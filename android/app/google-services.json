@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1050784867568",
+    "project_id": "lapangku-4e610",
+    "storage_bucket": "lapangku-4e610.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1050784867568:android:0971a4f050353606c54e35",
+        "android_client_info": {
+          "package_name": "com.lapangku.lapangku"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMuLhrBOu-pKy4YYqk7eeY-6DJI7iiZG8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
