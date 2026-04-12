@@ -10,6 +10,6 @@ abstract class AuthRepository {
     required String role,
   });
   Future<void> logout();
-  Future<void>sendPasswordResetEmail(String email);
+  Future<void>sendPasswordReset(String email);
   Stream<UserEntity?> get authStateChanges;
 }

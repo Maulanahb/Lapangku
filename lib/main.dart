@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
+import 'features/auth/presentation/pages/splash_page.dart';
+import 'features/auth/presentation/pages/onboarding_page.dart';
+import 'features/auth/presentation/pages/login_page.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,11 +33,27 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text('LapangKu siap! 🚀'),
-        ),
-      ),
+      home: const SplashPage(),
+      routes:{
+        '/onboarding': (context) => const OnboardingPage(),
+        '/login': (context) => const LoginPage(),
+        '/register': (context) => const Scaffold(
+      body: Center(child: Text('Register - Coming Soon')),
+            ),
+        '/forgot-password': (context) => const Scaffold(
+              body: Center(child: Text('Forgot Password - Coming Soon')),
+            ),
+        '/customer-home': (context) => const Scaffold(
+              body: Center(child: Text('Customer Home - Coming Soon')),
+            ),
+        '/owner-home': (context) => const Scaffold(
+              body: Center(child: Text('Owner Home - Coming Soon')),
+            ),
+        '/admin-home': (context) => const Scaffold(
+              body: Center(child: Text('Admin Home - Coming Soon')),
+          ),
+      },
     );
   }
 }
+  
