@@ -8,6 +8,7 @@ import 'features/auth/presentation/pages/onboarding_page.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/register_page.dart';
 import 'features/auth/presentation/pages/forgot_password_page.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -35,7 +36,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const SplashPage(),
-      routes:{
+      routes: {
         '/onboarding': (context) => const OnboardingPage(),
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
@@ -48,9 +49,8 @@ class MyApp extends StatelessWidget {
             ),
         '/admin-home': (context) => const Scaffold(
               body: Center(child: Text('Admin Home - Coming Soon')),
-          ),
+            ),
       },
     );
   }
 }
-  
