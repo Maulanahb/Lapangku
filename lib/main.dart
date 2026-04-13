@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lapangku/features/auth/presentation/pages/register_page.dart';
 import 'firebase_options.dart';
-
+import 'features/auth/presentation/pages/splash_page.dart';
+import 'features/auth/presentation/pages/onboarding_page.dart';
+import 'features/auth/presentation/pages/login_page.dart';
+import 'features/auth/presentation/pages/register_page.dart';
+import 'features/auth/presentation/pages/forgot_password_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -29,11 +34,23 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text('LapangKu siap! 🚀'),
-        ),
-      ),
+      home: const SplashPage(),
+      routes:{
+        '/onboarding': (context) => const OnboardingPage(),
+        '/login': (context) => const LoginPage(),
+        '/register': (context) => const RegisterPage(),
+        '/forgot-password': (context) => const ForgotPasswordPage(),
+        '/customer-home': (context) => const Scaffold(
+              body: Center(child: Text('Customer Home - Coming Soon')),
+            ),
+        '/owner-home': (context) => const Scaffold(
+              body: Center(child: Text('Owner Home - Coming Soon')),
+            ),
+        '/admin-home': (context) => const Scaffold(
+              body: Center(child: Text('Admin Home - Coming Soon')),
+          ),
+      },
     );
   }
 }
+  
