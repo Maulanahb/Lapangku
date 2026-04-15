@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
 
 class AuthRemoteDatasource {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db = FirestoreService.instance;
 
   Future<User> login(String email, String password) async {
     final result = await _auth.signInWithEmailAndPassword(
@@ -11,7 +12,7 @@ class AuthRemoteDatasource {
       password: password,
     );
     return result.user!;
-}
+  }
 
   Future<User> register({
     required String email,
@@ -36,7 +37,7 @@ class AuthRemoteDatasource {
       'statusVerifikasi': role == 'mitra' ? 'proses' : null,
       'createdAt': FieldValue.serverTimestamp(),
     });
-    
+
     return user;
   }
 
@@ -45,10 +46,13 @@ class AuthRemoteDatasource {
   Future<void> sendPasswordReset(String email) =>
       _auth.sendPasswordResetEmail(email: email);
 
-  Future<Map<String, dynamic>> getUserData(String uid) async {
-    final doc = await _db.collection('users').doc(uid).get();
-    return doc.data()!;
+Future<Map<String, dynamic>> getUserData(String uid) async {
+  final doc = await _db.collection('users').doc(uid).get();
+  if (!doc.exists || doc.data() == null) {
+    throw Exception('User data not found for uid: $uid');
   }
+  return doc.data()!;
+}
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 }
