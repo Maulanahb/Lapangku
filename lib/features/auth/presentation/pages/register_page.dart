@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
+import 'package:lapangku/core/utils/navigation_helper.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -40,58 +41,71 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
   }
 
   Future<void> _register() async {
-    if (_nameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _phoneController.text.isEmpty ||
-        _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Semua field wajib diisi')),
-      );
-      return;
-    }
-
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password tidak cocok')),
-      );
-      return;
-    }
-
-    if (_passwordController.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password minimal 6 karakter')),
-      );
-      return;
-    }
-
-    await ref.read(authProvider.notifier).register(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-          name: _nameController.text.trim(),
-          phone: _phoneController.text.trim(),
-          role: _selectedRole,
-        );
-
-    final authState = ref.read(authProvider);
+  // Validasi
+  if (_nameController.text.isEmpty ||
+      _emailController.text.isEmpty ||
+      _phoneController.text.isEmpty ||
+      _passwordController.text.isEmpty) {
     if (!mounted) return;
-
-    if (authState.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authState.errorMessage!)),
-      );
-      return;
-    }
-
-    if (authState.user != null) {
-      switch (authState.user!.role) {
-        case 'mitra':
-          Navigator.pushReplacementNamed(context, '/owner-home');
-          break;
-        default:
-          Navigator.pushReplacementNamed(context, '/customer-home');
-      }
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Semua field wajib diisi')),
+    );
+    return;
   }
+
+  if (_passwordController.text != _confirmPasswordController.text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Password tidak cocok')),
+    );
+    return;
+  }
+
+  if (_passwordController.text.length < 6) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Password minimal 6 karakter')),
+    );
+    return;
+  }
+
+  if (_selectedRole == 'admin') {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Akun admin hanya bisa dibuat oleh sistem.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
+
+  // Trigger register
+  await ref.read(authProvider.notifier).register(
+    email: _emailController.text.trim(),
+    password: _passwordController.text.trim(),
+    name: _nameController.text.trim(),
+    phone: _phoneController.text.trim(),
+    role: _selectedRole,
+  );
+
+  if (!mounted) return;
+  
+  final authState = ref.read(authProvider);
+
+  // Handle error
+  if (authState.errorMessage != null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(authState.errorMessage!)),
+    );
+    return;
+  }
+
+  // ✅ Navigate by role
+  if (authState.user != null) {
+    NavigationHelper.navigateByRole(context, authState.user!);
+  }
+}
 
   @override
   Widget build(BuildContext context) {
