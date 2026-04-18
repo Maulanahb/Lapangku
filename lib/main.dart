@@ -7,6 +7,7 @@ import 'features/auth/presentation/pages/splash_page.dart';
 import 'features/auth/presentation/pages/onboarding_page.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/forgot_password_page.dart';
+import 'features/customer/presentation/pages/customer_home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,9 +41,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/forgot-password': (context) => const ForgotPasswordPage(),
-        '/customer-home': (context) => const Scaffold(
-              body: Center(child: Text('Customer Home - Coming Soon')),
-            ),
+        '/customer-home': (context) => const CustomerHomePage(),
         '/owner-home': (context) => const Scaffold(
               body: Center(child: Text('Owner Home - Coming Soon')),
             ),
