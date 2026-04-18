@@ -56,8 +56,6 @@ class AuthRemoteDatasource {
     }
     return doc.data()!;
   }
-  return doc.data()!;
-}
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 }
