@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
-
+import 'package:lapangku/core/utils/navigation_helper.dart';
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -30,43 +30,40 @@ class _LoginPageState extends ConsumerState<LoginPage>
     super.dispose();
   }
 
-  Future<void> _login() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email dan password wajib diisi')),
-      );
-      return;
-    }
-
-    await ref.read(authProvider.notifier).login(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-        );
-
-    final authState = ref.read(authProvider);
+Future<void> _login() async {
+  // Validasi
+  if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
     if (!mounted) return;
-
-    if (authState.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authState.errorMessage!)),
-      );
-      return;
-    }
-
-    if (authState.user != null) {
-      switch (authState.user!.role) {
-        case 'mitra':
-          Navigator.pushReplacementNamed(context, '/owner-home');
-          break;
-        case 'admin':
-          Navigator.pushReplacementNamed(context, '/admin-home');
-          break;
-        default:
-          Navigator.pushReplacementNamed(context, '/customer-home');
-      }
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Email dan password wajib diisi')),
+    );
+    return;
   }
 
+  // Trigger login
+  await ref.read(authProvider.notifier).login(
+    _emailController.text.trim(),
+    _passwordController.text.trim(),
+  );
+
+  if (!mounted) return;
+  
+  // ✅ Baca state SETELAH async selesai
+  final authState = ref.read(authProvider);
+
+  // Handle error
+  if (authState.errorMessage != null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(authState.errorMessage!)),
+    );
+    return;
+  }
+
+  // ✅ Navigate by role — safe & centralized
+  if (authState.user != null) {
+    NavigationHelper.navigateByRole(context, authState.user!);
+  }
+}
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);

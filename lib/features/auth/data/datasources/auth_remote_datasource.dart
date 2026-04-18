@@ -49,10 +49,12 @@ class AuthRemoteDatasource {
   Future<void> sendPasswordReset(String email) =>
       _auth.sendPasswordResetEmail(email: email);
 
-Future<Map<String, dynamic>> getUserData(String uid) async {
-  final doc = await _db.collection('users').doc(uid).get();
-  if (!doc.exists || doc.data() == null) {
-    throw Exception('User data not found for uid: $uid');
+  Future<Map<String, dynamic>> getUserData(String uid) async {
+    final doc = await _db.collection('users').doc(uid).get();
+    if (!doc.exists || doc.data() == null) {
+      throw Exception('Data pengguna tidak ditemukan.');
+    }
+    return doc.data()!;
   }
   return doc.data()!;
 }

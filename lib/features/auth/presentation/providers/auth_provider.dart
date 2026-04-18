@@ -24,58 +24,70 @@ class AuthState {
     UserEntity? user,
     bool? isLoading,
     String? errorMessage,
+    bool clearUser = false,
+    bool clearError = false,
   }) {
     return AuthState(
-      user: user ?? this.user,
+      user: clearUser ? null : (user ?? this.user),
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 }
-
+String _parseAuthError(Object e) {
+  final msg = e.toString();
+  if (msg.contains('user-not-found')) return 'Email tidak terdaftar.';
+  if (msg.contains('wrong-password')) return 'Password salah.';
+  if (msg.contains('email-already-in-use')) return 'Email sudah digunakan.';
+  if (msg.contains('weak-password')) return 'Password minimal 6 karakter.';
+  if (msg.contains('invalid-email')) return 'Format email tidak valid.';
+  if (msg.contains('network-request-failed')) return 'Cek koneksi internet.';
+  if (msg.contains('too-many-requests')) return 'Terlalu banyak percobaan. Coba lagi nanti.';
+  return 'Terjadi kesalahan. Silakan coba lagi.';
+}
 // Notifier
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _repository;
 
   AuthNotifier(this._repository) : super(const AuthState());
 
-  Future<void> login(String email, String password) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
-    try {
-      final user = await _repository.login(email, password);
-      state = state.copyWith(user: user, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.toString(),
-      );
+    Future<void> login(String email, String password) async {
+      state = state.copyWith(isLoading: true, clearError: true);
+      try {
+        final user = await _repository.login(email, password);
+        state = state.copyWith(user: user, isLoading: false, clearError: true);
+      } catch (e) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: _parseAuthError(e), 
+        );
+      }
     }
-  }
 
-  Future<void> register({
-    required String email,
-    required String password,
-    required String name,
-    required String phone,
-    required String role,
-  }) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
-    try {
-      final user = await _repository.register(
-        email: email,
-        password: password,
-        name: name,
-        phone: phone,
-        role: role,
-      );
-      state = state.copyWith(user: user, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.toString(),
-      );
+    Future<void> register({
+      required String email,
+      required String password,
+      required String name,
+      required String phone,
+      required String role,
+    }) async {
+      state = state.copyWith(isLoading: true, clearError: true);
+      try {
+        final user = await _repository.register(
+          email: email,
+          password: password,
+          name: name,
+          phone: phone,
+          role: role,
+        );
+        state = state.copyWith(user: user, isLoading: false, clearError: true);
+      } catch (e) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: _parseAuthError(e),
+        );
+      }
     }
-  }
 
   Future<void> logout() async {
     await _repository.logout();
