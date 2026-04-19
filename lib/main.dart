@@ -8,6 +8,9 @@ import 'features/auth/presentation/pages/onboarding_page.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/forgot_password_page.dart';
 import 'features/customer/presentation/pages/customer_home_page.dart';
+import 'features/admin/presentation/pages/admin_dashboard_page.dart';
+import 'package:flutter/foundation.dart';
+import 'features/admin/presentation/pages/admin_login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +38,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const SplashPage(),
+      home: kIsWeb ? const AdminLoginPage() : const SplashPage(),
       routes: {
         '/onboarding': (context) => const OnboardingPage(),
         '/login': (context) => const LoginPage(),
@@ -45,9 +48,7 @@ class MyApp extends StatelessWidget {
         '/owner-home': (context) => const Scaffold(
               body: Center(child: Text('Owner Home - Coming Soon')),
             ),
-        '/admin-home': (context) => const Scaffold(
-              body: Center(child: Text('Admin Home - Coming Soon')),
-            ),
+        '/admin-home': (context) => const AdminDashboardPage(),
       },
     );
   }
