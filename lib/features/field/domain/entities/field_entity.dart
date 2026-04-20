@@ -1,5 +1,6 @@
 class FieldEntity {
   final String id;
+  final String idLapangan; // new
   final String nama;
   final String kategori;
   final int hargaPerJam;
@@ -14,9 +15,11 @@ class FieldEntity {
   final List<String> fotoGaleri;
   final List<String> fasilitas;
   final String idPemilik;
+  final String? statusVerifikasi; // new
 
   const FieldEntity({
     required this.id,
+    this.idLapangan = '',
     required this.nama,
     required this.kategori,
     required this.hargaPerJam,
@@ -31,5 +34,6 @@ class FieldEntity {
     required this.fotoGaleri,
     required this.fasilitas,
     required this.idPemilik,
+    this.statusVerifikasi,
   });
 }

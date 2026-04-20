@@ -23,7 +23,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final user = await _datasource.register(
       email: email,
       password: password,
-      name: name,
+      nama: name,
       phone: phone,
       role: role,
     );
@@ -49,12 +49,17 @@ class AuthRepositoryImpl implements AuthRepository {
 
   UserEntity _toEntity(Map<String, dynamic> data) {
     return UserEntity(
-      uid: data['uid'],
-      email: data['email'],
-      name: data['name'],
-      role: data['role'],
+      uid: data['uid'] ?? '',
+      email: data['email'] ?? '',
+      nama: data['nama'] ?? '',
+      role: data['role'] ?? 'customer',
       phone: data['phone'],
       photoUrl: data['photoUrl'],
+      avatarUrl: data['avatarUrl'],
+      bankInfo: data['bankInfo'],
+      isVerified: data['isVerified'] ?? false,
+      jabatan: data['jabatan'],
+      namaBisnis: data['namaBisnis'],
       statusVerifikasi: data['statusVerifikasi'],
     );
   }
