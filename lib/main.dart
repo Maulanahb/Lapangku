@@ -11,7 +11,7 @@ import 'features/customer/presentation/pages/customer_home_page.dart';
 import 'features/admin/presentation/pages/admin_dashboard_page.dart';
 import 'package:flutter/foundation.dart';
 import 'features/admin/presentation/pages/admin_login_page.dart';
-
+import 'features/owner/presentation/pages/owner_home_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -45,9 +45,7 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
         '/forgot-password': (context) => const ForgotPasswordPage(),
         '/customer-home': (context) => const CustomerHomePage(),
-        '/owner-home': (context) => const Scaffold(
-              body: Center(child: Text('Owner Home - Coming Soon')),
-            ),
+        '/owner-home': (context) => const OwnerHomePage(),
         '/admin-home': (context) => const AdminDashboardPage(),
       },
     );
