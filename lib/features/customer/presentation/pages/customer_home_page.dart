@@ -112,7 +112,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                                   backgroundColor:
                                       Colors.white.withValues(alpha: 0.24),
                                   backgroundImage: hasAvatar
-                                      ? NetworkImage(avatarUrl!)
+                                      ? NetworkImage(avatarUrl)
                                       : null,
                                   child: hasAvatar
                                       ? null
