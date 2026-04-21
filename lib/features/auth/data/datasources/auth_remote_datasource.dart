@@ -33,13 +33,10 @@ class AuthRemoteDatasource {
       'nama': nama,
       'phone': phone,
       'role': role,
-      'photoUrl': null,
-      'avatarUrl': '',
-      'bankInfo': '',
-      'isVerified': false,
-      'jabatan': '',
-      'namaBisnis': '',
-      'statusVerifikasi': role == 'mitra' ? 'proses' : null,
+      'avatarUrl': null, // Diupdate dari 'photoUrl' ke 'avatarUrl'
+      'isVerified': false, // Diupdate dari 'statusVerifikasi' ke 'isVerified'
+      'bankInfo': null,
+      'idLapangan': null,
       'createdAt': FieldValue.serverTimestamp(),
     });
 
@@ -52,9 +49,14 @@ class AuthRemoteDatasource {
       _auth.sendPasswordResetEmail(email: email);
 
   Future<Map<String, dynamic>> getUserData(String uid) async {
-    final doc = await _db.collection('users').doc(uid).get();
+    // Tambahkan timeout agar tidak loading terus-menerus jika koneksi/Firestore bermasalah
+    final doc = await _db.collection('users').doc(uid).get().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => throw Exception('Waktu koneksi habis (Timeout). Cek internet/App Check kamu.'),
+    );
+    
     if (!doc.exists || doc.data() == null) {
-      throw Exception('Data pengguna tidak ditemukan.');
+      throw Exception('Data pengguna tidak ditemukan di database.');
     }
     return doc.data()!;
   }

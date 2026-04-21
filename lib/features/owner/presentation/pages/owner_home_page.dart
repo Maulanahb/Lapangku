@@ -630,9 +630,9 @@ class _OwnerHomePageState extends ConsumerState<OwnerHomePage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Text(
                     'Pelajari Fitur',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),

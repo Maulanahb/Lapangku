@@ -23,15 +23,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
   String _selectedRole = 'customer';
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.index = 1;
-  }
-
-  @override
   void dispose() {
-    _tabController.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
@@ -41,71 +33,112 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
   }
 
   Future<void> _register() async {
-  // Validasi
-  if (_nameController.text.isEmpty ||
-      _emailController.text.isEmpty ||
-      _phoneController.text.isEmpty ||
-      _passwordController.text.isEmpty) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Semua field wajib diisi')),
+    // Validasi
+    if (_nameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _phoneController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Semua field wajib diisi')),
+      );
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password tidak cocok')),
+      );
+      return;
+    }
+
+    if (_passwordController.text.length < 6) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password minimal 6 karakter')),
+      );
+      return;
+    }
+
+    if (_selectedRole == 'admin') {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Akun admin hanya bisa dibuat oleh sistem.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Trigger register
+    await ref.read(authProvider.notifier).register(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+      name: _nameController.text.trim(),
+      phone: _phoneController.text.trim(),
+      role: _selectedRole,
     );
-    return;
+
+    if (!mounted) return;
+    
+    final authState = ref.read(authProvider);
+
+    // Handle error
+    if (authState.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authState.errorMessage!)),
+      );
+      return;
+    }
+
+    if (authState.user != null) {
+      NavigationHelper.navigateByRole(context, authState.user!);
+    }
   }
 
-  if (_passwordController.text != _confirmPasswordController.text) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Password tidak cocok')),
-    );
-    return;
-  }
-
-  if (_passwordController.text.length < 6) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Password minimal 6 karakter')),
-    );
-    return;
-  }
-
-  if (_selectedRole == 'admin') {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Akun admin hanya bisa dibuat oleh sistem.'),
-        backgroundColor: Colors.red,
+  Widget _buildToggle() {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F4F8),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                 Navigator.pushReplacementNamed(context, '/login');
+              },
+              child: Container(
+                color: Colors.transparent,
+                child: const Center(
+                  child: Text('Masuk', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF718096))),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 2, offset: const Offset(0, 1))
+                ]
+              ),
+              child: const Center(
+                child: Text('Daftar', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
+              ),
+            ),
+          ),
+        ],
       ),
     );
-    return;
   }
-
-  // Trigger register
-  await ref.read(authProvider.notifier).register(
-    email: _emailController.text.trim(),
-    password: _passwordController.text.trim(),
-    name: _nameController.text.trim(),
-    phone: _phoneController.text.trim(),
-    role: _selectedRole,
-  );
-
-  if (!mounted) return;
-  
-  final authState = ref.read(authProvider);
-
-  // Handle error
-  if (authState.errorMessage != null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(authState.errorMessage!)),
-    );
-    return;
-  }
-
-  // ✅ Navigate by role
-  if (authState.user != null) {
-    NavigationHelper.navigateByRole(context, authState.user!);
-  }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -120,115 +153,53 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
             physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 24),
 
-                // Tab Masuk / Daftar
-                Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF7F8FA),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicator: BoxDecoration(
-                      color: const Color(0xFF1B6B3A),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    labelColor: Colors.white,
-                    unselectedLabelColor: const Color(0xFF718096),
-                    dividerColor: Colors.transparent,
-                    labelStyle: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                    tabs: const [
-                      Tab(text: 'Masuk'),
-                      Tab(text: 'Daftar'),
+                // Header Top Bar
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1B6B3A),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.sports_soccer, // Same icon as login page for visual consistent base
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'LapangKu',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF1B6B3A),
+                        ),
+                      ),
                     ],
-                    onTap: (index) {
-                      if (index == 0) {
-                        Navigator.pushReplacementNamed(context, '/login');
-                      }
-                    },
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
-                // Banner hijau
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1B6B3A),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    'Mulai Perjalanan\nOlahragamu.',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
+                // Toggle
+                _buildToggle(),
+                const SizedBox(height: 32),
 
-                // Nama Lengkap
-                _buildTextField(
-                  controller: _nameController,
-                  hint: 'Nama Lengkap kamu',
-                  label: 'NAMA LENGKAP',
-                ),
-                const SizedBox(height: 16),
-
-                // Email
-                _buildTextField(
-                  controller: _emailController,
-                  hint: 'email@contoh.com',
-                  label: 'EMAIL',
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 16),
-
-                // Nomor HP
-                _buildPhoneField(),
-                const SizedBox(height: 16),
-
-                // Password
-                _buildPasswordField(
-                  controller: _passwordController,
-                  label: 'PASSWORD',
-                  obscure: _obscurePassword,
-                  onToggle: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
-                ),
-                const SizedBox(height: 16),
-
-                // Konfirmasi Password
-                _buildPasswordField(
-                  controller: _confirmPasswordController,
-                  label: 'KONFIRMASI PASSWORD',
-                  obscure: _obscureConfirm,
-                  onToggle: () =>
-                      setState(() => _obscureConfirm = !_obscureConfirm),
-                ),
-                const SizedBox(height: 20),
-
-                // Daftar sebagai
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'DAFTAR SEBAGAI',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF718096),
-                      letterSpacing: 0.5,
-                    ),
+                // Register Type label
+                const Text(
+                  'Saya ingin mendaftar sebagai:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D3748),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -240,8 +211,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
                       child: _buildRoleCard(
                         role: 'customer',
                         title: 'Customer',
-                        subtitle: 'Cari & booking lapangan',
-                        icon: Icons.person,
+                        subtitle: 'booking lapangan',
+                        icon: Icons.person_outline,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -249,57 +220,146 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
                       child: _buildRoleCard(
                         role: 'mitra',
                         title: 'Pemilik Lapangan',
-                        subtitle: 'Kelola lapangan saya',
-                        icon: Icons.store,
+                        subtitle: 'kelola lapangan',
+                        icon: Icons.domain,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
-                // Tombol Buat Akun
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: authState.isLoading ? null : _register,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1B6B3A),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                // Container for form fields for consistent styling
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.02),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
+                  ),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      // Nama Lengkap
+                      _buildTextField(
+                        controller: _nameController,
+                        hint: 'Masukkan nama lengkap Anda',
+                        label: 'NAMA LENGKAP',
                       ),
-                    ),
-                    child: authState.isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Buat Akun',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                      const SizedBox(height: 20),
+
+                      // Email
+                      _buildTextField(
+                        controller: _emailController,
+                        hint: 'contoh@email.com',
+                        label: 'EMAIL',
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Nomor HP
+                      _buildPhoneField(),
+                      const SizedBox(height: 20),
+
+                      // Password
+                      _buildPasswordField(
+                        controller: _passwordController,
+                        label: 'PASSWORD',
+                        obscure: _obscurePassword,
+                        onToggle: () =>
+                            setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Konfirmasi Password
+                      _buildPasswordField(
+                        controller: _confirmPasswordController,
+                        label: 'KONFIRMASI PASSWORD',
+                        obscure: _obscureConfirm,
+                        onToggle: () =>
+                            setState(() => _obscureConfirm = !_obscureConfirm),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Tombol Buat Akun
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: authState.isLoading ? null : _register,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0F5A2F),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Syarat
-                RichText(
-                  textAlign: TextAlign.center,
-                  text: const TextSpan(
-                    text: 'Dengan mendaftar kamu menyetujui ',
-                    style: TextStyle(color: Color(0xFF718096), fontSize: 12),
-                    children: [
-                      TextSpan(
-                        text: 'Syarat & Ketentuan',
-                        style: TextStyle(
-                          color: Color(0xFF1B6B3A),
-                          decoration: TextDecoration.underline,
+                          child: authState.isLoading
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text(
+                                  'Buat Akun',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ),
-                      TextSpan(text: ' kami.'),
+                      const SizedBox(height: 24),
+
+                      // Syarat
+                      RichText(
+                        textAlign: TextAlign.center,
+                        text: const TextSpan(
+                          text: 'Dengan mendaftar, Anda menyetujui ',
+                          style: TextStyle(color: Color(0xFF718096), fontSize: 10),
+                          children: [
+                            TextSpan(
+                              text: 'Syarat &\nKetentuan',
+                              style: TextStyle(
+                                color: Color(0xFF1B6B3A),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(text: ' serta '),
+                            TextSpan(
+                              text: 'Kebijakan Privasi',
+                              style: TextStyle(
+                                color: Color(0xFF1B6B3A),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(text: ' LapangKu.'),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
+                ),
+                
+                const SizedBox(height: 32),
+                // Bottom link
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Sudah punya akun? ', style: TextStyle(color: Color(0xFF718096))),
+                    GestureDetector(
+                      onTap: () =>
+                          Navigator.pushReplacementNamed(context, '/login'),
+                      child: const Text(
+                        'Masuk',
+                        style: TextStyle(
+                          color: Color(0xFF1B6B3A),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 32),
               ],
@@ -322,21 +382,23 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
         Text(
           label,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF718096),
+            color: Color(0xFF2D3748),
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          style: const TextStyle(fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: Color(0xFF718096)),
+            hintStyle: const TextStyle(color: Color(0xFFA0AEC0)),
             filled: true,
-            fillColor: const Color(0xFFF7F8FA),
+            fillColor: const Color(0xFFF1F4F8),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -354,47 +416,47 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
         const Text(
           'NOMOR HP',
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF718096),
+            color: Color(0xFF2D3748),
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 6),
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF7F8FA),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                '+62',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3748),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  hintText: '812...',
-                  hintStyle: const TextStyle(color: Color(0xFF718096)),
-                  filled: true,
-                  fillColor: const Color(0xFFF7F8FA),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+        const SizedBox(height: 8),
+        Container(
+          height: 52,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F4F8),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  '+62',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D3748),
+                    fontSize: 16,
                   ),
                 ),
               ),
-            ),
-          ],
+              Expanded(
+                child: TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                  decoration: const InputDecoration(
+                    hintText: '812 3456 7890',
+                    hintStyle: TextStyle(color: Color(0xFFA0AEC0)),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.only(bottom: 5), // align text
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -412,29 +474,31 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
         Text(
           label,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF718096),
+            color: Color(0xFF2D3748),
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         TextField(
           controller: controller,
           obscureText: obscure,
+          style: const TextStyle(fontWeight: FontWeight.w500, letterSpacing: 2.0),
           decoration: InputDecoration(
             hintText: '••••••••',
-            hintStyle: const TextStyle(color: Color(0xFF718096)),
+            hintStyle: const TextStyle(color: Color(0xFFA0AEC0), letterSpacing: 2.0),
             filled: true,
-            fillColor: const Color(0xFFF7F8FA),
+            fillColor: const Color(0xFFF1F4F8),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
             suffixIcon: IconButton(
               icon: Icon(
-                obscure ? Icons.visibility_off : Icons.visibility,
-                color: const Color(0xFF718096),
+                obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                color: const Color(0xFFA0AEC0),
               ),
               onPressed: onToggle,
             ),
@@ -456,37 +520,46 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFE8F5EC) : const Color(0xFFF7F8FA),
+          color: isSelected ? const Color(0xFFE8F5EC) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF1B6B3A) : Colors.transparent,
-            width: 2,
+            color: isSelected ? const Color(0xFF1B6B3A) : const Color(0xFFE2E8F0),
+            width: 1.5,
           ),
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, // Left aligned elements in right mockup
           children: [
-            Icon(
-              icon,
-              color: isSelected
-                  ? const Color(0xFF1B6B3A)
-                  : const Color(0xFF718096),
-              size: 32,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected
+                      ? const Color(0xFF1B6B3A)
+                      : const Color(0xFFA0AEC0),
+                  size: 24,
+                ),
+                if (isSelected)
+                  const Icon(
+                    Icons.check_circle,
+                    color: Color(0xFF1B6B3A),
+                    size: 20,
+                  ),
+              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color: isSelected
-                    ? const Color(0xFF1B6B3A)
-                    : const Color(0xFF2D3748),
+                color: Color(0xFF2D3748),
               ),
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
-              textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 11,
                 color: Color(0xFF718096),

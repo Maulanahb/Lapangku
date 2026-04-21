@@ -17,252 +17,379 @@ class _LoginPageState extends ConsumerState<LoginPage>
   bool _obscurePassword = true;
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
   void dispose() {
-    _tabController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-Future<void> _login() async {
-  // Validasi
-  if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+  Future<void> _login() async {
+    // Validasi
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email dan password wajib diisi')),
+      );
+      return;
+    }
+
+    // Trigger login
+    await ref.read(authProvider.notifier).login(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Email dan password wajib diisi')),
+    
+    final authState = ref.read(authProvider);
+
+    // Handle error
+    if (authState.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authState.errorMessage!)),
+      );
+      return;
+    }
+
+    if (authState.user != null) {
+      NavigationHelper.navigateByRole(context, authState.user!);
+    }
+  }
+
+  Widget _buildToggle() {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F4F8),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 2, offset: const Offset(0, 1))
+                ]
+              ),
+              child: const Center(
+                child: Text('Masuk', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                 Navigator.pushReplacementNamed(context, '/register');
+              },
+              child: Container(
+                color: Colors.transparent,
+                child: const Center(
+                  child: Text('Daftar', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF718096))),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
-    return;
   }
 
-  // Trigger login
-  await ref.read(authProvider.notifier).login(
-    _emailController.text.trim(),
-    _passwordController.text.trim(),
-  );
-
-  if (!mounted) return;
-  
-  // ✅ Baca state SETELAH async selesai
-  final authState = ref.read(authProvider);
-
-  // Handle error
-  if (authState.errorMessage != null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(authState.errorMessage!)),
-    );
-    return;
-  }
-
-  // ✅ Navigate by role — safe & centralized
-  if (authState.user != null) {
-    NavigationHelper.navigateByRole(context, authState.user!);
-  }
-}
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFCFCFC), // Very faint off-white background
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
 
-              // Logo
-              Container(
-                width: 70,
-                height: 70,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1B6B3A),
-                  shape: BoxShape.circle,
+              // Header Top Bar
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1B6B3A),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.sports_soccer, // Atau logo sesuai, bisa diupdate nanti
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'LapangKu',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1B6B3A), // Dark Green
+                      ),
+                    ),
+                  ],
                 ),
-                child: const Icon(
-                  Icons.sports_soccer,
-                  color: Colors.white,
-                  size: 36,
+              ),
+              const SizedBox(height: 48),
+
+              // Welcome Texts
+              const Text(
+                'Selamat Datang',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF134D2E), // Deep green title
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'LapangKu',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3748),
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Tab Masuk / Daftar
-              Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF7F8FA),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  indicator: BoxDecoration(
-                    color: const Color(0xFF1B6B3A),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  labelColor: Colors.white,
-                  unselectedLabelColor: const Color(0xFF718096),
-                  dividerColor: Colors.transparent,
-                  labelStyle: const TextStyle(
-                    fontWeight: FontWeight.bold,
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  'Temukan dan pesan lapangan olahraga favoritmu dengan sekali sentuh.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
                     fontSize: 14,
+                    color: Color(0xFF718096),
+                    height: 1.5,
                   ),
-                  tabs: const [
-                    Tab(text: 'Masuk'),
-                    Tab(text: 'Daftar'),
-                  ],
-                  onTap: (index) {
-                    if (index == 1) {
-                      Navigator.pushReplacementNamed(context, '/register');
-                    }
-                  },
                 ),
               ),
+              const SizedBox(height: 40),
+
+              // Toggle
+              _buildToggle(),
               const SizedBox(height: 32),
 
-              // Email
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  hintText: 'Email kamu',
-                  hintStyle: const TextStyle(color: Color(0xFF718096)),
-                  filled: true,
-                  fillColor: const Color(0xFFF7F8FA),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
+              // Form White Card (Optional, or just content)
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(32),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 40,
+                      spreadRadius: 10,
+                      offset: const Offset(0, 10),
+                    )
+                  ],
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              // Password
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  hintText: 'Password',
-                  hintStyle: const TextStyle(color: Color(0xFF718096)),
-                  filled: true,
-                  fillColor: const Color(0xFFF7F8FA),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                      color: const Color(0xFF718096),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Email Label
+                    const Text(
+                      'EMAIL',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFA0AEC0),
+                        letterSpacing: 1.0,
+                      ),
                     ),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Lupa password
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () =>
-                      Navigator.pushNamed(context, '/forgot-password'),
-                  child: const Text(
-                    'Lupa Password?',
-                    style: TextStyle(color: Color(0xFF1B6B3A)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Tombol Masuk
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: authState.isLoading ? null : _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1B6B3A),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 8),
+                    // Email Field
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                      decoration: InputDecoration(
+                        hintText: 'nama@email.com',
+                        hintStyle: const TextStyle(color: Color(0xFFA0AEC0)),
+                        filled: true,
+                        fillColor: const Color(0xFFF1F4F8), // Soft blue-gray
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        suffixIcon: const Icon(Icons.email_outlined, color: Color(0xFFA0AEC0)),
+                      ),
                     ),
-                  ),
-                  child: authState.isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Masuk',
+                    const SizedBox(height: 24),
+
+                    // Password Label & Forgot
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'KATA SANDI',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
+                            color: Color(0xFFA0AEC0),
+                            letterSpacing: 1.0,
                           ),
                         ),
+                        GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/forgot-password'),
+                          child: const Text(
+                            'Lupa Password?',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1B6B3A),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Password Field
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      style: const TextStyle(fontWeight: FontWeight.w500, letterSpacing: 2.0),
+                      decoration: InputDecoration(
+                        hintText: '••••••••',
+                        hintStyle: const TextStyle(color: Color(0xFFA0AEC0), letterSpacing: 2.0),
+                        filled: true,
+                        fillColor: const Color(0xFFF1F4F8),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            color: const Color(0xFFA0AEC0),
+                          ),
+                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Login Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: authState.isLoading ? null : _login,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0F5A2F), // Dark green
+                          shadowColor: const Color(0xFF0F5A2F).withOpacity(0.5),
+                          elevation: 8,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: authState.isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Masuk',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                                ],
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Divider
+                    Row(
+                      children: [
+                        Expanded(child: Divider(color: Colors.grey.withOpacity(0.2))),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'ATAU MASUK DENGAN',
+                            style: TextStyle(
+                              color: Color(0xFFA0AEC0),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                        ),
+                        Expanded(child: Divider(color: Colors.grey.withOpacity(0.2))),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Google Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: OutlinedButton(
+                        onPressed: () {},
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                              child: Image.network(
+                                'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png',
+                                height: 24,
+                                width: 24,
+                                errorBuilder: (context, error, stackTrace) => const Icon(
+                                  Icons.g_mobiledata,
+                                  size: 32,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Lanjutkan dengan Google',
+                              style: TextStyle(
+                                color: Color(0xFF2D3748),
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
-              // Divider
-              Row(
-                children: [
-                  const Expanded(child: Divider()),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      'atau masuk dengan',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 13),
-                    ),
-                  ),
-                  const Expanded(child: Divider()),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Google button
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.g_mobiledata, size: 24),
-                  label: const Text('Lanjut dengan Google'),
-                  style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Daftar link
+              // Bottom Signup link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Belum punya akun? '),
+                  const Text(
+                    'Belum punya akun? ',
+                    style: TextStyle(color: Color(0xFF718096)),
+                  ),
                   GestureDetector(
-                    onTap: () =>
-                        Navigator.pushReplacementNamed(context, '/register'),
+                    onTap: () => Navigator.pushReplacementNamed(context, '/register'),
                     child: const Text(
-                      'Daftar',
+                      'Daftar Sekarang',
                       style: TextStyle(
                         color: Color(0xFF1B6B3A),
                         fontWeight: FontWeight.bold,
@@ -271,7 +398,7 @@ Future<void> _login() async {
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
             ],
           ),
         ),
