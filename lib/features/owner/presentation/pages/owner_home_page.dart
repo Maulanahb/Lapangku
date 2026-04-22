@@ -597,62 +597,64 @@ class _OwnerHomePageState extends ConsumerState<OwnerHomePage> {
   }
 
   Widget _buildMiniBar(String day, double heightFactor,
-      {bool isToday = false}) {
-    return Column(
-      children: [
-        if (isToday)
-          Container(
-            margin: const EdgeInsets.only(bottom: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD1FAE5),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: const Text(
-              'Today',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+    {bool isToday = false}) {
+  return Column(
+    children: [
+      if (isToday)
+        Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD1FAE5),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'Today',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
               ),
             ),
             const SizedBox(height: 8),
             const Text(
               'Gunakan fitur promosi untuk menarik lebih banyak penyewa di jam-jam sepi.',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(color: Colors.black54, fontSize: 12),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () {
-                // TODO: Tambahkan navigasi ke halaman promosi
-              },
+              onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC7E6C1), // Hijau muda
-                foregroundColor: _primaryColor,
+                backgroundColor: const Color(0xFFC7E6C1),
+                foregroundColor: Colors.black,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Text(
-                    'Pelajari Fitur',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward, size: 18),
-                ],
-              ),
+              child: const Text('Pelajari Fitur'),
             ),
           ],
         ),
+
+      // BAR CHART
+      Container(
+        width: 10,
+        height: 60 * heightFactor,
+        decoration: BoxDecoration(
+          color: isToday ? _primaryGreen : Colors.grey[300],
+          borderRadius: BorderRadius.circular(4),
+        ),
       ),
-    );
-  }
+      const SizedBox(height: 6),
+      Text(day, style: const TextStyle(fontSize: 10)),
+    ],
+  );
+}
 
   // Update bagian Bottom Nav
 }
