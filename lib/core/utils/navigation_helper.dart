@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../features/auth/domain/entities/user_entity.dart';
+import '../../models/auth/user_model.dart';
 
 class NavigationHelper {
-  static void navigateByRole(BuildContext context, UserEntity user) {
+  static void navigateByRole(BuildContext context, UserModel user) {
     final route = _getRouteByRole(user.role);
     
     // Guard: cek mounted sebelum navigate
