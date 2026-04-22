@@ -611,29 +611,46 @@ class _OwnerHomePageState extends ConsumerState<OwnerHomePage> {
             child: const Text(
               'Today',
               style: TextStyle(
-                  color: Color(0xFF059669),
-                  fontSize: 8,
-                  fontWeight: FontWeight.bold),
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
             ),
-          ),
-        Container(
-          width: 24,
-          height: 100 * heightFactor,
-          decoration: BoxDecoration(
-            color: isToday ? _primaryGreen : const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(4),
-          ),
+            const SizedBox(height: 8),
+            const Text(
+              'Gunakan fitur promosi untuk menarik lebih banyak penyewa di jam-jam sepi.',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                // TODO: Tambahkan navigasi ke halaman promosi
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFC7E6C1), // Hijau muda
+                foregroundColor: _primaryColor,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text(
+                    'Pelajari Fitur',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward, size: 18),
+                ],
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          day,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
-            color: isToday ? Colors.black : Colors.grey[400],
-          ),
-        ),
-      ],
+      ),
     );
   }
 

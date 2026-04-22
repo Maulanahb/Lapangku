@@ -301,7 +301,7 @@ class _DashboardBody extends ConsumerWidget {
     return BarChart(
       BarChartData(
         maxY: maxY,
-        barTouchData: BarTouchData(enabled: false),
+        barTouchData: const BarTouchData(enabled: false),
         titlesData: FlTitlesData(
           leftTitles:
               const AxisTitles(sideTitles: SideTitles(showTitles: false)),

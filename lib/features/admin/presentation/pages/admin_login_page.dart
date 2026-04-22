@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/admin_provider.dart';
 import 'package:lapangku/features/auth/presentation/providers/auth_provider.dart';
 
 class AdminLoginPage extends ConsumerStatefulWidget {

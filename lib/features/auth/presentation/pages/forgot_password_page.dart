@@ -12,6 +12,7 @@ class ForgotPasswordPage extends ConsumerStatefulWidget {
 class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   final _emailController = TextEditingController();
   bool _emailSent = false;
+  String _sentEmail = '';
 
   @override
   void dispose() {
@@ -20,28 +21,49 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   }
 
   Future<void> _sendReset() async {
-    if (_emailController.text.isEmpty) {
+    final email = _emailController.text.trim();
+    
+    // Validasi kosong
+    if (email.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Email wajib diisi')),
       );
       return;
     }
 
-    await ref
-        .read(authProvider.notifier)
-        .sendPasswordReset(_emailController.text.trim());
+    // Validasi Regex Email
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(email)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Format email tidak valid. Periksa kembali email Anda.')),
+      );
+      return;
+    }
 
-    final authState = ref.read(authProvider);
+    // Call Provider
+    await ref.read(authProvider.notifier).sendPasswordReset(email);
+
     if (!mounted) return;
+    
+    final authState = ref.read(authProvider);
 
+    // Tangani Error Firebase Exception
     if (authState.errorMessage != null) {
+      // Snackbar menampilkan return message hasil parse error di Provider -> bahasa manusia
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(authState.errorMessage!)),
       );
       return;
     }
 
-    setState(() => _emailSent = true);
+    // Jika Supaya tidak memory leak, dan logic clear email
+    setState(() {
+      _sentEmail = email;
+      _emailSent = true;
+    });
+    _emailController.clear(); 
   }
 
   @override
@@ -70,9 +92,16 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: _emailSent ? _buildSuccessState() : _buildFormState(authState),
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                sliver: SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _emailSent ? _buildSuccessState() : _buildFormState(authState),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -173,9 +202,14 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
+              disabledBackgroundColor: const Color(0xFF1B6B3A).withOpacity(0.6), // Warna saat loading disable
             ),
             child: authState.isLoading
-                ? const CircularProgressIndicator(color: Colors.white)
+                ? const SizedBox(
+                    height: 24, 
+                    width: 24, 
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
+                  )
                 : const Text(
                     'Kirim Link Reset →',
                     style: TextStyle(
@@ -195,7 +229,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 size: 16, color: Color(0xFF1B6B3A)),
             label: const Text(
               'Kembali ke Login',
-              style: TextStyle(color: Color(0xFF1B6B3A)),
+              style: TextStyle(color: Color(0xFF1B6B3A), fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -242,17 +276,28 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             color: Color(0xFF2D3748),
           ),
         ),
-        const SizedBox(height: 12),
-        Text(
-          'Link reset password sudah dikirim ke\n${_emailController.text}',
+        const SizedBox(height: 16),
+        RichText(
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF718096),
-            height: 1.6,
+          text: TextSpan(
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF718096),
+              height: 1.6,
+            ),
+            children: [
+              const TextSpan(text: 'Link reset password telah dikirim ke email\n'),
+              TextSpan(
+                text: '$_sentEmail\n\n',
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
+              ),
+              const TextSpan(
+                text: 'Silakan cek kotak masuk atau folder spam di aplikasi Email Anda, lalu klik link tersebut untuk membuat password baru.',
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 48),
         SizedBox(
           width: double.infinity,
           height: 52,

@@ -49,18 +49,19 @@ class AuthRepositoryImpl implements AuthRepository {
 
   UserEntity _toEntity(Map<String, dynamic> data) {
     return UserEntity(
-      uid: data['uid'] ?? '',
-      email: data['email'] ?? '',
-      nama: data['nama'] ?? '',
-      role: data['role'] ?? 'customer',
-      phone: data['phone'],
-      photoUrl: data['photoUrl'],
-      avatarUrl: data['avatarUrl'],
-      bankInfo: data['bankInfo'],
-      isVerified: data['isVerified'] ?? false,
-      jabatan: data['jabatan'],
-      namaBisnis: data['namaBisnis'],
-      statusVerifikasi: data['statusVerifikasi'],
+      uid: data['uid']?.toString() ?? '',
+      email: data['email']?.toString() ?? '',
+      // Parameter di UserEntity diubah dari 'name' menjadi 'nama'
+      nama: data['nama']?.toString() ?? data['name']?.toString() ?? 'User Tanpa Nama',
+      role: data['role']?.toString() ?? 'customer',
+      phone: data['phone']?.toString(),
+      photoUrl: data['photoUrl']?.toString(),
+      avatarUrl: data['avatarUrl']?.toString() ?? data['photoUrl']?.toString(),
+      bankInfo: data['bankInfo']?.toString(),
+      isVerified: data['isVerified'] == true,
+      jabatan: data['jabatan']?.toString(),
+      namaBisnis: data['namaBisnis']?.toString(),
+      statusVerifikasi: data['statusVerifikasi']?.toString() ?? 'proses',
     );
   }
 }
