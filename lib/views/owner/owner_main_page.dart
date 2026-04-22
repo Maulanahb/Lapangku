@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'owner_home_page.dart';
 import 'manage_fields_page.dart';
+import 'owner_profile_page.dart';
 
 class OwnerMainPage extends StatefulWidget {
   const OwnerMainPage({super.key});
@@ -17,7 +18,7 @@ class _OwnerMainPageState extends State<OwnerMainPage> {
     const OwnerHomePage(key: ValueKey('home')),
     const ManageFieldsPage(key: ValueKey('fields')),
     const Center(key: ValueKey('orders'), child: Text('Halaman Orders (Belum Ada)')),
-    const Center(key: ValueKey('profile'), child: Text('Halaman Profile (Belum Ada)')),
+    const OwnerProfilePage(key: ValueKey('profile')),
   ];
 
   void _onNavTapped(int index) {
