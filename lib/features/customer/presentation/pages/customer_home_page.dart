@@ -100,7 +100,9 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                                     shape: BoxShape.circle,
                                   ),
                                   child: IconButton(
-                                    icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+                                    icon: const Icon(
+                                        Icons.notifications_none_rounded,
+                                        color: Colors.white),
                                     onPressed: () {
                                       // TODO: Navigasi ke inbox / notifikasi
                                     },
@@ -112,7 +114,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                                   backgroundColor:
                                       Colors.white.withValues(alpha: 0.24),
                                   backgroundImage: hasAvatar
-                                      ? NetworkImage(avatarUrl!)
+                                      ? NetworkImage(avatarUrl)
                                       : null,
                                   child: hasAvatar
                                       ? null
@@ -264,14 +266,13 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
           fieldsAsync.when(
             loading: () => const SliverFillRemaining(
               child: Center(
-                child:
-                    CircularProgressIndicator(color: Color(0xFF1B6B3A)),
+                child: CircularProgressIndicator(color: Color(0xFF1B6B3A)),
               ),
             ),
             error: (e, _) => SliverFillRemaining(
               child: Center(
-                child: Text('Terjadi kesalahan:\n$e',
-                    textAlign: TextAlign.center),
+                child:
+                    Text('Terjadi kesalahan:\n$e', textAlign: TextAlign.center),
               ),
             ),
             data: (fields) {
@@ -294,8 +295,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                   child: Center(
                     child: Text(
                       'Tidak ada lapangan yang sesuai.',
-                      style: TextStyle(
-                          color: Color(0xFF718096), fontSize: 16),
+                      style: TextStyle(color: Color(0xFF718096), fontSize: 16),
                     ),
                   ),
                 );

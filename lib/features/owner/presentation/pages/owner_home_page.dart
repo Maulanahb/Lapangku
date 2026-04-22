@@ -4,9 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../providers/owner_field_provider.dart';
-// TODO: Jangan lupa import model FieldEntity kamu dan booking model (jika ada) nanti
-// import '../../domain/entities/field_entity.dart';
-// import '../../../booking/domain/entities/booking_entity.dart';
+import 'manage_fields_page.dart';
 
 class OwnerHomePage extends ConsumerStatefulWidget {
   const OwnerHomePage({super.key});
@@ -16,213 +14,197 @@ class OwnerHomePage extends ConsumerStatefulWidget {
 }
 
 class _OwnerHomePageState extends ConsumerState<OwnerHomePage> {
-  // Variabel statis untuk tampilan, ganti dengan state management Riverpod nanti
-  final int _bookingTodayCount = 8;
-  final String _revenueToday = 'Rp 960K';
-  final int _activeFields = 3;
-  final int _totalFields = 3;
-  final double _rating = 4.8;
-  final int _reviewCount = 67;
-  final String _revenue7Days = 'Rp 3.2 juta';
-  final int _pendingConfirmations = 2;
-
-  // Variabel untuk mengelola indeks navigasi bawah
-  int _selectedIndex = 0;
-
-  // Warna utama dari brief
-  final Color _primaryColor = const Color(0xFF1B6B3A);
+  final Color _primaryGreen = const Color(0xFF0F5A3C);
+  final Color _bgLightGreen = const Color(0xFFE8F5EF);
+  final Color _bgLightRed = const Color(0xFFFEE8E7);
+  final Color _textRed = const Color(0xFFE04443);
+  final Color _bgGrey = const Color(0xFFF9FAFB);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB), // Latar belakang keabu-abuan
-      appBar: AppBar(
-        title: Text(
-          'Dashboard',
-          style: TextStyle(
-            color: _primaryColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
-        centerTitle: false,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Stack(
-              children: [
-                const Icon(Icons.notifications_outlined, color: Colors.black),
-                Positioned(
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(1),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 12,
-                      minHeight: 12,
-                    ),
-                    child: const Text(
-                      '2', // Ganti dengan jumlah notifikasi sebenarnya nanti
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildWelcomeSection(),
+                      const SizedBox(height: 24),
+                      _buildStatsGrid(),
+                      const SizedBox(height: 32),
+                      _buildWaitingListHeader(),
+                      const SizedBox(height: 16),
+                      _buildWaitingOrderCard(),
+                      const SizedBox(height: 32),
+                      _buildRevenueSummarySection(),
+                      const SizedBox(height: 40),
+                    ],
                   ),
-                )
-              ],
-            ),
-            onPressed: () {
-              // TODO: Tambahkan navigasi ke halaman notifikasi
-            },
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: CircleAvatar(
-              backgroundColor: _primaryColor,
-              child: const Text(
-                'BS',
-                style:
-                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
             children: [
-              Text(
-                'Senin, 30 Maret 2024',
-                style: TextStyle(color: Colors.grey[600], fontSize: 16),
+              const CircleAvatar(
+                radius: 20,
+                backgroundImage:
+                    NetworkImage('https://i.pravatar.cc/150?img=12'),
               ),
-              const SizedBox(height: 20),
-
-              // Bagian Statistik Utama
-              _buildStatsGrid(),
-              const SizedBox(height: 20),
-
-              // Bagian Grafik Pendapatan
-              _buildRevenueSection(),
-              const SizedBox(height: 20),
-
-              // Bagian Daftar Pesanan Menunggu Konfirmasi
-              _buildBookingSectionHeader(),
-              const SizedBox(height: 12),
-              _buildPendingBookingCard(),
-              const SizedBox(height: 20),
-
-              // Bagian Promo / Peningkatan Performa
-              _buildPromoCard(),
+              const SizedBox(width: 12),
+              Text(
+                'LapangKu',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: _primaryGreen,
+                ),
+              ),
             ],
           ),
-        ),
-      ),
-      // Navigasi bawah, ini static untuk tampilan, tambahkan state management nanti
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          // TODO: Gunakan state management untuk mengubah indeks dan menavigasi
-          // Untuk saat ini, kita hanya memperbarui tampilan di halaman ini
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: _primaryColor,
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sports_soccer),
-            label: 'Lapangan',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long),
-            label: 'Pesanan',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profil',
+          Stack(
+            children: [
+              const Icon(Icons.notifications_outlined,
+                  size: 28, color: Colors.black87),
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE04443),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Text(
+                    '2',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  Widget _buildWelcomeSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Dashboard',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Senin, 30 Maret 2024',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildStatsGrid() {
-    // 1. Ambil UID user yang sedang login (kasih nilai default kalau belum login saat ngetes)
+    // 1. Ambil UID dari Firebase Auth
     final String ownerId =
         FirebaseAuth.instance.currentUser?.uid ?? 'dummy_owner_id';
 
-    // 2. Pantau provider lapangan berdasarkan ownerId
+    // 2. Tonton (watch) provider lapangan
     final fieldsAsyncValue = ref.watch(ownerFieldsProvider(ownerId));
 
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+    return Column(
       children: [
-        _buildStatCard(
-          label: 'PESANAN HARI INI',
-          value:
-              '$_bookingTodayCount', // Ini nanti diganti pakai provider booking
-          trendIcon: Icons.trending_up,
-          trendText: '+2 dari kemarin',
-          trendColor: Colors.green,
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                label: 'Pesanan Hari Ini',
+                value: '8', // Nanti diganti kalau provider pesanan udah ada
+                trend: '↑2',
+                trendColor: Colors.green,
+                footer: 'dari kemarin',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                label: 'Pendapatan Hari Ini',
+                value: 'Rp 960K', // Nanti diganti pakai provider pendapatan
+                valueColor: _primaryGreen,
+                trend: '↑15%',
+                trendColor: Colors.green,
+                footer: '',
+                isBordered: true,
+              ),
+            ),
+          ],
         ),
-        _buildStatCard(
-          label: 'PENDAPATAN HARI INI',
-          value: _revenueToday, // Ini nanti diganti pakai provider pendapatan
-          trendIcon: Icons.trending_up,
-          trendText: '+15%',
-          trendColor: Colors.green,
-        ),
-
-        // 3. Gunakan fieldsAsyncValue.when untuk kotak LAPANGAN AKTIF
-        fieldsAsyncValue.when(
-          data: (fields) {
-            // Jika sukses, hitung jumlah lapangan milik owner ini
-            final activeCount = fields.length;
-            return _buildStatCard(
-              label: 'LAPANGAN AKTIF',
-              value: '$activeCount',
-              trendText: 'dari total lapangan',
-            );
-          },
-          loading: () => _buildStatCard(
-            label: 'LAPANGAN AKTIF',
-            value: '...', // Tampilkan titik-titik saat loading
-            trendText: 'Memuat data...',
-          ),
-          error: (error, stack) => _buildStatCard(
-            label: 'LAPANGAN AKTIF',
-            value: '-',
-            trendText: 'Gagal memuat',
-          ),
-        ),
-
-        _buildStatCard(
-          label: 'RATING',
-          value: '$_rating', // Nanti diganti pakai data ulasan asli
-          icon: Icons.star_rounded,
-          iconColor: Colors.amber[700],
-          trendText: '($_reviewCount ulasan)',
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            // 3. Gunakan .when untuk mengganti angka '3' menjadi dinamis
+            Expanded(
+              child: fieldsAsyncValue.when(
+                data: (fields) {
+                  final totalFields = fields.length;
+                  return _buildStatCard(
+                    label: 'Lapangan Aktif',
+                    value: '$totalFields',
+                    footer: 'dari total lapangan',
+                  );
+                },
+                loading: () => _buildStatCard(
+                  label: 'Lapangan Aktif',
+                  value: '...', // Tampil saat loading
+                  footer: 'Memuat data...',
+                ),
+                error: (error, stack) => _buildStatCard(
+                  label: 'Lapangan Aktif',
+                  value: '-', // Tampil saat error
+                  footer: 'Gagal memuat',
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                label: 'Rating Rata-rata',
+                value: '4.8', // Nanti diganti pakai data rating
+                hasStar: true,
+                footer: '(67 ulasan)',
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -231,420 +213,429 @@ class _OwnerHomePageState extends ConsumerState<OwnerHomePage> {
   Widget _buildStatCard({
     required String label,
     required String value,
-    String? trendText,
-    IconData? trendIcon,
+    String? trend,
     Color? trendColor,
-    IconData? icon,
-    Color? iconColor,
+    required String footer,
+    Color? valueColor,
+    bool isBordered = false,
+    bool hasStar = false,
   }) {
-    return Material(
-      color: Colors.white,
-      elevation: 4,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.grey[700],
-                fontWeight: FontWeight.bold,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: isBordered
+            ? Border.all(color: _bgLightGreen, width: 1.5)
+            : Border.all(color: Colors.grey[100]!, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
                 fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700]),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  color: valueColor ?? Colors.black,
+                ),
               ),
-            ),
-            Row(
-              children: [
-                if (icon != null) Icon(icon, color: iconColor, size: 24),
-                if (icon != null) const SizedBox(width: 8),
+              if (hasStar) ...[
+                const SizedBox(width: 4),
+                const Icon(Icons.star, color: Color(0xFFFFB800), size: 18),
+              ],
+              if (trend != null) ...[
+                const Spacer(),
                 Text(
-                  value,
+                  trend,
                   style: TextStyle(
-                    color: Colors.grey[900],
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    fontSize: 28,
+                    color: trendColor,
                   ),
                 ),
               ],
+            ],
+          ),
+          if (footer.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              footer,
+              style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[500],
+                  fontWeight: FontWeight.w500),
             ),
-            if (trendText != null)
-              Row(
-                children: [
-                  if (trendIcon != null)
-                    Icon(trendIcon, color: trendColor, size: 16),
-                  if (trendIcon != null) const SizedBox(width: 4),
-                  Text(
-                    trendText,
-                    style: TextStyle(
-                      color: trendColor ?? Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
           ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildRevenueSection() {
-    return Material(
-      color: Colors.white,
-      elevation: 4,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pendapatan 7 Hari',
-                      style: TextStyle(
-                        color: Colors.grey[900],
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    Text(
-                      _revenue7Days,
-                      style: TextStyle(
-                        color: _primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 24,
-                      ),
-                    ),
-                  ],
-                ),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: Tambahkan aksi filter
-                  },
-                  icon: const Icon(Icons.filter_list),
-                  label: const Text('Filter'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey[700],
-                    side: const BorderSide(color: Colors.grey),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                )
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Placeholder untuk Grafik Pendapatan
-            Container(
-              height: 120,
-              width: double.infinity,
-              color: const Color(0xFFF6F8FB),
-              child: const Center(
-                child: Text(
-                  'Grafik Pendapatan',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildChartLabels(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChartLabels() {
+  Widget _buildWaitingListHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildChartLabel('SEN'),
-        _buildChartLabel('SEL'),
-        _buildChartLabel('RAB'),
-        _buildChartLabel('KAM'),
-        _buildChartLabel('JUM'),
-        _buildChartLabel('SAB', isActive: true),
-        _buildChartLabel('MIN'),
+        Row(
+          children: [
+            const Text(
+              'Pesanan Menunggu',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEE8E7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                '2',
+                style: TextStyle(
+                    color: Color(0xFFE04443),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Text(
+              'Lihat Semua',
+              style: TextStyle(
+                  color: _primaryGreen,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14),
+            ),
+            Icon(Icons.arrow_forward, color: _primaryGreen, size: 16),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _buildChartLabel(String text, {bool isActive = false}) {
+  Widget _buildWaitingOrderCard() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: isActive
-          ? BoxDecoration(
-              color:
-                  const Color(0xFFC7E6C1), // Hijau muda, sesuaikan jika perlu
-              borderRadius: BorderRadius.circular(8),
-            )
-          : null,
-      child: Text(
-        text,
-        style: TextStyle(
-          color: isActive ? _primaryColor : Colors.grey[700],
-          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          fontSize: 12,
-        ),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey[100]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildBookingSectionHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Tambahkan Expanded di sini agar Row kiri menyesuaikan sisa ruang
-        Expanded(
-          child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              // Tambahkan Expanded juga di Text-nya
+              const CircleAvatar(
+                radius: 24,
+                backgroundImage:
+                    NetworkImage('https://i.pravatar.cc/150?img=11'),
+              ),
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  'Pesanan Menunggu Konfirmasi',
-                  style: TextStyle(
-                    color: Colors.grey[900],
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16, // Sedikit dikecilkan dari 18 biar lebih pas
-                  ),
-                  // Jika teks kepanjangan, akan dipotong pakai titik-titik (...)
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Budi Santoso',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(Icons.phone_outlined,
+                            size: 14, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(
+                          '0812-3456-7890',
+                          style:
+                              TextStyle(color: Colors.grey[600], fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEDBB1), // Oranye muda
-                  borderRadius: BorderRadius.circular(6),
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  '$_pendingConfirmations',
-                  style: const TextStyle(
-                    color: Color(0xFFE65100), // Oranye tua
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                child: const Text(
+                  '5 menit lalu',
+                  style: TextStyle(
+                      color: Color(0xFF6366F1),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5FE),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.location_on_outlined,
+                        size: 16, color: _primaryGreen),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Futsal A',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    const Text('  •  ', style: TextStyle(color: Colors.grey)),
+                    const Text(
+                      'Sabtu, 30 Mar',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.access_time, size: 16, color: _primaryGreen),
+                    const SizedBox(width: 8),
+                    const Text(
+                      '19:00–20:00',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total Pembayaran',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Rp 125.000',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                  ),
+                  Text(
+                    'Transfer BCA',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                  ),
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _bgLightGreen,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.list_alt, size: 16, color: _primaryGreen),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Lihat Bukti',
+                      style: TextStyle(
+                          color: _primaryGreen,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _bgLightRed,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Tolak',
+                      style: TextStyle(
+                          color: _textRed,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _primaryGreen,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Konfirmasi',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-        ),
-        const SizedBox(width: 8), // Kasih jarak sedikit ke tombol
-        TextButton.icon(
-          onPressed: () {
-            // TODO: Tambahkan navigasi ke semua pesanan
-          },
-          icon: const Icon(Icons.arrow_forward, size: 16),
-          label: const Text('Lihat Semua'),
-          style: TextButton.styleFrom(
-            foregroundColor: _primaryColor,
-            padding:
-                EdgeInsets.zero, // Hilangkan padding bawaan biar hemat tempat
-            textStyle:
-                const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-        )
-      ],
-    );
-  }
-
-  Widget _buildPendingBookingCard() {
-    return Material(
-      color: Colors.white,
-      elevation: 4,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                // Placeholder foto profil
-                CircleAvatar(
-                  backgroundColor: Colors.grey[300],
-                  child: const Icon(Icons.person, color: Colors.white),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Budi Santoso',
-                      style: TextStyle(
-                        color: Colors.grey[900],
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(
-                      '0812-3456-7890',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                Text(
-                  '5 menit lalu',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            _buildBookingDetailRow(Icons.sports_soccer_outlined, 'Futsal A'),
-            const SizedBox(height: 8),
-            _buildBookingDetailRow(
-                Icons.calendar_month_outlined, 'Sabtu 30 Mar'),
-            const SizedBox(height: 8),
-            _buildBookingDetailRow(Icons.access_time, '19:00-20:00'),
-            const SizedBox(height: 8),
-            _buildBookingDetailRow(
-                Icons.account_balance_wallet_outlined, 'Transfer BCA'),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Rp 125.000',
-                  style: TextStyle(
-                    color: _primaryColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    // TODO: Tambahkan aksi lihat bukti transfer
-                  },
-                  child: Text(
-                    'Lihat Bukti',
-                    style: TextStyle(
-                        color: Colors.grey[700],
-                        decoration: TextDecoration.underline),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Tambahkan aksi konfirmasi
-                    },
-                    icon: const Icon(Icons.check, size: 18),
-                    label: const Text('Konfirmasi'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _primaryColor,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      // TODO: Tambahkan aksi tolak
-                    },
-                    icon: const Icon(Icons.close, size: 18),
-                    label: const Text('Tolak'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                  ),
-                ),
-              ],
-            )
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildBookingDetailRow(IconData icon, String text) {
-    return Row(
+  Widget _buildRevenueSummarySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: Colors.grey[600], size: 18),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: TextStyle(color: Colors.grey[800], fontSize: 14),
+        const Text(
+          'Ringkasan Pendapatan',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
         ),
-      ],
-    );
-  }
-
-  Widget _buildPromoCard() {
-    return Material(
-      color: _primaryColor,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Tingkatkan Performa Lapangan',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.grey[100]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Pendapatan 7 Hari Terakhir',
+                style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500),
               ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Gunakan fitur promosi untuk menarik lebih banyak penyewa di jam-jam sepi.',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: Tambahkan navigasi ke halaman promosi
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC7E6C1), // Hijau muda
-                foregroundColor: _primaryColor,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              const SizedBox(height: 4),
+              Text(
+                'Rp 3.2 Juta',
+                style: TextStyle(
+                    color: _primaryGreen,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Text(
-                    'Pelajari Fitur',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward, size: 18),
+              const SizedBox(height: 40),
+              // Dummy Chart
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _buildMiniBar('Sen', 0.4),
+                  _buildMiniBar('Sel', 0.6),
+                  _buildMiniBar('Rab', 0.3),
+                  _buildMiniBar('Kam', 0.8),
+                  _buildMiniBar('Jum', 0.5),
+                  _buildMiniBar('Sab', 0.7),
+                  _buildMiniBar('Min', 0.9, isToday: true),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
+
+  Widget _buildMiniBar(String day, double heightFactor,
+      {bool isToday = false}) {
+    return Column(
+      children: [
+        if (isToday)
+          Container(
+            margin: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFFD1FAE5),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'Today',
+              style: TextStyle(
+                  color: Color(0xFF059669),
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold),
+            ),
+          ),
+        Container(
+          width: 24,
+          height: 100 * heightFactor,
+          decoration: BoxDecoration(
+            color: isToday ? _primaryGreen : const Color(0xFFF3F4F6),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          day,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+            color: isToday ? Colors.black : Colors.grey[400],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Update bagian Bottom Nav
 }
