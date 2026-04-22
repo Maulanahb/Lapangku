@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/features/auth/presentation/pages/register_page.dart';
-import 'firebase_options.dart';
-import 'features/auth/presentation/pages/splash_page.dart';
-import 'features/auth/presentation/pages/onboarding_page.dart';
-import 'features/auth/presentation/pages/login_page.dart';
-import 'features/auth/presentation/pages/forgot_password_page.dart';
-import 'features/customer/presentation/pages/customer_main_page.dart';
-import 'features/admin/presentation/pages/admin_dashboard_page.dart';
 import 'package:flutter/foundation.dart';
-import 'features/admin/presentation/pages/admin_login_page.dart';
-// import 'features/owner/presentation/pages/owner_home_page.dart';
-import 'features/owner/presentation/pages/owner_main_page.dart';
+import 'firebase_options.dart';
+
+// ─── Views (MVC) ─────────────────────────────────────────────────────────────
+import 'views/auth/splash_page.dart';
+import 'views/auth/onboarding_page.dart';
+import 'views/auth/login_page.dart';
+import 'views/auth/register_page.dart';
+import 'views/auth/forgot_password_page.dart';
+import 'views/customer/customer_main_page.dart';
+import 'views/owner/owner_main_page.dart';
+import 'views/admin/admin_dashboard_page.dart';
+import 'views/admin/admin_login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,7 +53,7 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
         '/forgot-password': (context) => const ForgotPasswordPage(),
         '/customer-home': (context) => const CustomerMainPage(),
-        '/owner-home': (context) => OwnerMainPage(),
+        '/owner-home': (context) => const OwnerMainPage(),
         '/admin-home': (context) => const AdminDashboardPage(),
       },
     );
