@@ -42,7 +42,7 @@ class _OwnerHomePageState extends ConsumerState<OwnerHomePage> {
                       _buildWaitingOrderCard(),
                       const SizedBox(height: 32),
                       _buildRevenueSummarySection(),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -94,12 +94,44 @@ class _OwnerHomePageState extends ConsumerState<OwnerHomePage> {
   }
 
   Widget _buildWelcomeSection() {
+    // Mengambil waktu saat ini
+    final now = DateTime.now();
+
+    // Array untuk nama hari dan bulan dalam bahasa Indonesia
+    final List<String> days = [
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu'
+    ];
+    final List<String> months = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember'
+    ];
+
+    // Membentuk string tanggal yang rapi
+    final String currentDate =
+        '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} ${now.year}';
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('Dashboard',
           style: TextStyle(
               fontSize: 28, fontWeight: FontWeight.w900, color: Colors.black)),
       const SizedBox(height: 4),
-      Text('Senin, 30 Maret 2024',
+      Text(currentDate, // <--- Tanggal sekarang otomatis tampil di sini
           style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],
@@ -280,12 +312,15 @@ class _OwnerHomePageState extends ConsumerState<OwnerHomePage> {
       decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey[100]!),
+          // Border dibuat sangat transparan agar tidak kaku
+          border: Border.all(color: Colors.black.withOpacity(0.02)),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 15,
-                offset: const Offset(0, 8))
+                color: Colors.black
+                    .withOpacity(0.06), // Shadow lebih lembut dan menyebar
+                blurRadius: 24,
+                spreadRadius: 0,
+                offset: const Offset(0, 8)) // Jatuh bayangannya ke bawah
           ]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
