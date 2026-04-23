@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/auth/user_model.dart';
 
@@ -47,7 +48,66 @@ class AuthService {
     return UserModel.fromFirestore(data);
   }
 
-  Future<void> logout() => _auth.signOut();
+  Future<UserModel> signInWithGoogle() async {
+    try {
+      // 1. Memicu proses autentikasi Google
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        throw Exception('Login dibatalkan pengguna');
+      }
+
+      // 2. Mendapatkan detail autentikasi dari permintaan
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // 3. Membuat kredensial baru
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // 4. Masuk ke Firebase dengan kredensial tersebut
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
+      if (user == null) {
+        throw Exception('Gagal mendapatkan informasi pengguna dari Google');
+      }
+
+      // 5. Cek apakah user sudah ada di Firestore
+      final docRef = _db.collection('users').doc(user.uid);
+      final docSnap = await docRef.get();
+
+      if (!docSnap.exists) {
+        // Jika belum ada, buat dokumen baru dengan role default 'customer'
+        await docRef.set({
+          'uid': user.uid,
+          'email': user.email ?? googleUser.email,
+          'nama': user.displayName ?? googleUser.displayName ?? 'User Google',
+          'role': 'customer',
+          'phone': user.phoneNumber,
+          'avatarUrl': user.photoURL ?? googleUser.photoUrl,
+          'isVerified': false,
+          'bankInfo': null,
+          'idLapangan': null,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // 6. Ambil data dari Firestore untuk direturn sebagai UserModel
+      final data = await getUserData(user.uid);
+      return UserModel.fromFirestore(data);
+    } catch (e) {
+      throw Exception('Gagal login dengan Google: $e');
+    }
+  }
+
+  Future<void> logout() async {
+    try {
+      await GoogleSignIn().signOut();
+    } catch (e) {
+      // Ignore error if not signed in with google
+    }
+    await _auth.signOut();
+  }
 
   Future<void> sendPasswordReset(String email) =>
       _auth.sendPasswordResetEmail(email: email);
