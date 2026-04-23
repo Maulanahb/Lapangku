@@ -55,6 +55,25 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
   }
 
+  Future<void> _loginWithGoogle() async {
+    await ref.read(authProvider.notifier).loginWithGoogle();
+    
+    if (!mounted) return;
+    
+    final authState = ref.read(authProvider);
+
+    if (authState.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authState.errorMessage!)),
+      );
+      return;
+    }
+
+    if (authState.user != null) {
+      NavigationHelper.navigateByRole(context, authState.user!);
+    }
+  }
+
   Widget _buildToggle() {
     return Container(
       height: 48,
@@ -334,7 +353,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       width: double.infinity,
                       height: 56,
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: authState.isLoading ? null : _loginWithGoogle,
                         style: OutlinedButton.styleFrom(
                           backgroundColor: Colors.white,
                           side: const BorderSide(color: Color(0xFFE2E8F0)),
