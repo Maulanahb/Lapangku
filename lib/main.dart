@@ -12,7 +12,6 @@ import 'views/auth/login_page.dart';
 import 'views/auth/register_page.dart';
 import 'views/auth/forgot_password_page.dart';
 import 'views/customer/customer_main_page.dart';
-import 'views/customer/customer_field_detail_page.dart';
 import 'views/owner/owner_main_page.dart';
 import 'views/admin/admin_dashboard_page.dart';
 import 'views/admin/admin_login_page.dart';
@@ -43,7 +42,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF059669),
+          seedColor: const Color(0xFF1B6B3A),
         ),
         useMaterial3: true,
       ),
@@ -54,7 +53,6 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
         '/forgot-password': (context) => const ForgotPasswordPage(),
         '/customer-home': (context) => const CustomerMainPage(),
-        '/field-detail': (context) => const CustomerFieldDetailPage(),
         '/owner-home': (context) => const OwnerMainPage(),
         '/admin-home': (context) => const AdminDashboardPage(),
       },

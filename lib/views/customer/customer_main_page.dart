@@ -43,7 +43,7 @@ class _CustomerMainPageState extends ConsumerState<CustomerMainPage> {
           },
           backgroundColor: Colors.white,
           elevation: 0,
-          selectedItemColor: const Color(0xFF059669),
+          selectedItemColor: const Color(0xFF1B6B3A),
           unselectedItemColor: const Color(0xFF718096),
           selectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.bold,
