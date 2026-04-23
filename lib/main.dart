@@ -16,6 +16,7 @@ import 'views/customer/customer_main_page.dart';
 import 'views/owner/owner_main_page.dart';
 import 'views/admin/admin_dashboard_page.dart';
 import 'views/admin/admin_login_page.dart';
+import 'views/customer/customer_profile_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +41,7 @@ void main() async {
       child: MyApp(),
     ),
   );
+
 }
 
 class MyApp extends StatelessWidget {
@@ -51,9 +53,7 @@ class MyApp extends StatelessWidget {
       title: 'LapangKu',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1B6B3A),
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B6B3A)),
         useMaterial3: true,
       ),
       home: kIsWeb ? const AdminLoginPage() : const SplashPage(),
@@ -66,6 +66,7 @@ class MyApp extends StatelessWidget {
         '/owner-home': (context) => const OwnerMainPage(),
         '/admin-login': (context) => const AdminLoginPage(),
         '/admin-home': (context) => const AdminDashboardPage(),
+        '/profile': (context) => const CustomerProfilePage(),
       },
     );
   }
