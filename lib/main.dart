@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 
 // ─── Views (MVC) ─────────────────────────────────────────────────────────────
@@ -18,13 +19,22 @@ import 'views/admin/admin_login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inisialisasi locale Indonesia untuk intl (DateFormat)
+  await initializeDateFormatting('id', null);
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug,
-  );
+  // Firebase App Check: hanya aktif di Android (debug mode)
+  // Web tidak memerlukan App Check untuk development
+  if (!kIsWeb) {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug,
+    );
+  }
+
   runApp(
     const ProviderScope(
       child: MyApp(),
@@ -54,6 +64,7 @@ class MyApp extends StatelessWidget {
         '/forgot-password': (context) => const ForgotPasswordPage(),
         '/customer-home': (context) => const CustomerMainPage(),
         '/owner-home': (context) => const OwnerMainPage(),
+        '/admin-login': (context) => const AdminLoginPage(),
         '/admin-home': (context) => const AdminDashboardPage(),
       },
     );

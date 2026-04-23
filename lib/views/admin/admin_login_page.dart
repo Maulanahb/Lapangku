@@ -11,9 +11,12 @@ class AdminLoginPage extends ConsumerStatefulWidget {
 
 class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
   static const _primary = Color(0xFF1B6B3A);
+  static const _fieldBg = Color(0xFFEEF0F7);
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _rememberMe = false;
 
   @override
   void dispose() {
@@ -54,7 +57,10 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
 
   void _showSnackbar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: isError ? Colors.red : _primary),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : _primary,
+      ),
     );
   }
 
@@ -63,67 +69,248 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: const Color(0xFFF0F2F5),
       body: Center(
         child: SingleChildScrollView(
           child: Container(
-            width: 420,
+            width: 400,
             margin: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 24, offset: const Offset(0, 8))]),
-            padding: const EdgeInsets.all(40),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              // Logo
-              Container(width: 72, height: 72,
-                decoration: const BoxDecoration(color: _primary, shape: BoxShape.circle),
-                child: const Icon(Icons.sports_soccer, color: Colors.white, size: 36)),
-              const SizedBox(height: 16),
-              const Text('LapangKu', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF2D3748))),
-              const SizedBox(height: 4),
-              const Text('Admin Panel', style: TextStyle(fontSize: 14, color: Color(0xFF718096))),
-              const SizedBox(height: 32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 44),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ─── Header ───────────────────────────────────────────────
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: _primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.sports_soccer,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Selamat Datang',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1B6B3A),
+                          ),
+                        ),
+                        Text(
+                          'Admin',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF718096),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 36),
 
-              // Email
-              Align(alignment: Alignment.centerLeft,
-                child: Text('EMAIL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey[600], letterSpacing: 0.5))),
-              const SizedBox(height: 8),
-              TextField(controller: _emailController, keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(hintText: 'admin@lapangku.com', hintStyle: const TextStyle(color: Color(0xFF718096)),
-                  prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF718096)),
-                  filled: true, fillColor: const Color(0xFFF7F8FA),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _primary, width: 1.5)))),
-              const SizedBox(height: 20),
+                // ─── Email Field ──────────────────────────────────────────
+                const Text(
+                  'Email Admin',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF2D3748),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  style: const TextStyle(fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'admin@lapangku.com',
+                    hintStyle: const TextStyle(color: Color(0xFFADB5BD)),
+                    prefixIcon: const Icon(
+                      Icons.mail_outline_rounded,
+                      color: Color(0xFF718096),
+                      size: 20,
+                    ),
+                    filled: true,
+                    fillColor: _fieldBg,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: _primary,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
 
-              // Password
-              Align(alignment: Alignment.centerLeft,
-                child: Text('PASSWORD', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey[600], letterSpacing: 0.5))),
-              const SizedBox(height: 8),
-              TextField(controller: _passwordController, obscureText: _obscurePassword,
-                decoration: InputDecoration(hintText: '••••••••', hintStyle: const TextStyle(color: Color(0xFF718096)),
-                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF718096)),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: const Color(0xFF718096)),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword)),
-                  filled: true, fillColor: const Color(0xFFF7F8FA),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _primary, width: 1.5)))),
-              const SizedBox(height: 32),
+                // ─── Password Field ───────────────────────────────────────
+                const Text(
+                  'Password',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF2D3748),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  style: const TextStyle(fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: '••••••••',
+                    hintStyle: const TextStyle(color: Color(0xFFADB5BD)),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      color: Color(0xFF718096),
+                      size: 20,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                        color: const Color(0xFF718096),
+                        size: 20,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                    filled: true,
+                    fillColor: _fieldBg,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: _primary,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
 
-              // Login Button
-              SizedBox(width: double.infinity, height: 52,
-                child: ElevatedButton(
-                  onPressed: authState.isLoading ? null : _login,
-                  style: ElevatedButton.styleFrom(backgroundColor: _primary, foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
-                  child: authState.isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Masuk sebagai Admin', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)))),
-              const SizedBox(height: 20),
+                // ─── Remember Me & Lupa Password ─────────────────────────
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: Checkbox(
+                            value: _rememberMe,
+                            onChanged: (v) =>
+                                setState(() => _rememberMe = v ?? false),
+                            activeColor: _primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            side: const BorderSide(
+                              color: Color(0xFFCBD5E0),
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Ingat Saya',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF4A5568),
+                          ),
+                        ),
+                      ],
+                    ),
+                    GestureDetector(
+                      onTap: () {},
+                      child: const Text(
+                        'Lupa Password?',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: _primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
 
-              // Footer
-              Text('Hanya untuk administrator LapangKu', style: TextStyle(fontSize: 12, color: Colors.grey[400])),
-            ]),
+                // ─── Login Button ─────────────────────────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: authState.isLoading ? null : _login,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: authState.isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : const Text(
+                            'Masuk ke Dashboard',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
