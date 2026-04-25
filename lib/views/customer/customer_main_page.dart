@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'customer_home_page.dart';
+
+// [RESOLVED] Menggabungkan import dari server (Profile) dan dari stash-mu (Orders)
 import 'customer_profile_page.dart';
+import 'customer_orders_page.dart';
 
 class CustomerMainPage extends ConsumerStatefulWidget {
   const CustomerMainPage({super.key});
@@ -15,7 +18,7 @@ class _CustomerMainPageState extends ConsumerState<CustomerMainPage> {
 
   final List<Widget> _pages = [
     const CustomerHomePage(),
-    const _DummyPage(title: 'Pesanan Saya', icon: Icons.receipt_long),
+    const CustomerOrdersPage(),
     const _DummyPage(title: 'Favorit', icon: Icons.favorite),
     const CustomerProfilePage(),
   ];

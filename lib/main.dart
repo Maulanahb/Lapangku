@@ -16,7 +16,12 @@ import 'views/customer/customer_main_page.dart';
 import 'views/owner/owner_main_page.dart';
 import 'views/admin/admin_dashboard_page.dart';
 import 'views/admin/admin_login_page.dart';
+
+// [RESOLVED] Menggabungkan import milik server (profile) dan milikmu (search, detail, model)
 import 'views/customer/customer_profile_page.dart';
+import 'views/customer/customer_search_page.dart';
+import 'views/customer/customer_field_detail_page.dart';
+import 'models/field/field_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,8 +33,8 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Firebase App Check: hanya aktif di Android (debug mode)
-  // Web tidak memerlukan App Check untuk development
+  // [RESOLVED] Mengambil kode server: Firebase App Check dibatasi hanya untuk Android.
+  // Ini lebih aman dan mencegah error kalau kamu sedang me-run versi Web untuk Admin.
   if (!kIsWeb) {
     await FirebaseAppCheck.instance.activate(
       androidProvider: AndroidProvider.debug,
@@ -41,7 +46,6 @@ void main() async {
       child: MyApp(),
     ),
   );
-
 }
 
 class MyApp extends StatelessWidget {
@@ -56,6 +60,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B6B3A)),
         useMaterial3: true,
       ),
+      // Setelan home sudah otomatis mendeteksi Web (untuk admin) atau Mobile (Splash untuk customer)
       home: kIsWeb ? const AdminLoginPage() : const SplashPage(),
       routes: {
         '/onboarding': (context) => const OnboardingPage(),
@@ -66,7 +71,14 @@ class MyApp extends StatelessWidget {
         '/owner-home': (context) => const OwnerMainPage(),
         '/admin-login': (context) => const AdminLoginPage(),
         '/admin-home': (context) => const AdminDashboardPage(),
+        
+        // [RESOLVED] Menggabungkan routing milik server dan routing milikmu
         '/profile': (context) => const CustomerProfilePage(),
+        '/search': (context) => const CustomerSearchPage(),
+        '/field-detail': (context) {
+          final field = ModalRoute.of(context)!.settings.arguments as FieldModel;
+          return CustomerFieldDetailPage(field: field);
+        },
       },
     );
   }
