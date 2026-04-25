@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class AdminLoginPage extends ConsumerStatefulWidget {
   const AdminLoginPage({super.key});
@@ -17,6 +19,23 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _rememberMe = prefs.getBool('admin_remember_me') ?? false;
+      if (_rememberMe) {
+        _emailController.text = prefs.getString('admin_email') ?? '';
+        _passwordController.text = prefs.getString('admin_password') ?? '';
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -47,6 +66,17 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
 
     if (authState.user != null) {
       if (authState.user!.role.toLowerCase() == 'admin') {
+        final prefs = await SharedPreferences.getInstance();
+        if (_rememberMe) {
+          await prefs.setBool('admin_remember_me', true);
+          await prefs.setString('admin_email', _emailController.text.trim());
+          await prefs.setString('admin_password', _passwordController.text.trim());
+        } else {
+          await prefs.remove('admin_remember_me');
+          await prefs.remove('admin_email');
+          await prefs.remove('admin_password');
+        }
+
         Navigator.pushReplacementNamed(context, '/admin-home');
       } else {
         _showSnackbar('Akun ini bukan admin!', isError: true);
@@ -261,17 +291,6 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                           ),
                         ),
                       ],
-                    ),
-                    GestureDetector(
-                      onTap: () {},
-                      child: const Text(
-                        'Lupa Password?',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: _primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
                     ),
                   ],
                 ),
