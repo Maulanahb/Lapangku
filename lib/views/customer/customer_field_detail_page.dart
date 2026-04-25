@@ -366,43 +366,26 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     );
   }
 
-  Future<void> _handleBooking() async {
+  void _handleBooking() {
     final user = ref.read(authProvider).user;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu'), backgroundColor: Colors.red));
       return;
     }
 
-    setState(() => _isBooking = true);
-    try {
-      final selectedSlots = _selectedTimeIndices.map((i) => _allSlots[i]).toList();
-      final service = ref.read(bookingServiceProvider);
+    final selectedSlots = _selectedTimeIndices.map((i) => _allSlots[i]).toList();
+    // Sort slots based on original index to maintain order
+    final sortedSlots = _selectedTimeIndices.toList()..sort();
+    final orderedSlots = sortedSlots.map((i) => _allSlots[i]).toList();
 
-      await service.createBooking(
-        fieldId: widget.field.id,
-        fieldName: widget.field.nama,
-        userId: user.uid,
-        userName: user.nama,
-        date: _selectedDate,
-        timeSlots: selectedSlots,
-        pricePerHour: widget.field.hargaPerJam,
-      );
-
-      // Refresh booked slots
-      ref.invalidate(bookedSlotsProvider(_providerKey));
-
-      if (mounted) {
-        setState(() { _selectedTimeIndices.clear(); _isBooking = false; });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Berhasil memesan ${selectedSlots.length} sesi di ${widget.field.nama}!'),
-          backgroundColor: const Color(0xFF1B6B3A), behavior: SnackBarBehavior.floating,
-        ));
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isBooking = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal memesan: $e'), backgroundColor: Colors.red));
-      }
-    }
+    Navigator.pushNamed(
+      context,
+      '/booking-confirmation',
+      arguments: {
+        'field': widget.field,
+        'date': _selectedDate,
+        'timeSlots': orderedSlots,
+      },
+    );
   }
 }
