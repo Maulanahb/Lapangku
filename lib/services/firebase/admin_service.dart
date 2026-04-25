@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/admin/admin_field_model.dart';
 import 'package:lapangku/models/admin/booking_model.dart';
 import 'package:lapangku/models/admin/admin_stats.dart';
 
 class AdminService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirestoreService.instance;
 
   Future<AdminStats> getStats() async {
     final now = DateTime.now();
@@ -12,11 +13,8 @@ class AdminService {
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
     final results = await Future.wait([
-      _firestore.collection('users').get(),
-      _firestore
-          .collection('fields')
-          .where('statusVerifikasi', isEqualTo: 'aktif')
-          .get(),
+      _firestore.collection('users').where('role', isEqualTo: 'customer').get(),
+      _firestore.collection('users').where('role', isEqualTo: 'mitra').get(),
       _firestore
           .collection('bookings')
           .where('tanggal',
