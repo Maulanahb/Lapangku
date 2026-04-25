@@ -107,7 +107,10 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
                           ),
                           child: TextField(
-                            onChanged: (value) => setState(() => _searchQuery = value),
+                            readOnly: true,
+                            onTap: () {
+                              Navigator.pushNamed(context, '/search');
+                            },
                             decoration: InputDecoration(
                               hintText: 'Nama lapangan atau lokasi...',
                               hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
