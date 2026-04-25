@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
+import 'package:lapangku/views/customer/payment_upload_page.dart';
 
 class CustomerOrdersPage extends ConsumerStatefulWidget {
   const CustomerOrdersPage({super.key});
@@ -13,7 +14,7 @@ class CustomerOrdersPage extends ConsumerStatefulWidget {
 
 class _State extends ConsumerState<CustomerOrdersPage> {
   String _filter = 'Semua';
-  final List<String> _filters = ['Semua', 'Aktif', 'Menunggu', 'Selesai', 'Dibatalkan'];
+  final List<String> _filters = ['Semua', 'Menunggu Bayar', 'Aktif', 'Menunggu', 'Selesai', 'Dibatalkan'];
 
   @override
   Widget build(BuildContext context) {
@@ -91,14 +92,16 @@ class _State extends ConsumerState<CustomerOrdersPage> {
     );
   }
 
-  Widget _buildBookingList(List<Map<String, dynamic>> bookings, String userId) {
+  Widget _buildBookingList(List<BookingModel> bookings, String userId) {
     // Filter berdasarkan status
     final filtered = _filter == 'Semua'
         ? bookings
         : bookings.where((b) {
-            final status = (b['status'] ?? '').toString().toLowerCase();
+            final status = b.status.toLowerCase();
             final filterKey = _filter.toLowerCase();
-            if (filterKey == 'aktif') return status == 'dikonfirmasi';
+            if (filterKey == 'menunggu bayar') return status == 'menunggu_bayar';
+            if (filterKey == 'aktif') return status == 'dikonfirmasi' || status == 'aktif';
+            if (filterKey == 'menunggu') return status == 'menunggu_konfirmasi';
             return status == filterKey;
           }).toList();
 
@@ -109,7 +112,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
       itemCount: filtered.length,
       itemBuilder: (_, i) => _BookingCard(
         booking: filtered[i],
-        onCancel: () => _cancelBooking(filtered[i]['id'], userId),
+        onCancel: () => _cancelBooking(filtered[i].id, userId),
         onRefresh: () => ref.invalidate(userBookingsProvider(userId)),
       ),
     );
@@ -167,7 +170,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
 
 // ── BOOKING CARD ──
 class _BookingCard extends StatelessWidget {
-  final Map<String, dynamic> booking;
+  final BookingModel booking;
   final VoidCallback onCancel;
   final VoidCallback onRefresh;
 
@@ -175,108 +178,118 @@ class _BookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = (booking['status'] ?? 'menunggu').toString();
-    final nama = booking['namaLapangan'] ?? 'Lapangan';
-    final jamMulai = booking['jamMulai'] ?? '';
-    final jamSelesai = booking['jamSelesai'] ?? '';
-    final harga = (booking['totalHarga'] ?? 0) as int;
-    final tanggal = (booking['tanggal'] as Timestamp?)?.toDate();
-    final id = booking['id'] ?? '';
+    final statusInfo = _getStatusInfo(booking.status);
+    final dateStr = DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
+    final timeStr = booking.timeSlots.isNotEmpty ? booking.timeSlots.first : '-';
 
-    final statusInfo = _getStatusInfo(status);
-    final dateStr = tanggal != null ? DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(tanggal) : '-';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: ID + Status
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('ID #${id.substring(0, id.length > 8 ? 8 : id.length).toUpperCase()}',
-                    style: const TextStyle(fontSize: 11, color: Color(0xFF718096), fontWeight: FontWeight.w500)),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusInfo['bgColor'] as Color,
-                    borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/booking-detail', arguments: booking.id);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: ID + Status
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('#${booking.bookingId}',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF718096), fontWeight: FontWeight.w500)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusInfo['bgColor'] as Color,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(statusInfo['label'] as String,
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusInfo['textColor'] as Color)),
                   ),
-                  child: Text(statusInfo['label'] as String,
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusInfo['textColor'] as Color)),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // Body
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Placeholder image
-                Container(
-                  width: 64, height: 64,
-                  decoration: BoxDecoration(color: const Color(0xFFE8F5EC), borderRadius: BorderRadius.circular(12)),
-                  child: const Center(child: Icon(Icons.sports_soccer, size: 28, color: Color(0xFF1B6B3A))),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(nama, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 4),
-                    Row(children: [
-                      const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF718096)),
-                      const SizedBox(width: 4),
-                      Expanded(child: Text('$dateStr · $jamMulai', style: const TextStyle(fontSize: 12, color: Color(0xFF718096)))),
+            // Body
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 64, height: 64,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5EC), 
+                      borderRadius: BorderRadius.circular(12),
+                      image: booking.fieldImageUrl.isNotEmpty
+                          ? DecorationImage(image: NetworkImage(booking.fieldImageUrl), fit: BoxFit.cover)
+                          : null,
+                    ),
+                    child: booking.fieldImageUrl.isEmpty ? const Center(child: Icon(Icons.sports_soccer, size: 28, color: Color(0xFF1B6B3A))) : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(booking.fieldName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 4),
+                      Row(children: [
+                        const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF718096)),
+                        const SizedBox(width: 4),
+                        Expanded(child: Text('$dateStr · $timeStr', style: const TextStyle(fontSize: 12, color: Color(0xFF718096)))),
+                      ]),
                     ]),
+                  ),
+                ],
+              ),
+            ),
+            // Footer: Harga + Actions
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: Colors.grey.shade100)),
+              ),
+              child: Row(
+                children: [
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('TOTAL BAYAR', style: TextStyle(fontSize: 9, color: Color(0xFF718096), letterSpacing: 0.5)),
+                    const SizedBox(height: 2),
+                    Text(NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(booking.totalBayar),
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
                   ]),
-                ),
-              ],
+                  const Spacer(),
+                  // Action buttons based on status
+                  ..._buildActions(context, booking.status),
+                ],
+              ),
             ),
-          ),
-          // Footer: Harga + Actions
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey.shade100)),
-            ),
-            child: Row(
-              children: [
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('TOTAL BAYAR', style: TextStyle(fontSize: 9, color: Color(0xFF718096), letterSpacing: 0.5)),
-                  const SizedBox(height: 2),
-                  Text(NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(harga),
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
-                ]),
-                const Spacer(),
-                // Action buttons based on status
-                ..._buildActions(context, status),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   List<Widget> _buildActions(BuildContext context, String status) {
     switch (status.toLowerCase()) {
-      case 'menunggu':
+      case 'menunggu_bayar':
         return [
-          _actionBtn(Icons.upload_file, 'Upload Bukti', const Color(0xFF1B6B3A), () {}),
+          _actionBtn(Icons.payment, 'Bayar', const Color(0xFFD97706), () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => PaymentUploadPage(booking: booking)));
+          }),
           const SizedBox(width: 8),
+          _actionBtn(Icons.close, 'Batal', Colors.red.shade400, onCancel),
+        ];
+      case 'menunggu_konfirmasi':
+        return [
           _actionBtn(Icons.close, 'Batalkan', Colors.red.shade400, onCancel),
         ];
       case 'dikonfirmasi':
+      case 'aktif':
         return [
           _actionBtn(Icons.confirmation_num_outlined, 'Lihat Tiket', const Color(0xFF1B6B3A), () {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur tiket segera hadir!'), backgroundColor: Color(0xFF1B6B3A)));
@@ -296,20 +309,30 @@ class _BookingCard extends StatelessWidget {
   Widget _actionBtn(IconData icon, String label, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
-      child: Row(children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
-      ]),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          border: Border.all(color: color),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+        ]),
+      ),
     );
   }
 
   Map<String, dynamic> _getStatusInfo(String status) {
     switch (status.toLowerCase()) {
+      case 'menunggu_bayar':
+        return {'label': 'MENUNGGU PEMBAYARAN', 'bgColor': const Color(0xFFFEF3C7), 'textColor': Colors.orange.shade800};
+      case 'menunggu_konfirmasi':
+        return {'label': 'MENUNGGU KONFIRMASI', 'bgColor': const Color(0xFFEBF8FF), 'textColor': const Color(0xFF2B6CB0)};
       case 'dikonfirmasi':
+      case 'aktif':
         return {'label': 'AKTIF', 'bgColor': const Color(0xFFD1FAE5), 'textColor': const Color(0xFF1B6B3A)};
-      case 'menunggu':
-        return {'label': 'MENUNGGU KONFIRMASI', 'bgColor': const Color(0xFFFEF3C7), 'textColor': Colors.orange.shade800};
       case 'selesai':
         return {'label': 'SELESAI', 'bgColor': const Color(0xFFE0E7FF), 'textColor': Colors.indigo};
       case 'dibatalkan':

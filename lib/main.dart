@@ -21,7 +21,11 @@ import 'views/admin/admin_login_page.dart';
 import 'views/customer/customer_profile_page.dart';
 import 'views/customer/customer_search_page.dart';
 import 'views/customer/customer_field_detail_page.dart';
+import 'views/customer/booking_confirmation_page.dart';
+import 'views/customer/payment_upload_page.dart';
+import 'views/customer/booking_detail_page.dart';
 import 'models/field/field_model.dart';
+import 'models/booking/booking_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,6 +82,22 @@ class MyApp extends StatelessWidget {
         '/field-detail': (context) {
           final field = ModalRoute.of(context)!.settings.arguments as FieldModel;
           return CustomerFieldDetailPage(field: field);
+        },
+        '/booking-confirmation': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return BookingConfirmationPage(
+            field: args['field'] as FieldModel,
+            selectedDate: args['date'] as DateTime,
+            selectedTimeSlots: args['timeSlots'] as List<String>,
+          );
+        },
+        '/payment-upload': (context) {
+          final booking = ModalRoute.of(context)!.settings.arguments as BookingModel;
+          return PaymentUploadPage(booking: booking);
+        },
+        '/booking-detail': (context) {
+          final bookingId = ModalRoute.of(context)!.settings.arguments as String;
+          return BookingDetailPage(bookingId: bookingId);
         },
       },
     );

@@ -1,10 +1,25 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
+import 'package:lapangku/models/booking/booking_model.dart';
+import 'package:lapangku/models/field/field_model.dart';
+import 'package:lapangku/models/auth/user_model.dart';
 
 class BookingService {
   final FirebaseFirestore _db = FirestoreService.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  /// Ambil daftar jam yang sudah dibooking untuk lapangan tertentu pada tanggal tertentu
+  /// Generate Booking ID format LPK-YYYYMMDD-XXX
+  String _generateBookingId() {
+    final now = DateTime.now();
+    final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    // Generate 3 random digits (for simplicity, using timestamp suffix)
+    final randomDigits = (now.millisecondsSinceEpoch % 1000).toString().padLeft(3, '0');
+    return 'LPK-$dateStr-$randomDigits';
+  }
+
+  /// Get booked slots for a specific field and date
   Future<List<String>> getBookedSlots({
     required String fieldId,
     required DateTime date,
@@ -12,7 +27,6 @@ class BookingService {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    // Query sederhana tanpa composite index
     final snap = await _db
         .collection('bookings')
         .where('fieldId', isEqualTo: fieldId)
@@ -22,82 +36,151 @@ class BookingService {
     for (final doc in snap.docs) {
       final data = doc.data();
       
-      // Filter tanggal dan status secara client-side
       final tanggal = (data['tanggal'] as Timestamp?)?.toDate();
       if (tanggal == null) continue;
       if (tanggal.isBefore(startOfDay) || tanggal.isAfter(endOfDay)) continue;
       
       final status = data['status'] ?? '';
-      if (status == 'dibatalkan') continue; // Abaikan yang dibatalkan
+      // Exclude dibatalkan and expired
+      if (status == 'dibatalkan' || status == 'expired') continue;
       
-      final jamMulai = data['jamMulai'] ?? '';
-      final jamSelesai = data['jamSelesai'] ?? '';
-      if (jamMulai.isNotEmpty && jamSelesai.isNotEmpty) {
-        bookedSlots.add('$jamMulai - $jamSelesai');
+      final timeSlots = data['timeSlots'];
+      if (timeSlots != null) {
+        bookedSlots.addAll(List<String>.from(timeSlots));
+      } else {
+        // Fallback to old format
+        final jamMulai = data['jamMulai'] ?? '';
+        final jamSelesai = data['jamSelesai'] ?? '';
+        if (jamMulai.isNotEmpty && jamSelesai.isNotEmpty) {
+          bookedSlots.add('$jamMulai - $jamSelesai');
+        }
       }
     }
     return bookedSlots;
   }
 
-  /// Buat booking baru
-  Future<void> createBooking({
-    required String fieldId,
-    required String fieldName,
-    required String userId,
-    required String userName,
+  /// Create a new booking
+  Future<BookingModel> createBooking({
+    required FieldModel field,
+    required UserModel user,
     required DateTime date,
     required List<String> timeSlots,
-    required int pricePerHour,
+    required String metodePembayaran,
+    required int biayaLayanan,
   }) async {
-    final batch = _db.batch();
+    final docRef = _db.collection('bookings').doc();
+    final now = DateTime.now();
+    
+    final int durasi = timeSlots.length;
+    final int hargaLapangan = field.hargaPerJam * durasi;
+    final int totalBayar = hargaLapangan + biayaLayanan;
 
-    for (final slot in timeSlots) {
-      final parts = slot.split(' - ');
-      final docRef = _db.collection('bookings').doc();
-      batch.set(docRef, {
-        'fieldId': fieldId,
-        'namaLapangan': fieldName,
-        'userId': userId,
-        'namaPenyewa': userName,
-        'tanggal': Timestamp.fromDate(DateTime(date.year, date.month, date.day)),
-        'jamMulai': parts[0].trim(),
-        'jamSelesai': parts[1].trim(),
-        'totalHarga': pricePerHour,
-        'status': 'menunggu',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-    }
+    final booking = BookingModel(
+      id: docRef.id,
+      bookingId: _generateBookingId(),
+      fieldId: field.id,
+      fieldName: field.nama,
+      fieldAddress: field.alamat,
+      fieldCategory: field.kategori,
+      fieldImageUrl: field.fotoUtama,
+      userId: user.uid,
+      userName: user.nama,
+      tanggal: DateTime(date.year, date.month, date.day),
+      timeSlots: timeSlots,
+      durasi: durasi,
+      hargaLapangan: hargaLapangan,
+      biayaLayanan: biayaLayanan,
+      totalBayar: totalBayar,
+      metodePembayaran: metodePembayaran,
+      status: 'menunggu_bayar',
+      statusTimeline: [
+        {'status': 'menunggu_bayar', 'waktu': Timestamp.fromDate(now)}
+      ],
+      batasWaktuBayar: now.add(const Duration(hours: 4)),
+      createdAt: now,
+      updatedAt: now,
+    );
 
-    await batch.commit();
+    await docRef.set(booking.toFirestore());
+    return booking;
   }
 
-  /// Ambil semua booking milik user tertentu
-  Future<List<Map<String, dynamic>>> getUserBookings(String userId) async {
+  /// Get single booking by ID
+  Future<BookingModel?> getBookingById(String bookingId) async {
+    final doc = await _db.collection('bookings').doc(bookingId).get();
+    if (!doc.exists) return null;
+    return BookingModel.fromFirestore(doc);
+  }
+
+  /// Stream single booking for real-time updates
+  Stream<BookingModel?> streamBooking(String bookingId) {
+    return _db.collection('bookings').doc(bookingId).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return BookingModel.fromFirestore(doc);
+    });
+  }
+
+  /// Get all user bookings
+  Future<List<BookingModel>> getUserBookings(String userId) async {
     final snap = await _db
         .collection('bookings')
         .where('userId', isEqualTo: userId)
         .get();
 
-    final bookings = snap.docs.map((doc) {
-      final data = doc.data();
-      data['id'] = doc.id;
-      return data;
-    }).toList();
+    final bookings = snap.docs.map((doc) => BookingModel.fromFirestore(doc)).toList();
 
-    // Sort by createdAt descending (client-side)
-    bookings.sort((a, b) {
-      final aDate = (a['createdAt'] as Timestamp?)?.toDate() ?? DateTime(2000);
-      final bDate = (b['createdAt'] as Timestamp?)?.toDate() ?? DateTime(2000);
-      return bDate.compareTo(aDate);
-    });
+    // Sort by createdAt descending
+    bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return bookings;
   }
 
-  /// Batalkan booking
+  /// Upload payment proof to Firebase Storage and update booking
+  Future<void> uploadPaymentProof(String bookingId, File imageFile) async {
+    final bookingDoc = await _db.collection('bookings').doc(bookingId).get();
+    if (!bookingDoc.exists) throw Exception('Booking tidak ditemukan');
+    
+    final booking = BookingModel.fromFirestore(bookingDoc);
+    if (booking.status != 'menunggu_bayar') {
+      throw Exception('Booking tidak dalam status menunggu bayar');
+    }
+
+    // Upload to Storage
+    final storageRef = _storage.ref().child('payment_proofs/${booking.bookingId}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    final uploadTask = await storageRef.putFile(imageFile);
+    final imageUrl = await uploadTask.ref.getDownloadURL();
+
+    // Update Firestore
+    final now = DateTime.now();
+    final timeline = List<Map<String, dynamic>>.from(booking.statusTimeline);
+    timeline.add({'status': 'menunggu_konfirmasi', 'waktu': Timestamp.fromDate(now)});
+
+    await _db.collection('bookings').doc(bookingId).update({
+      'buktiTransferUrl': imageUrl,
+      'status': 'menunggu_konfirmasi',
+      'statusTimeline': timeline,
+      'updatedAt': Timestamp.fromDate(now),
+    });
+  }
+
+  /// Cancel booking
   Future<void> cancelBooking(String bookingId) async {
+    final doc = await _db.collection('bookings').doc(bookingId).get();
+    if (!doc.exists) throw Exception('Booking tidak ditemukan');
+    
+    final status = doc.data()?['status'] ?? '';
+    if (status != 'menunggu_bayar' && status != 'menunggu_konfirmasi') {
+      throw Exception('Hanya pesanan yang belum dikonfirmasi yang dapat dibatalkan');
+    }
+
+    final now = DateTime.now();
+    final timeline = List<Map<String, dynamic>>.from(doc.data()?['statusTimeline'] ?? []);
+    timeline.add({'status': 'dibatalkan', 'waktu': Timestamp.fromDate(now)});
+
     await _db.collection('bookings').doc(bookingId).update({
       'status': 'dibatalkan',
+      'statusTimeline': timeline,
+      'updatedAt': Timestamp.fromDate(now),
     });
   }
 }

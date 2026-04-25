@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/services/firebase/booking_service.dart';
+import 'package:lapangku/models/booking/booking_model.dart';
 
 final bookingServiceProvider = Provider<BookingService>((ref) {
   return BookingService();
@@ -16,7 +17,19 @@ final bookedSlotsProvider = FutureProvider.family<List<String>, String>((ref, pa
 });
 
 /// Provider untuk mengambil semua booking milik user
-final userBookingsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, userId) async {
+final userBookingsProvider = FutureProvider.family<List<BookingModel>, String>((ref, userId) async {
   final service = ref.watch(bookingServiceProvider);
   return service.getUserBookings(userId);
+});
+
+/// Provider untuk mengambil detail booking tunggal
+final bookingDetailProvider = FutureProvider.family<BookingModel?, String>((ref, bookingId) async {
+  final service = ref.watch(bookingServiceProvider);
+  return service.getBookingById(bookingId);
+});
+
+/// Stream provider untuk memonitor perubahan pada booking tunggal secara real-time
+final activeBookingStreamProvider = StreamProvider.family<BookingModel?, String>((ref, bookingId) {
+  final service = ref.watch(bookingServiceProvider);
+  return service.streamBooking(bookingId);
 });
