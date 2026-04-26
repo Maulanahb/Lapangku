@@ -284,7 +284,7 @@ class _State extends ConsumerState<BookingConfirmationPage> {
   }
 
   Future<void> _handleBooking() async {
-    final user = ref.read(authProvider).user;
+    final user = ref.read(authStateProvider).value;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu'), backgroundColor: Colors.red));
       return;
