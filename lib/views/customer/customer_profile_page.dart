@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 
-class CustomerProfilePage extends StatefulWidget {
-  const CustomerProfilePage({Key? key}) : super(key: key);
+class CustomerProfilePage extends ConsumerStatefulWidget {
+  const CustomerProfilePage({super.key});
 
   @override
-  State<CustomerProfilePage> createState() => _CustomerProfilePageState();
+  ConsumerState<CustomerProfilePage> createState() => _CustomerProfilePageState();
 }
 
-class _CustomerProfilePageState extends State<CustomerProfilePage> {
+class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
   // State untuk toggle Notifikasi
   bool _isNotificationOn = true;
 
@@ -19,6 +21,9 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final userAsync = ref.watch(authStateProvider);
+    final user = userAsync.value;
+
     return Scaffold(
       backgroundColor: Colors.grey[200], // Background abu-abu muda
       body: SingleChildScrollView(
@@ -35,23 +40,28 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                 child: Column(
                   children: [
                     // Avatar
-                    const CircleAvatar(
+                    CircleAvatar(
                       radius: 35,
                       backgroundColor: Colors.white,
-                      child: Text(
-                        'BS',
-                        style: TextStyle(
-                          color: Color(0xFF1B5E20),
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      backgroundImage: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                          ? NetworkImage(user.avatarUrl!)
+                          : null,
+                      child: user?.avatarUrl == null || user!.avatarUrl!.isEmpty
+                          ? Text(
+                              user?.nama.isNotEmpty == true ? user!.nama[0].toUpperCase() : 'U',
+                              style: const TextStyle(
+                                color: Color(0xFF1B5E20),
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          : null,
                     ),
                     const SizedBox(height: 12),
                     // Nama
-                    const Text(
-                      'Budi Santoso',
-                      style: TextStyle(
+                    Text(
+                      user?.nama ?? 'User',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -59,9 +69,9 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                     ),
                     const SizedBox(height: 4),
                     // Email
-                    const Text(
-                      'budi@email.com',
-                      style: TextStyle(color: Colors.white, fontSize: 14),
+                    Text(
+                      user?.email ?? 'email@domain.com',
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
                     ),
                     const SizedBox(height: 12),
                     // Tombol Edit Profil
@@ -240,7 +250,8 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                           ),
                         ),
                         onPressed: () {
-                          print('Tombol Logout/Keluar ditekan');
+                          ref.read(authProvider.notifier).logout();
+                          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
                         },
                         icon: const Icon(Icons.logout, color: Colors.red),
                         label: const Text(

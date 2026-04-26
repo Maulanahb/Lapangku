@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
+import 'package:lapangku/core/utils/navigation_helper.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
@@ -16,9 +18,21 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   }
 
   Future<void> _navigate() async {
-    await Future.delayed(const Duration(seconds: 2));
+    final results = await Future.wait([
+      Future.delayed(const Duration(seconds: 2)),
+      ref.read(authStateProvider.future).catchError((_) => null),
+    ]);
+
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/onboarding');
+
+    final user = results[1];
+
+    if (user != null) {
+      // ignore: use_build_context_synchronously
+      NavigationHelper.navigateByRole(context, user);
+    } else {
+      Navigator.pushReplacementNamed(context, '/onboarding');
+    }
   }
 
   @override

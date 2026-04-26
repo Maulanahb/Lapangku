@@ -28,7 +28,8 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
   @override
   Widget build(BuildContext context) {
     final fieldsAsync = ref.watch(fieldsProvider);
-    final user = ref.watch(authProvider).user;
+    final userAsync = ref.watch(authStateProvider);
+    final user = userAsync.value;
 
     final avatarUrl = user?.avatarUrl;
     final hasAvatar = avatarUrl != null && avatarUrl.isNotEmpty;

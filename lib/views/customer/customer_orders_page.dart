@@ -18,7 +18,8 @@ class _State extends ConsumerState<CustomerOrdersPage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authProvider).user;
+    final userAsync = ref.watch(authStateProvider);
+    final user = userAsync.value;
     if (user == null) return _loginPrompt();
 
     final bookingsAsync = ref.watch(userBookingsProvider(user.uid));
