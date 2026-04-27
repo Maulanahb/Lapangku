@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 
 class OwnerProfilePage extends ConsumerStatefulWidget {
   const OwnerProfilePage({super.key});
@@ -450,9 +451,7 @@ class _OwnerProfilePageState extends ConsumerState<OwnerProfilePage> {
 
   Widget _buildLogoutButton() {
     return InkWell(
-      onTap: () {
-        // TODO: implement logout
-      },
+      onTap: () => _showLogoutDialog(),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
@@ -481,6 +480,42 @@ class _OwnerProfilePageState extends ConsumerState<OwnerProfilePage> {
             Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Keluar'),
+        content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Tutup dialog konfirmasi
+
+              // Eksekusi logout
+              await ref.read(authProvider.notifier).logout();
+
+              if (mounted) {
+                // Kembali ke halaman login dan hapus semua stack navigasi
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/login', (route) => false);
+              }
+            },
+            child: const Text(
+              'Keluar',
+              style: TextStyle(
+                  color: Color(0xFFE04443), fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
     );
   }
