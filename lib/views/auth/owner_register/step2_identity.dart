@@ -1,8 +1,20 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'widgets/upload_card.dart';
 
 class Step2Identity extends StatelessWidget {
-  const Step2Identity({super.key});
+  final File? ktpPhoto;
+  final File? selfiePhoto;
+  final VoidCallback onPickKtp;
+  final VoidCallback onPickSelfie;
+
+  const Step2Identity({
+    super.key,
+    this.ktpPhoto,
+    this.selfiePhoto,
+    required this.onPickKtp,
+    required this.onPickSelfie,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,21 +46,25 @@ class Step2Identity extends StatelessWidget {
         const SizedBox(height: 32),
 
         // Foto KTP Section
-        const UploadCard(
+        UploadCard(
           title: 'Foto KTP',
           icon: Icons.camera_alt_outlined,
-          label: 'Upload foto KTP',
-          subtitle: 'Format JPG, PNG (Maks 5MB)',
+          label: ktpPhoto != null ? 'KTP Terpilih' : 'Upload foto KTP',
+          subtitle: ktpPhoto != null ? 'Klik untuk mengubah' : 'Format JPG, PNG (Maks 5MB)',
+          imageFile: ktpPhoto,
+          onTap: onPickKtp,
         ),
 
         const SizedBox(height: 24),
 
         // Selfie Section
-        const UploadCard(
+        UploadCard(
           title: 'Selfie dengan KTP',
           icon: Icons.face_outlined,
-          label: 'Upload Selfie + KTP',
-          subtitle: 'Pegang KTP saat selfie agar data cocok',
+          label: selfiePhoto != null ? 'Selfie Terpilih' : 'Upload Selfie + KTP',
+          subtitle: selfiePhoto != null ? 'Klik untuk mengubah' : 'Pegang KTP saat selfie agar data cocok',
+          imageFile: selfiePhoto,
+          onTap: onPickSelfie,
         ),
 
         const SizedBox(height: 24),

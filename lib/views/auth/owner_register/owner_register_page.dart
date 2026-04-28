@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:lapangku/views/owner/owner_main_page.dart';
 
 // Import Langkah-langkah (Sekarang satu folder)
@@ -29,6 +33,7 @@ class _OwnerRegisterPageState extends State<OwnerRegisterPage> {
   final _addressController = TextEditingController();
   final _priceController = TextEditingController();
   String _selectedSport = 'Futsal';
+  List<String> _selectedFacilities = ['Parkir', 'Wifi', 'Mushola'];
   TimeOfDay _openingTime = const TimeOfDay(hour: 8, minute: 0);
   TimeOfDay _closingTime = const TimeOfDay(hour: 22, minute: 0);
   List<String> _selectedDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
@@ -40,6 +45,35 @@ class _OwnerRegisterPageState extends State<OwnerRegisterPage> {
 
   int _resendTimer = 60;
   Timer? _timer;
+
+  // Foto
+  File? _ktpPhoto;
+  File? _selfiePhoto;
+  List<File> _fieldPhotos = [];
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage(ImageSource source, {required bool isKtp}) async {
+    final pickedFile =
+        await _picker.pickImage(source: source, imageQuality: 80);
+    if (pickedFile != null) {
+      setState(() {
+        if (isKtp) {
+          _ktpPhoto = File(pickedFile.path);
+        } else {
+          _selfiePhoto = File(pickedFile.path);
+        }
+      });
+    }
+  }
+
+  Future<void> _pickFieldPhotos() async {
+    final pickedFiles = await _picker.pickMultiImage(imageQuality: 80);
+    if (pickedFiles.isNotEmpty) {
+      setState(() {
+        _fieldPhotos.addAll(pickedFiles.map((e) => File(e.path)));
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -202,18 +236,43 @@ class _OwnerRegisterPageState extends State<OwnerRegisterPage> {
           onResend: _startTimer,
         );
       case 2:
-        return const Step2Identity();
+        return Step2Identity(
+          ktpPhoto: _ktpPhoto,
+          selfiePhoto: _selfiePhoto,
+          onPickKtp: () => _pickImage(ImageSource.gallery, isKtp: true),
+          onPickSelfie: () => _pickImage(ImageSource.camera, isKtp: false),
+        );
       case 3:
         return Step3FieldInfo(
           nameController: _fieldNameController,
           descriptionController: _fieldDescriptionController,
           selectedSport: _selectedSport,
           onSportSelected: (sport) => setState(() => _selectedSport = sport),
+          selectedFacilities: _selectedFacilities,
+          onFacilityToggled: (facility) {
+            setState(() {
+              if (_selectedFacilities.contains(facility)) {
+                _selectedFacilities.remove(facility);
+              } else {
+                _selectedFacilities.add(facility);
+              }
+            });
+          },
         );
       case 4:
-        return Step4Location(addressController: _addressController);
+        return Step4Location(
+          addressController: _addressController,
+        );
       case 5:
-        return const Step5Photos();
+        return Step5Photos(
+          fieldPhotos: _fieldPhotos,
+          onPickPhotos: _pickFieldPhotos,
+          onRemovePhoto: (index) {
+            setState(() {
+              _fieldPhotos.removeAt(index);
+            });
+          },
+        );
       case 6:
         return Step6Schedule(
           priceController: _priceController,
@@ -247,6 +306,9 @@ class _OwnerRegisterPageState extends State<OwnerRegisterPage> {
           fieldDescription: _fieldDescriptionController.text,
           address: _addressController.text,
           price: _priceController.text,
+          ktpPhoto: _ktpPhoto,
+          selfiePhoto: _selfiePhoto,
+          fieldPhotos: _fieldPhotos,
           onEditStep: (step) => setState(() => _currentStep = step),
         );
       default:
