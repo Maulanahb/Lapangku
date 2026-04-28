@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 class UploadCard extends StatelessWidget {
@@ -6,6 +7,7 @@ class UploadCard extends StatelessWidget {
   final String label;
   final String subtitle;
   final VoidCallback? onTap;
+  final File? imageFile;
 
   const UploadCard({
     super.key,
@@ -14,6 +16,7 @@ class UploadCard extends StatelessWidget {
     required this.label,
     required this.subtitle,
     this.onTap,
+    this.imageFile,
   });
 
   @override
@@ -43,36 +46,46 @@ class UploadCard extends StatelessWidget {
                 style: BorderStyle.solid,
               ),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFEDF2F7),
-                    shape: BoxShape.circle,
+            child: imageFile != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.file(
+                      imageFile!,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEDF2F7),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(icon, color: const Color(0xFF4A5568), size: 28),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1B6B3A),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF718096),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: Icon(icon, color: const Color(0xFF4A5568), size: 28),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1B6B3A),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF718096),
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ],

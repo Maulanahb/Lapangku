@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'widgets/map_placeholder.dart';
 
@@ -7,6 +8,9 @@ class Step7Review extends StatelessWidget {
   final String fieldDescription;
   final String address;
   final String price;
+  final File? ktpPhoto;
+  final File? selfiePhoto;
+  final List<File> fieldPhotos;
   final Function(int) onEditStep;
 
   const Step7Review({
@@ -16,6 +20,9 @@ class Step7Review extends StatelessWidget {
     required this.fieldDescription,
     required this.address,
     required this.price,
+    this.ktpPhoto,
+    this.selfiePhoto,
+    required this.fieldPhotos,
     required this.onEditStep,
   });
 
@@ -124,23 +131,26 @@ class Step7Review extends StatelessWidget {
               _buildReviewItem(
                 step: 5,
                 icon: Icons.check_circle,
-                title: 'Foto',
-                content: Row(
-                  children: [
-                    for (int i = 0; i < 3; i++)
-                      Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          color: const Color(0xFFE2E8F0),
-                        ),
-                        child: const Icon(Icons.image,
-                            color: Color(0xFFA0AEC0), size: 24),
-                      ),
-                  ],
-                ),
+                title: 'Foto Lapangan',
+                content: fieldPhotos.isEmpty 
+                  ? const Text('Belum ada foto', style: TextStyle(color: Colors.red))
+                  : Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: fieldPhotos.take(3).map((file) {
+                        return Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            image: DecorationImage(
+                              image: FileImage(file),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
               ),
               const Divider(height: 32),
 

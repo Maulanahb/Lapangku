@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lapangku/controllers/owner/owner_location_controller.dart';
 import 'widgets/map_placeholder.dart';
 
-class Step4Location extends StatelessWidget {
+class Step4Location extends ConsumerStatefulWidget {
   final TextEditingController addressController;
 
   const Step4Location({
@@ -10,7 +12,22 @@ class Step4Location extends StatelessWidget {
   });
 
   @override
+  ConsumerState<Step4Location> createState() => _Step4LocationState();
+}
+
+class _Step4LocationState extends ConsumerState<Step4Location> {
+  @override
   Widget build(BuildContext context) {
+    final locationState = ref.watch(ownerLocationProvider);
+
+    // Gunakan ref.listen agar text controller hanya diupdate SAAT state berubah (selesai loading lokasi)
+    // bukan setiap kali widget direbuild.
+    ref.listen<LocationState>(ownerLocationProvider, (previous, next) {
+      if (previous?.address != next.address && next.address.isNotEmpty) {
+        widget.addressController.text = next.address;
+      }
+    });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -38,6 +55,7 @@ class Step4Location extends StatelessWidget {
         ),
         const SizedBox(height: 32),
 
+        // Mengembalikan Map Placeholder (Gambar statis)
         const MapPlaceholder(),
 
         const SizedBox(height: 16),
@@ -47,9 +65,23 @@ class Step4Location extends StatelessWidget {
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.my_location, size: 20),
-            label: const Text('Gunakan lokasi saya'),
+            onPressed: locationState.isLoading ? null : () async {
+               try {
+                 await ref.read(ownerLocationProvider.notifier).getCurrentLocation();
+               } catch (e) {
+                 if (context.mounted) {
+                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+                 }
+               }
+            },
+            icon: locationState.isLoading 
+                ? const SizedBox(
+                    width: 20, 
+                    height: 20, 
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1B6B3A))
+                  )
+                : const Icon(Icons.my_location, size: 20),
+            label: Text(locationState.isLoading ? 'Mencari lokasi...' : 'Gunakan lokasi saya'),
             style: ElevatedButton.styleFrom(
               foregroundColor: const Color(0xFF1B6B3A),
               backgroundColor: const Color(0xFFE6FFFA),
@@ -73,7 +105,7 @@ class Step4Location extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         TextField(
-          controller: addressController,
+          controller: widget.addressController,
           maxLines: 4,
           decoration: InputDecoration(
             hintText:

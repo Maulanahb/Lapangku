@@ -5,6 +5,19 @@ class Step3FieldInfo extends StatelessWidget {
   final TextEditingController descriptionController;
   final String selectedSport;
   final Function(String) onSportSelected;
+  final List<String> selectedFacilities;
+  final Function(String) onFacilityToggled;
+
+  static const List<Map<String, dynamic>> _facilities = [
+    {'name': 'Parkir', 'icon': Icons.local_parking},
+    {'name': 'Toilet', 'icon': Icons.wc},
+    {'name': 'Wifi', 'icon': Icons.wifi},
+    {'name': 'CCTV', 'icon': Icons.videocam_outlined},
+    {'name': 'Mushola', 'icon': Icons.mosque_outlined},
+    {'name': 'Kantin', 'icon': Icons.restaurant},
+    {'name': 'Ruang Ganti', 'icon': Icons.checkroom},
+    {'name': 'Tribun', 'icon': Icons.stadium_outlined},
+  ];
 
   const Step3FieldInfo({
     super.key,
@@ -12,6 +25,8 @@ class Step3FieldInfo extends StatelessWidget {
     required this.descriptionController,
     required this.selectedSport,
     required this.onSportSelected,
+    required this.selectedFacilities,
+    required this.onFacilityToggled,
   });
 
   @override
@@ -134,6 +149,77 @@ class Step3FieldInfo extends StatelessWidget {
                     ),
                   );
                 }).toList(),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Fasilitas
+              const Text(
+                'Pilih Fasilitas',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F5A2F),
+                ),
+              ),
+              const SizedBox(height: 12),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 2.2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: _facilities.length,
+                itemBuilder: (context, index) {
+                  final facility = _facilities[index];
+                  final isSelected =
+                      selectedFacilities.contains(facility['name']);
+                  return GestureDetector(
+                    onTap: () => onFacilityToggled(facility['name'] as String),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFFEBF8F2)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF1B6B3A)
+                              : const Color(0xFFE2E8F0),
+                          width: isSelected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            facility['icon'] as IconData,
+                            color: isSelected
+                                ? const Color(0xFF1B6B3A)
+                                : const Color(0xFF4A5568),
+                            size: 24,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            facility['name'] as String,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? const Color(0xFF1B6B3A)
+                                  : const Color(0xFF4A5568),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 24),
