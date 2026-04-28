@@ -56,11 +56,13 @@ class AdminService {
         fieldId: d.id,
         ownerUid: data['ownerUid'] ?? '',
         namaLapangan: data['namaLapangan'] ?? '',
-        namaMitra: data['namaMitra'] ?? '',
+        namaMitra: data['namaMitra'] ?? 'User',
+        emailPemilik: data['emailPemilik'] ?? 'mitra@example.com',
         lokasi: data['lokasi'] ?? '',
         hargaPerJam: (data['hargaPerJam'] ?? 0) as int,
-        jenis: data['jenis'] ?? '',
+        jenis: data['jenis'] ?? 'Futsal',
         statusVerifikasi: data['statusVerifikasi'] ?? 'menunggu',
+        createdAt: data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate() : DateTime.now().subtract(const Duration(days: 2)),
       );
     }).toList();
   }
