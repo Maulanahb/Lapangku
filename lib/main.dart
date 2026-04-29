@@ -15,7 +15,7 @@ import 'views/auth/forgot_password_page.dart';
 import 'views/auth/otp_verification_page.dart';
 import 'views/auth/reset_password_page.dart';
 import 'views/customer/customer_main_page.dart';
-import 'views/owner/owner_main_page.dart';
+import 'views/Mitra/mitra_main_page.dart';
 import 'views/admin/admin_dashboard_page.dart';
 import 'views/admin/admin_login_page.dart';
 
@@ -76,7 +76,7 @@ class MyApp extends StatelessWidget {
         '/otp-verification': (context) => const OtpVerificationPage(),
         '/reset-password': (context) => const ResetPasswordPage(),
         '/customer-home': (context) => const CustomerMainPage(),
-        '/owner-home': (context) => const OwnerMainPage(),
+        '/Mitra-home': (context) => const MitraMainPage(),
         '/admin-login': (context) => const AdminLoginPage(),
         '/admin-home': (context) => const AdminDashboardPage(),
         

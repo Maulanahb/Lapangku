@@ -408,7 +408,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     if (confirm == true && mounted) {
       await ref.read(adminFieldsProvider.notifier).updateVerifikasi(
             fieldId: field.fieldId,
-            ownerUid: field.ownerUid,
+            mitraUid: field.mitraUid,
             status: status,
           );
     }

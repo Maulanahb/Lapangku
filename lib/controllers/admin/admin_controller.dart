@@ -127,12 +127,12 @@ class AdminFieldsNotifier extends StateNotifier<AsyncValue<List<AdminFieldModel>
 
   Future<void> updateVerifikasi({
     required String fieldId,
-    required String ownerUid,
+    required String mitraUid,
     required String status,
   }) async {
     await _service.updateFieldVerifikasi(
       fieldId: fieldId,
-      ownerUid: ownerUid,
+      mitraUid: mitraUid,
       status: status,
     );
     await load();

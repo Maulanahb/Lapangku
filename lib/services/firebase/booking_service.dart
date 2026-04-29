@@ -185,11 +185,11 @@ class BookingService {
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // OWNER ACTIONS
+  // Mitra ACTIONS
   // ─────────────────────────────────────────────────────────────────
 
-  /// Stream semua booking milik owner berdasarkan list fieldId
-  Stream<List<BookingModel>> streamOwnerBookings(
+  /// Stream semua booking milik Mitra berdasarkan list fieldId
+  Stream<List<BookingModel>> streamMitraBookings(
     List<String> fieldIds, {
     String? statusFilter,
   }) {
@@ -215,7 +215,7 @@ class BookingService {
         snap.docs.map((d) => BookingModel.fromFirestore(d)).toList());
   }
 
-  /// Konfirmasi booking oleh owner
+  /// Konfirmasi booking oleh Mitra
   Future<void> confirmBooking(String bookingId) async {
     final doc = await _db.collection('bookings').doc(bookingId).get();
     if (!doc.exists) throw Exception('Booking tidak ditemukan');
@@ -235,7 +235,7 @@ class BookingService {
     });
   }
 
-  /// Tolak booking oleh owner (dengan alasan opsional)
+  /// Tolak booking oleh Mitra (dengan alasan opsional)
   Future<void> rejectBooking(String bookingId, {String? reason}) async {
     final doc = await _db.collection('bookings').doc(bookingId).get();
     if (!doc.exists) throw Exception('Booking tidak ditemukan');

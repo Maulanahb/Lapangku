@@ -111,7 +111,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: ['semua', 'customer', 'owner', 'admin'].map((role) {
+              children: ['semua', 'customer', 'Mitra', 'admin'].map((role) {
                 final selected = _filterRole == role;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -288,7 +288,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (role.toLowerCase() == 'owner' && statusVerifikasi == 'menunggu') ...[
+              if (role.toLowerCase() == 'Mitra' && statusVerifikasi == 'menunggu') ...[
                 Row(
                   children: [
                     _actionBtn(Icons.check, Colors.green, 'Setujui', () {
@@ -344,11 +344,11 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(status == 'aktif' ? 'Verifikasi Owner' : 'Tolak Owner'),
+        title: Text(status == 'aktif' ? 'Verifikasi Mitra' : 'Tolak Mitra'),
         content: Text(
           status == 'aktif'
-              ? 'Verifikasi akun owner "$name"?'
-              : 'Tolak akun owner "$name"?',
+              ? 'Verifikasi akun Mitra "$name"?'
+              : 'Tolak akun Mitra "$name"?',
         ),
         actions: [
           TextButton(
@@ -376,8 +376,8 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(status == 'aktif'
-              ? 'Owner berhasil diverifikasi'
-              : 'Owner berhasil ditolak'),
+              ? 'Mitra berhasil diverifikasi'
+              : 'Mitra berhasil ditolak'),
           backgroundColor: status == 'aktif' ? _primary : Colors.red,
         ));
       }
@@ -478,7 +478,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                         child: DropdownButton<String>(
                           value: selectedRole,
                           isExpanded: true,
-                          items: ['customer', 'owner', 'admin'].map((String value) {
+                          items: ['customer', 'Mitra', 'admin'].map((String value) {
                             return DropdownMenuItem<String>(
                               value: value,
                               child: Text(_roleLabel(value)),
@@ -578,9 +578,9 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
     switch (r.toLowerCase()) {
       case 'customer':
         return 'Customer';
-      case 'owner':
+      case 'Mitra':
       case 'mitra':
-        return 'Owner';
+        return 'Mitra';
       case 'admin':
         return 'Admin';
       case 'semua':
@@ -594,7 +594,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
     switch (r.toLowerCase()) {
       case 'customer':
         return const Color(0xFF2196F3);
-      case 'owner':
+      case 'Mitra':
       case 'mitra':
         return const Color(0xFF9C27B0);
       case 'admin':

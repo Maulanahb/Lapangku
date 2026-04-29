@@ -14,7 +14,7 @@ class AdminService {
 
     final results = await Future.wait([
       _firestore.collection('users').where('role', isEqualTo: 'customer').get(),
-      _firestore.collection('owners').get(),
+      _firestore.collection('Mitras').get(),
       _firestore
           .collection('bookings')
           .where('tanggal',
@@ -49,7 +49,7 @@ class AdminService {
   }
 
   Future<List<AdminFieldModel>> getAllFields() async {
-    final snap = await _firestore.collection('owners').get();
+    final snap = await _firestore.collection('Mitras').get();
     return snap.docs.map((d) {
       final data = d.data();
       // Map isVerified to statusVerifikasi if statusVerifikasi is not present
@@ -59,10 +59,10 @@ class AdminService {
       }
 
       return AdminFieldModel(
-        fieldId: d.id, // Using owner UID as fieldId since we verify owners
-        ownerUid: d.id,
+        fieldId: d.id, // Using Mitra UID as fieldId since we verify Mitras
+        mitraUid: d.id,
         namaLapangan: data['businessName'] ?? data['namaBisnis'] ?? 'Bisnis Baru',
-        namaMitra: data['ownerName'] ?? data['nama'] ?? 'Owner',
+        namaMitra: data['MitraName'] ?? data['nama'] ?? 'Mitra',
         emailPemilik: data['email'] ?? 'mitra@example.com',
         lokasi: data['alamat'] ?? 'Alamat belum diatur',
         hargaPerJam: 0,
@@ -104,7 +104,7 @@ class AdminService {
     final docRef = _firestore.collection('users').doc();
     data['uid'] = docRef.id;
     data['createdAt'] = FieldValue.serverTimestamp();
-    data['isVerified'] = data['role'] == 'owner' ? false : true;
+    data['isVerified'] = data['role'] == 'Mitra' ? false : true;
     await docRef.set(data);
   }
 
@@ -114,23 +114,23 @@ class AdminService {
 
   Future<void> deleteUser(String uid) async {
     await _firestore.collection('users').doc(uid).delete();
-    // Also try to delete from owners if it exists
+    // Also try to delete from Mitras if it exists
     try {
-      await _firestore.collection('owners').doc(uid).delete();
+      await _firestore.collection('Mitras').doc(uid).delete();
     } catch (_) {}
   }
 
   Future<void> updateFieldVerifikasi({
     required String fieldId,
-    required String ownerUid,
+    required String mitraUid,
     required String status,
   }) async {
     final batch = _firestore.batch();
     final isVerified = status == 'aktif';
 
-    // Update the owners collection
+    // Update the Mitras collection
     batch.update(
-      _firestore.collection('owners').doc(ownerUid),
+      _firestore.collection('Mitras').doc(mitraUid),
       {
         'statusVerifikasi': status,
         'isVerified': isVerified,
@@ -139,7 +139,7 @@ class AdminService {
     
     // Update the users collection
     batch.update(
-      _firestore.collection('users').doc(ownerUid),
+      _firestore.collection('users').doc(mitraUid),
       {
         'statusVerifikasi': status,
         'isVerified': isVerified,
