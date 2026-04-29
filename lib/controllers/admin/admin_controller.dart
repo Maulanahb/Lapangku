@@ -84,6 +84,21 @@ class AllUsersNotifier
     await _service.updateUserVerifikasi(uid, status);
     await load();
   }
+
+  Future<void> addUser(Map<String, dynamic> data) async {
+    await _service.addUser(data);
+    await load();
+  }
+
+  Future<void> updateUser(String uid, Map<String, dynamic> data) async {
+    await _service.updateUserData(uid, data);
+    await load();
+  }
+
+  Future<void> deleteUser(String uid) async {
+    await _service.deleteUser(uid);
+    await load();
+  }
 }
 
 final allUsersProvider = StateNotifierProvider<AllUsersNotifier,

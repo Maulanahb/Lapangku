@@ -367,7 +367,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   }
 
   void _handleBooking() {
-    final user = ref.read(authProvider).user;
+    final user = ref.read(authStateProvider).value;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu'), backgroundColor: Colors.red));
       return;

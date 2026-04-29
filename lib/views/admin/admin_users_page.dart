@@ -56,9 +56,28 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
               color: Color(0xFF1A1A2E),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: _primary),
-            onPressed: () => ref.read(allUsersProvider.notifier).load(),
+          Row(
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => _showUserForm(null),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Tambah'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded, color: _primary),
+                onPressed: () => ref.read(allUsersProvider.notifier).load(),
+              ),
+            ],
           ),
         ],
       ),
@@ -92,7 +111,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: ['semua', 'customer', 'mitra', 'admin'].map((role) {
+              children: ['semua', 'customer', 'Mitra', 'admin'].map((role) {
                 final selected = _filterRole == role;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -266,20 +285,36 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
             ),
           ),
           // Action
-          if (role.toLowerCase() == 'mitra' &&
-              statusVerifikasi == 'menunggu') ...[
-            Column(
-              children: [
-                _actionBtn(Icons.check, Colors.green, 'Setujui', () {
-                  _updateVerifikasi(uid, name, 'aktif');
-                }),
-                const SizedBox(height: 6),
-                _actionBtn(Icons.close, Colors.red, 'Tolak', () {
-                  _updateVerifikasi(uid, name, 'ditolak');
-                }),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (role.toLowerCase() == 'Mitra' && statusVerifikasi == 'menunggu') ...[
+                Row(
+                  children: [
+                    _actionBtn(Icons.check, Colors.green, 'Setujui', () {
+                      _updateVerifikasi(uid, name, 'aktif');
+                    }),
+                    const SizedBox(width: 6),
+                    _actionBtn(Icons.close, Colors.red, 'Tolak', () {
+                      _updateVerifikasi(uid, name, 'ditolak');
+                    }),
+                  ],
+                ),
+                const SizedBox(width: 8),
               ],
-            ),
-          ],
+              Row(
+                children: [
+                  _actionBtn(Icons.edit, Colors.blue, 'Edit', () {
+                    _showUserForm(user);
+                  }),
+                  const SizedBox(width: 6),
+                  _actionBtn(Icons.delete, Colors.red, 'Hapus', () {
+                    _deleteUser(uid, name);
+                  }),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -312,8 +347,8 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
         title: Text(status == 'aktif' ? 'Verifikasi Mitra' : 'Tolak Mitra'),
         content: Text(
           status == 'aktif'
-              ? 'Verifikasi akun mitra "$name"?'
-              : 'Tolak akun mitra "$name"?',
+              ? 'Verifikasi akun Mitra "$name"?'
+              : 'Tolak akun Mitra "$name"?',
         ),
         actions: [
           TextButton(
@@ -349,10 +384,201 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
     }
   }
 
+  Future<void> _deleteUser(String uid, String name) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Hapus Pengguna'),
+        content: Text('Yakin ingin menghapus pengguna "$name"? Aksi ini tidak dapat dibatalkan.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      await ref.read(allUsersProvider.notifier).deleteUser(uid);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pengguna berhasil dihapus'),
+            backgroundColor: _primary,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showUserForm(Map<String, dynamic>? user) {
+    final isEdit = user != null;
+    final nameController = TextEditingController(text: user?['nama'] ?? user?['name'] ?? '');
+    final emailController = TextEditingController(text: user?['email'] ?? '');
+    final phoneController = TextEditingController(text: user?['phone'] ?? '');
+    String selectedRole = user?['role'] ?? 'customer';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateModal) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 24,
+                right: 24,
+                top: 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isEdit ? 'Edit Pengguna' : 'Tambah Pengguna',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _buildTextField('Nama', nameController, Icons.person_outline),
+                    const SizedBox(height: 16),
+                    _buildTextField('Email', emailController, Icons.email_outlined),
+                    const SizedBox(height: 16),
+                    _buildTextField('Nomor Telepon', phoneController, Icons.phone_outlined),
+                    const SizedBox(height: 16),
+                    const Text('Role', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Color(0xFF4A5568))),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xFFF8FAFC),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedRole,
+                          isExpanded: true,
+                          items: ['customer', 'Mitra', 'admin'].map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(_roleLabel(value)),
+                            );
+                          }).toList(),
+                          onChanged: (newValue) {
+                            setStateModal(() {
+                              if (newValue != null) selectedRole = newValue;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          if (nameController.text.isEmpty || emailController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Nama dan Email harus diisi')),
+                            );
+                            return;
+                          }
+                          
+                          final data = {
+                            'nama': nameController.text.trim(),
+                            'email': emailController.text.trim(),
+                            'phone': phoneController.text.trim(),
+                            'role': selectedRole,
+                          };
+
+                          Navigator.pop(context);
+
+                          if (isEdit) {
+                            await ref.read(allUsersProvider.notifier).updateUser(user!['uid'], data);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Pengguna berhasil diperbarui'), backgroundColor: _primary),
+                              );
+                            }
+                          } else {
+                            await ref.read(allUsersProvider.notifier).addUser(data);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Pengguna berhasil ditambahkan'), backgroundColor: _primary),
+                              );
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(isEdit ? 'Simpan Perubahan' : 'Tambah Pengguna', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller, IconData icon) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Color(0xFF4A5568))),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            prefixIcon: Icon(icon, color: const Color(0xFFADB5BD)),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   String _roleLabel(String r) {
     switch (r.toLowerCase()) {
       case 'customer':
         return 'Customer';
+      case 'Mitra':
       case 'mitra':
         return 'Mitra';
       case 'admin':
@@ -368,6 +594,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
     switch (r.toLowerCase()) {
       case 'customer':
         return const Color(0xFF2196F3);
+      case 'Mitra':
       case 'mitra':
         return const Color(0xFF9C27B0);
       case 'admin':

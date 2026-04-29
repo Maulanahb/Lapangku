@@ -8,6 +8,7 @@ import 'package:lapangku/models/admin/admin_stats.dart';
 import 'package:lapangku/views/admin/admin_fields_page.dart';
 import 'package:lapangku/views/admin/admin_bookings_page.dart';
 import 'package:lapangku/views/admin/admin_users_page.dart';
+import 'package:lapangku/views/admin/admin_reports_page.dart';
 
 class AdminDashboardPage extends ConsumerStatefulWidget {
   const AdminDashboardPage({super.key});
@@ -28,7 +29,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
       const AdminUsersPage(),
       const AdminFieldsPage(),
       const AdminBookingsPage(),
-      const Center(child: Text('Laporan belum tersedia')),
+      const AdminReportsPage(),
     ];
 
     if (isDesktop) {
