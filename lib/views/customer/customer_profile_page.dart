@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
+import 'package:lapangku/models/auth/user_model.dart';
 import 'personal_info_page.dart';
 import 'payment_method_page.dart';
 import 'security_page.dart';
@@ -32,12 +33,68 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(authStateProvider);
-    final user = userAsync.value;
     final profileState = ref.watch(profileStateProvider);
 
     return Scaffold(
       backgroundColor: Colors.grey[200], // Background abu-abu muda
-      body: SingleChildScrollView(
+      body: userAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => _buildErrorView(context, error.toString()),
+        data: (user) => _buildProfileContent(context, user, profileState),
+      ),
+    );
+  }
+
+  /// Tampilan error dengan tombol coba lagi
+  Widget _buildErrorView(BuildContext context, String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.wifi_off_rounded, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            const Text(
+              'Gagal Memuat Profil',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Koneksi ke server gagal. Pastikan internet kamu stabil lalu coba lagi.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryGreen,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                // Refresh/invalidate provider untuk retry
+                ref.invalidate(authStateProvider);
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Konten profil utama (dipindah dari build agar rapi)
+  Widget _buildProfileContent(BuildContext context, UserModel? user, ProfileState profileState) {
+    return SingleChildScrollView(
         child: Stack(
           children: [
             // 1. Header Bagian Atas (Lengkungan Hijau)
@@ -325,7 +382,6 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
             ),
           ],
         ),
-      ),
     );
   }
 
