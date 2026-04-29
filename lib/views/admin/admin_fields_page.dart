@@ -55,7 +55,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Verifikasi Lapangan',
+                'Verifikasi Pemilik Lapangan (Mitra)',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -79,7 +79,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
           Row(
             children: [
               const Text(
-                'Verifikasi Lapangan',
+                'Verifikasi Pemilik Lapangan',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -106,7 +106,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Tinjau dan setujui pengajuan lapangan baru untuk ditayangkan di platform.',
+            'Tinjau dan setujui pengajuan pemilik lapangan baru untuk ditayangkan di platform.',
             style: TextStyle(
               color: Color(0xFF6B7280),
               fontSize: 14,
@@ -201,7 +201,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                   dataRowMaxHeight: 72,
                   dataRowMinHeight: 72,
                   columns: const [
-                    DataColumn(label: Text('LAPANGAN', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('NAMA BISNIS/LAPANGAN', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
                     DataColumn(label: Text('PEMILIK', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
                     DataColumn(label: Text('LOKASI', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
                     DataColumn(label: Text('TANGGAL PENGAJUAN', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
@@ -383,11 +383,11 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(status == 'aktif' ? 'Verifikasi Lapangan' : 'Tolak Lapangan'),
+        title: Text(status == 'aktif' ? 'Verifikasi Pemilik Lapangan' : 'Tolak Pemilik Lapangan'),
         content: Text(
           status == 'aktif'
-              ? 'Anda yakin ingin memverifikasi lapangan ini?'
-              : 'Anda yakin ingin menolak lapangan ini?',
+              ? 'Anda yakin ingin memverifikasi pemilik lapangan ini?'
+              : 'Anda yakin ingin menolak pemilik lapangan ini?',
         ),
         actions: [
           TextButton(
