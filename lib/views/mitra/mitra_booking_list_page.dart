@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lapangku/features/Mitra/booking/providers/Mitra_booking_provider.dart';
-import 'package:lapangku/features/Mitra/field/providers/Mitra_field_provider.dart';
+import 'package:lapangku/features/mitra/booking/providers/mitra_booking_provider.dart';
+import 'package:lapangku/features/mitra/field/providers/mitra_field_provider.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
 
@@ -47,7 +47,7 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
   @override
   Widget build(BuildContext context) {
     // Pastikan lapangan sudah di-load
-    ref.watch(MitraFieldProvider);
+    ref.watch(mitraFieldProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),

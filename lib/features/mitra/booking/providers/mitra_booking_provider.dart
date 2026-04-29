@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/features/Mitra/booking/repositories/Mitra_booking_repository.dart';
-import 'package:lapangku/features/Mitra/field/providers/Mitra_field_provider.dart';
+import 'package:lapangku/features/mitra/booking/repositories/mitra_booking_repository.dart';
+import 'package:lapangku/features/mitra/field/providers/mitra_field_provider.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/services/firebase/booking_service.dart';
 
@@ -13,7 +13,7 @@ final MitraBookingRepositoryProvider = Provider<MitraBookingRepository>(
 // ── Stream Provider: booking berdasarkan lapangan Mitra ──────────
 final MitraBookingStreamProvider =
     StreamProvider.family<List<BookingModel>, String?>((ref, statusFilter) {
-  final fieldsAsync = ref.watch(MitraFieldProvider).fields;
+  final fieldsAsync = ref.watch(mitraFieldProvider).fields;
   final fieldIds = fieldsAsync.value?.map((f) => f.id).toList() ?? [];
   final repo = ref.watch(MitraBookingRepositoryProvider);
   return repo.streamBookings(fieldIds, statusFilter: statusFilter);

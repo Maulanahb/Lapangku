@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/features/Mitra/field/providers/Mitra_field_provider.dart';
-import 'package:lapangku/features/Mitra/schedule/models/Mitra_schedule_model.dart';
-import 'package:lapangku/features/Mitra/schedule/repositories/Mitra_schedule_repository.dart';
-import 'package:lapangku/services/firebase/Mitra_service.dart';
+import 'package:lapangku/features/mitra/field/providers/mitra_field_provider.dart';
+import 'package:lapangku/features/mitra/schedule/models/mitra_schedule_model.dart';
+import 'package:lapangku/features/mitra/schedule/repositories/mitra_schedule_repository.dart';
+import 'package:lapangku/services/firebase/mitra_service.dart';
 
 final _MitraSvcForScheduleProvider =
     Provider<MitraService>((ref) => MitraService());
@@ -87,7 +87,7 @@ class MitraScheduleNotifier extends StateNotifier<MitraScheduleState> {
   }
 }
 
-final MitraScheduleProvider =
+final mitraScheduleProvider =
     StateNotifierProvider<MitraScheduleNotifier, MitraScheduleState>((ref) {
   final repo = ref.watch(MitraScheduleRepositoryProvider);
   return MitraScheduleNotifier(repo);

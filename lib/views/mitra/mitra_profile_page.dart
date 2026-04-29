@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
-import 'package:lapangku/features/Mitra/profile/providers/Mitra_profile_provider.dart';
-import 'package:lapangku/features/Mitra/profile/models/Mitra_profile_model.dart';
+import 'package:lapangku/features/mitra/profile/providers/mitra_profile_provider.dart';
+import 'package:lapangku/features/mitra/profile/models/mitra_profile_model.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
 
 // Import newly created pages
-import 'widgets/Mitra_menu_tile.dart';
-import 'Mitra_profile_document_page.dart';
-import 'Mitra_fields_page.dart';
-import 'Mitra_schedule_page.dart';
-import 'Mitra_payout_page.dart';
-import 'Mitra_revenue_page.dart';
-import 'Mitra_reviews_page.dart';
-import 'Mitra_help_page.dart';
-import 'Mitra_language_page.dart';
+import 'widgets/mitra_menu_tile.dart';
+import 'mitra_profile_document_page.dart';
+import 'mitra_fields_page.dart';
+import 'mitra_schedule_page.dart';
+import 'mitra_payout_page.dart';
+import 'mitra_revenue_page.dart';
+import 'mitra_reviews_page.dart';
+import 'mitra_help_page.dart';
+import 'mitra_language_page.dart';
 
 class MitraProfilePage extends ConsumerWidget {
   const MitraProfilePage({super.key});
@@ -24,7 +24,7 @@ class MitraProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(MitraProfileProvider);
+    final profileAsync = ref.watch(mitraProfileProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
@@ -38,7 +38,7 @@ class MitraProfilePage extends ConsumerWidget {
               const SizedBox(height: 16),
               Text('Gagal memuat profil', style: TextStyle(color: Colors.grey.shade700)),
               TextButton(
-                onPressed: () => ref.read(MitraProfileProvider.notifier).loadProfile('mock_uid_123'),
+                onPressed: () => ref.read(mitraProfileProvider.notifier).loadProfile('mock_uid_123'),
                 child: const Text('Coba Lagi', style: TextStyle(color: Color(0xFF1B6B3A))),
               )
             ],
@@ -159,7 +159,7 @@ class MitraProfilePage extends ConsumerWidget {
 
   void _toggleOrderNotif(BuildContext context, WidgetRef ref, MitraProfileModel state) async {
     try {
-      await ref.read(MitraProfileProvider.notifier).toggleNotificationOrder();
+      await ref.read(mitraProfileProvider.notifier).toggleNotificationOrder();
       if (context.mounted) {
         SnackbarHelper.showSuccess(context, 'Notifikasi pesanan ${!state.notificationOrder ? "diaktifkan" : "dimatikan"}');
       }
@@ -170,7 +170,7 @@ class MitraProfilePage extends ConsumerWidget {
 
   void _togglePromoNotif(BuildContext context, WidgetRef ref, MitraProfileModel state) async {
     try {
-      await ref.read(MitraProfileProvider.notifier).toggleNotificationPromo();
+      await ref.read(mitraProfileProvider.notifier).toggleNotificationPromo();
       if (context.mounted) {
         SnackbarHelper.showSuccess(context, 'Notifikasi promo ${!state.notificationPromo ? "diaktifkan" : "dimatikan"}');
       }

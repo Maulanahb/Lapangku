@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:lapangku/services/firebase/Mitra_service.dart';
-import '../models/Mitra_revenue_model.dart';
-import '../repositories/Mitra_revenue_repository.dart';
+import 'package:lapangku/services/firebase/mitra_service.dart';
+import '../models/mitra_revenue_model.dart';
+import '../repositories/mitra_revenue_repository.dart';
 
 final MitraRevenueRepositoryProvider = Provider((ref) => MitraRevenueRepository(MitraService()));
 
@@ -17,7 +17,7 @@ final revenueDateRangeProvider = StateProvider<DateRange>((ref) {
   return DateRange(DateTime(now.year, now.month, 1), DateTime(now.year, now.month + 1, 0)); // This month
 });
 
-final MitraRevenueProvider = StateNotifierProvider<MitraRevenueNotifier, AsyncValue<MitraRevenueModel>>((ref) {
+final mitraRevenueProvider = StateNotifierProvider<MitraRevenueNotifier, AsyncValue<MitraRevenueModel>>((ref) {
   final repository = ref.watch(MitraRevenueRepositoryProvider);
   final dateRange = ref.watch(revenueDateRangeProvider);
   return MitraRevenueNotifier(repository, dateRange);

@@ -1,9 +1,9 @@
-// lib/views/Mitra/Mitra_home_page.dart
+// lib/views/Mitra/mitra_home_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../controllers/Mitra/Mitra_controller.dart';
+import '../../controllers/Mitra/mitra_controller.dart';
 
 class MitraHomePage extends ConsumerStatefulWidget {
   const MitraHomePage({super.key});
@@ -141,7 +141,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
 
   Widget _buildStatsGrid() {
     final String MitraId =
-        FirebaseAuth.instance.currentUser?.uid ?? 'dummy_Mitra_id';
+        FirebaseAuth.instance.currentUser?.uid ?? 'dummy_mitra_id';
     final fieldsAsyncValue = ref.watch(MitraFieldsProvider(MitraId));
 
     return Column(children: [

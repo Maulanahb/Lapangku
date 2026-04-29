@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:lapangku/features/Mitra/profile/providers/Mitra_profile_provider.dart';
+import 'package:lapangku/features/mitra/profile/providers/mitra_profile_provider.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
 
 class MitraProfileDocumentPage extends ConsumerStatefulWidget {
@@ -29,7 +29,7 @@ class _MitraProfileDocumentPageState
   @override
   void initState() {
     super.initState();
-    final profileState = ref.read(MitraProfileProvider).value;
+    final profileState = ref.read(mitraProfileProvider).value;
     _businessNameController =
         TextEditingController(text: profileState?.businessName ?? '');
     _MitraNameController =
@@ -58,7 +58,7 @@ class _MitraProfileDocumentPageState
 
     setState(() => _isLoading = true);
     try {
-      await ref.read(MitraProfileProvider.notifier).updateProfile(
+      await ref.read(mitraProfileProvider.notifier).updateProfile(
             businessName: _businessNameController.text.trim(),
             MitraName: _MitraNameController.text.trim(),
             email: _emailController.text.trim(),
@@ -87,7 +87,7 @@ class _MitraProfileDocumentPageState
     
     setState(() => _isLoading = true);
     try {
-      await ref.read(MitraProfileProvider.notifier).uploadLogo(File(picked.path));
+      await ref.read(mitraProfileProvider.notifier).uploadLogo(File(picked.path));
       if (mounted) SnackbarHelper.showSuccess(context, 'Logo berhasil diupload');
     } catch (e) {
       if (mounted) SnackbarHelper.showError(context, 'Gagal upload logo: $e');
@@ -102,7 +102,7 @@ class _MitraProfileDocumentPageState
     
     setState(() => _isLoading = true);
     try {
-      await ref.read(MitraProfileProvider.notifier).uploadDocument(docType, File(picked.path));
+      await ref.read(mitraProfileProvider.notifier).uploadDocument(docType, File(picked.path));
       if (mounted) SnackbarHelper.showSuccess(context, 'Dokumen berhasil diupload');
     } catch (e) {
       if (mounted) SnackbarHelper.showError(context, 'Gagal upload dokumen: $e');
@@ -113,7 +113,7 @@ class _MitraProfileDocumentPageState
 
   @override
   Widget build(BuildContext context) {
-    final profileAsync = ref.watch(MitraProfileProvider);
+    final profileAsync = ref.watch(mitraProfileProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),

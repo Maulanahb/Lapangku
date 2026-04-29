@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:lapangku/features/Mitra/profile/models/Mitra_profile_model.dart';
-import 'package:lapangku/services/firebase/Mitra_service.dart';
+import 'package:lapangku/features/mitra/profile/models/mitra_profile_model.dart';
+import 'package:lapangku/services/firebase/mitra_service.dart';
 
 class MitraProfileRepository {
   final MitraService _service;

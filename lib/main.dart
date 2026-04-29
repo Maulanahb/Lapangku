@@ -15,7 +15,7 @@ import 'views/auth/forgot_password_page.dart';
 import 'views/auth/otp_verification_page.dart';
 import 'views/auth/reset_password_page.dart';
 import 'views/customer/customer_main_page.dart';
-import 'views/Mitra/Mitra_main_page.dart';
+import 'views/Mitra/mitra_main_page.dart';
 import 'views/admin/admin_dashboard_page.dart';
 import 'views/admin/admin_login_page.dart';
 

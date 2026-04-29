@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/Mitra_review_model.dart';
-import '../repositories/Mitra_review_repository.dart';
+import '../models/mitra_review_model.dart';
+import '../repositories/mitra_review_repository.dart';
 
 final MitraReviewRepositoryProvider = Provider((ref) => MitraReviewRepository());
 
@@ -22,7 +22,7 @@ class MitraReviewNotifier extends StateNotifier<AsyncValue<List<MitraReviewModel
   }
 }
 
-final MitraReviewProvider = StateNotifierProvider<MitraReviewNotifier, AsyncValue<List<MitraReviewModel>>>((ref) {
+final mitraReviewProvider = StateNotifierProvider<MitraReviewNotifier, AsyncValue<List<MitraReviewModel>>>((ref) {
   final repository = ref.watch(MitraReviewRepositoryProvider);
   return MitraReviewNotifier(repository);
 });

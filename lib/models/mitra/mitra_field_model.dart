@@ -1,4 +1,4 @@
-// lib/models/Mitra/Mitra_field_model.dart
+// lib/models/Mitra/mitra_field_model.dart
 
 class MitraFieldModel {
   final String id;

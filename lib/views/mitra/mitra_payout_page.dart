@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/features/Mitra/profile/providers/Mitra_profile_provider.dart';
+import 'package:lapangku/features/mitra/profile/providers/mitra_profile_provider.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
 
 class MitraPayoutPage extends ConsumerStatefulWidget {
@@ -22,7 +22,7 @@ class _MitraPayoutPageState extends ConsumerState<MitraPayoutPage> {
   @override
   void initState() {
     super.initState();
-    final state = ref.read(MitraProfileProvider).value;
+    final state = ref.read(mitraProfileProvider).value;
     _selectedBank = state?.bankName.isNotEmpty == true ? state?.bankName : 'BCA';
     _accountNumberController = TextEditingController(text: state?.bankAccount.replaceAll('-', '') ?? '');
     _accountNameController = TextEditingController(text: state?.MitraName ?? '');
@@ -40,7 +40,7 @@ class _MitraPayoutPageState extends ConsumerState<MitraPayoutPage> {
     
     setState(() => _isLoading = true);
     try {
-      await ref.read(MitraProfileProvider.notifier).updateBankInfo(
+      await ref.read(mitraProfileProvider.notifier).updateBankInfo(
         _selectedBank ?? 'BCA',
         _accountNumberController.text.trim(),
       );

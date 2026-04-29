@@ -119,6 +119,6 @@ class MitraProfileNotifier extends StateNotifier<MitraProfileState> {
   }
 }
 
-final MitraProfileProvider = StateNotifierProvider<MitraProfileNotifier, MitraProfileState>((ref) {
+final mitraProfileProvider = StateNotifierProvider<MitraProfileNotifier, MitraProfileState>((ref) {
   return MitraProfileNotifier();
 });

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/models/Mitra/Mitra_field_model.dart';
-import 'package:lapangku/services/firebase/Mitra_service.dart';
+import 'package:lapangku/features/mitra/field/models/mitra_field_model.dart';
+import 'package:lapangku/services/firebase/mitra_service.dart';
 
 // Provider untuk MitraService
 final MitraServiceProvider = Provider<MitraService>((ref) {

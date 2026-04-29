@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/features/Mitra/field/providers/Mitra_field_provider.dart';
-import 'package:lapangku/features/Mitra/schedule/models/Mitra_schedule_model.dart';
-import 'package:lapangku/features/Mitra/schedule/providers/Mitra_schedule_provider.dart';
+import 'package:lapangku/features/mitra/field/providers/mitra_field_provider.dart';
+import 'package:lapangku/features/mitra/schedule/models/mitra_schedule_model.dart';
+import 'package:lapangku/features/mitra/schedule/providers/mitra_schedule_provider.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
 
 class MitraSchedulePage extends ConsumerWidget {
@@ -10,8 +10,8 @@ class MitraSchedulePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final fieldsAsync = ref.watch(MitraFieldProvider).fields;
-    final scheduleState = ref.watch(MitraScheduleProvider);
+    final fieldsAsync = ref.watch(mitraFieldProvider).fields;
+    final scheduleState = ref.watch(mitraScheduleProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
@@ -74,7 +74,7 @@ class MitraSchedulePage extends ConsumerWidget {
                   onChanged: (id) {
                     if (id != null) {
                       ref
-                          .read(MitraScheduleProvider.notifier)
+                          .read(mitraScheduleProvider.notifier)
                           .selectField(id);
                     }
                   },
@@ -169,7 +169,7 @@ class _ScheduleList extends ConsumerWidget {
                         value: s.isActive,
                         onChanged: (val) {
                           ref
-                              .read(MitraScheduleProvider.notifier)
+                              .read(mitraScheduleProvider.notifier)
                               .updateDaySchedule(index, isActive: val);
                         },
                         activeTrackColor: const Color(0xFF1B6B3A),
@@ -192,7 +192,7 @@ class _ScheduleList extends ConsumerWidget {
                               context, s.jamBuka);
                           if (picked != null) {
                             ref
-                                .read(MitraScheduleProvider.notifier)
+                                .read(mitraScheduleProvider.notifier)
                                 .updateDaySchedule(index, jamBuka: picked);
                           }
                         },
@@ -213,7 +213,7 @@ class _ScheduleList extends ConsumerWidget {
                               context, s.jamTutup);
                           if (picked != null) {
                             ref
-                                .read(MitraScheduleProvider.notifier)
+                                .read(mitraScheduleProvider.notifier)
                                 .updateDaySchedule(index, jamTutup: picked);
                           }
                         },
@@ -324,7 +324,7 @@ class _SaveButton extends ConsumerWidget {
               : () async {
                   try {
                     await ref
-                        .read(MitraScheduleProvider.notifier)
+                        .read(mitraScheduleProvider.notifier)
                         .saveSchedule();
                     if (context.mounted) {
                       SnackbarHelper.showSuccess(

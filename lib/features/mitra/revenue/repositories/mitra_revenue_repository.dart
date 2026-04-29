@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:lapangku/features/Mitra/revenue/models/Mitra_revenue_model.dart';
+import 'package:lapangku/features/mitra/revenue/models/mitra_revenue_model.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
-import 'package:lapangku/services/firebase/Mitra_service.dart';
+import 'package:lapangku/services/firebase/mitra_service.dart';
 
 class MitraRevenueRepository {
   final FirebaseFirestore _db = FirebaseFirestore.instance;

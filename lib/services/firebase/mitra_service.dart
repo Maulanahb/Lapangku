@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:lapangku/features/Mitra/field/models/Mitra_field_model.dart';
-import 'package:lapangku/features/Mitra/profile/models/Mitra_profile_model.dart';
-import 'package:lapangku/features/Mitra/schedule/models/Mitra_schedule_model.dart';
+import 'package:lapangku/features/mitra/field/models/mitra_field_model.dart';
+import 'package:lapangku/features/mitra/profile/models/mitra_profile_model.dart';
+import 'package:lapangku/features/mitra/schedule/models/mitra_schedule_model.dart';
 
 class MitraService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -44,7 +44,7 @@ class MitraService {
   }
 
   Future<String> uploadLogo(String uid, File imageFile) async {
-    final ref = _storage.ref().child('Mitra_logos/$uid.jpg');
+    final ref = _storage.ref().child('mitra_logos/$uid.jpg');
     final task = await ref.putFile(imageFile);
     return await task.ref.getDownloadURL();
   }
@@ -53,7 +53,7 @@ class MitraService {
       String uid, String docType, File file) async {
     final ext = file.path.split('.').last;
     final ref =
-        _storage.ref().child('Mitra_documents/$uid/${docType}_${DateTime.now().millisecondsSinceEpoch}.$ext');
+        _storage.ref().child('mitra_documents/$uid/${docType}_${DateTime.now().millisecondsSinceEpoch}.$ext');
     final task = await ref.putFile(file);
     return await task.ref.getDownloadURL();
   }

@@ -1,4 +1,4 @@
-import 'Mitra_review_model.dart';
+import '../models/mitra_review_model.dart';
 
 class MitraReviewRepository {
   Future<List<MitraReviewModel>> getReviews() async {

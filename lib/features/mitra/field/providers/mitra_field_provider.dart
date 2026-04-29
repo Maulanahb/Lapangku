@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/features/Mitra/field/models/Mitra_field_model.dart';
-import 'package:lapangku/features/Mitra/field/repositories/Mitra_field_repository.dart';
-import 'package:lapangku/services/firebase/Mitra_service.dart';
+import 'package:lapangku/features/mitra/field/models/mitra_field_model.dart';
+import 'package:lapangku/features/mitra/field/repositories/mitra_field_repository.dart';
+import 'package:lapangku/services/firebase/mitra_service.dart';
 
 // ── Service & Repository Providers ────────────────────────────────
 final MitraServiceProvider = Provider<MitraService>((ref) => MitraService());
@@ -136,7 +136,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
   }
 }
 
-final MitraFieldProvider =
+final mitraFieldProvider =
     StateNotifierProvider<MitraFieldNotifier, MitraFieldState>((ref) {
   final repo = ref.watch(MitraFieldRepositoryProvider);
   return MitraFieldNotifier(repo);
@@ -144,5 +144,5 @@ final MitraFieldProvider =
 
 // Convenience getter
 final MitraFieldListProvider = Provider<AsyncValue<List<MitraFieldModel>>>((ref) {
-  return ref.watch(MitraFieldProvider).fields;
+  return ref.watch(mitraFieldProvider).fields;
 });

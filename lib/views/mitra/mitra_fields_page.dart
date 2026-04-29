@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/features/Mitra/field/providers/Mitra_field_provider.dart';
-import 'package:lapangku/features/Mitra/field/models/Mitra_field_model.dart';
+import 'package:lapangku/features/mitra/field/providers/mitra_field_provider.dart';
+import 'package:lapangku/features/mitra/field/models/mitra_field_model.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
-import 'package:lapangku/views/Mitra/widgets/Mitra_field_form_sheet.dart';
+import 'package:lapangku/views/Mitra/widgets/mitra_field_form_sheet.dart';
 
 class MitraFieldsPage extends ConsumerStatefulWidget {
   const MitraFieldsPage({super.key});
@@ -16,7 +16,7 @@ class _MitraFieldsPageState extends ConsumerState<MitraFieldsPage> {
 
   void _toggleStatus(String fieldId, bool currentStatus, String fieldName) async {
     try {
-      await ref.read(MitraFieldProvider.notifier).toggleFieldStatus(fieldId, currentStatus);
+      await ref.read(mitraFieldProvider.notifier).toggleFieldStatus(fieldId, currentStatus);
       if (mounted) {
         SnackbarHelper.showSuccess(
           context, 
@@ -46,7 +46,7 @@ class _MitraFieldsPageState extends ConsumerState<MitraFieldsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final fieldState = ref.watch(MitraFieldProvider);
+    final fieldState = ref.watch(mitraFieldProvider);
     final fieldsAsync = fieldState.fields;
 
     return Scaffold(

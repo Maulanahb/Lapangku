@@ -1,5 +1,5 @@
-import 'package:lapangku/features/Mitra/schedule/models/Mitra_schedule_model.dart';
-import 'package:lapangku/services/firebase/Mitra_service.dart';
+import 'package:lapangku/features/mitra/schedule/models/mitra_schedule_model.dart';
+import 'package:lapangku/services/firebase/mitra_service.dart';
 
 class MitraScheduleRepository {
   final MitraService _service;

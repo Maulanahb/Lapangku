@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'Mitra_home_page.dart';
+import 'mitra_home_page.dart';
 import 'manage_fields_page.dart';
-import 'Mitra_profile_page.dart';
+import 'mitra_profile_page.dart';
 
 class MitraMainPage extends StatefulWidget {
   const MitraMainPage({super.key});

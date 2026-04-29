@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
-import 'package:lapangku/views/auth/Mitra_register/Mitra_register_page.dart';
+import 'package:lapangku/views/auth/mitra_register/mitra_register_page.dart';
 import 'package:lapangku/core/utils/navigation_helper.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {

@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'package:lapangku/features/Mitra/field/models/Mitra_field_model.dart';
-import 'package:lapangku/services/firebase/Mitra_service.dart';
+import 'package:lapangku/features/mitra/field/models/mitra_field_model.dart';
+import 'package:lapangku/services/firebase/mitra_service.dart';
 
 class MitraFieldRepository {
   final MitraService _service;

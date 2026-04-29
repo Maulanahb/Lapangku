@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:lapangku/features/Mitra/field/models/Mitra_field_model.dart';
-import 'package:lapangku/features/Mitra/field/providers/Mitra_field_provider.dart';
+import 'package:lapangku/features/mitra/field/models/mitra_field_model.dart';
+import 'package:lapangku/features/mitra/field/providers/mitra_field_provider.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
 
 class MitraFieldFormSheet extends ConsumerStatefulWidget {
@@ -95,7 +95,7 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
           photoUrls: _existingPhotoUrls, // Keep remaining
         );
         
-        await ref.read(MitraFieldProvider.notifier).editField(
+        await ref.read(mitraFieldProvider.notifier).editField(
           updatedField.id,
           namaLapangan: name,
           hargaPerJam: price,
@@ -106,7 +106,7 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
         if (mounted) SnackbarHelper.showSuccess(context, 'Lapangan diperbarui');
       } else {
         // Add
-        await ref.read(MitraFieldProvider.notifier).addField(
+        await ref.read(mitraFieldProvider.notifier).addField(
           namaLapangan: name,
           jenisLapangan: _selectedJenis,
           hargaPerJam: price,

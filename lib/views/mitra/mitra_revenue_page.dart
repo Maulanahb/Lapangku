@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lapangku/features/Mitra/revenue/providers/Mitra_revenue_provider.dart';
+import 'package:lapangku/features/mitra/revenue/providers/mitra_revenue_provider.dart';
 
 class MitraRevenuePage extends ConsumerStatefulWidget {
   const MitraRevenuePage({super.key});
@@ -42,7 +42,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
 
   @override
   Widget build(BuildContext context) {
-    final revenueAsync = ref.watch(MitraRevenueProvider);
+    final revenueAsync = ref.watch(mitraRevenueProvider);
     final dateRange = ref.watch(revenueDateRangeProvider);
     final dateStr = '${DateFormat('dd MMM yyyy').format(dateRange.start)} - ${DateFormat('dd MMM yyyy').format(dateRange.end)}';
 
@@ -91,7 +91,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
                 return RefreshIndicator(
                   color: const Color(0xFF1B6B3A),
                   onRefresh: () async {
-                    await ref.read(MitraRevenueProvider.notifier).loadRevenue();
+                    await ref.read(mitraRevenueProvider.notifier).loadRevenue();
                   },
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),

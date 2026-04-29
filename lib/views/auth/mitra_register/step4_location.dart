@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/controllers/Mitra/Mitra_location_controller.dart';
+import 'package:lapangku/controllers/Mitra/mitra_location_controller.dart';
 import 'widgets/map_placeholder.dart';
 
 class Step4Location extends ConsumerStatefulWidget {
