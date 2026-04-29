@@ -173,16 +173,35 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> getUserData(String uid) async {
-    // Tambahkan timeout agar tidak loading terus-menerus jika koneksi/Firestore bermasalah
-    final doc = await _db.collection('users').doc(uid).get().timeout(
-      const Duration(seconds: 10),
-      onTimeout: () => throw Exception('Waktu koneksi habis (Timeout). Cek internet/App Check kamu.'),
-    );
-    
-    if (!doc.exists || doc.data() == null) {
-      throw Exception('Data pengguna tidak ditemukan di database.');
+    // Coba ambil dari server dulu, jika timeout fallback ke cache
+    try {
+      final doc = await _db.collection('users').doc(uid).get(
+        const GetOptions(source: Source.serverAndCache),
+      ).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () => throw Exception('Waktu koneksi habis (Timeout). Cek internet kamu.'),
+      );
+      
+      if (!doc.exists || doc.data() == null) {
+        throw Exception('Data pengguna tidak ditemukan di database.');
+      }
+      return doc.data()!;
+    } catch (e) {
+      // Jika gagal dari server, coba dari cache lokal
+      if (e.toString().contains('Timeout') || e.toString().contains('koneksi')) {
+        try {
+          final cachedDoc = await _db.collection('users').doc(uid).get(
+            const GetOptions(source: Source.cache),
+          );
+          if (cachedDoc.exists && cachedDoc.data() != null) {
+            return cachedDoc.data()!;
+          }
+        } catch (_) {
+          // Cache juga kosong, lempar error asli
+        }
+      }
+      rethrow;
     }
-    return doc.data()!;
   }
 
   Stream<UserModel?> get authStateChanges {

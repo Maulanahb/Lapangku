@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
+import 'package:lapangku/controllers/favorite/favorite_controller.dart';
 
 class CustomerFieldDetailPage extends ConsumerStatefulWidget {
   final FieldModel field;
@@ -16,7 +17,7 @@ class CustomerFieldDetailPage extends ConsumerStatefulWidget {
 class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerProviderStateMixin {
   int _selectedDateIndex = 0;
   final Set<int> _selectedTimeIndices = {};
-  bool _isFavorite = false;
+
   bool _showFullDesc = false;
   final bool _isBooking = false;
   late TabController _tabController;
@@ -78,9 +79,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       leading: _cBtn(Icons.arrow_back, () => Navigator.pop(context)),
       actions: [
         _cBtn(Icons.share_outlined, () {}),
-        _cBtn(_isFavorite ? Icons.favorite : Icons.favorite_border,
-            () => setState(() => _isFavorite = !_isFavorite),
-            ic: _isFavorite ? Colors.red : Colors.black),
+        _favoriteButton(),
         const SizedBox(width: 8),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -93,6 +92,41 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
             colors: [Colors.black38, Colors.transparent, Colors.black26],
           ))),
         ]),
+      ),
+    );
+  }
+
+  Widget _favoriteButton() {
+    final favAsync = ref.watch(isFavoritedProvider(widget.field.id));
+    final isFav = favAsync.value ?? false;
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: CircleAvatar(
+        backgroundColor: Colors.white,
+        radius: 18,
+        child: IconButton(
+          icon: Icon(
+            isFav ? Icons.favorite : Icons.favorite_border,
+            color: isFav ? Colors.red : Colors.black,
+            size: 18,
+          ),
+          onPressed: () {
+            final user = ref.read(authStateProvider).value;
+            if (user == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Silakan login terlebih dahulu'), backgroundColor: Colors.red),
+              );
+              return;
+            }
+            final service = ref.read(favoriteServiceProvider);
+            if (isFav) {
+              service.removeFavorite(user.uid, widget.field.id);
+            } else {
+              service.addFavorite(user.uid, widget.field.id);
+            }
+          },
+          padding: EdgeInsets.zero,
+        ),
       ),
     );
   }
