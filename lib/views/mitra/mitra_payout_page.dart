@@ -100,7 +100,7 @@ class _MitraPayoutPageState extends ConsumerState<MitraPayoutPage> {
               const Text('Bank Tujuan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _selectedBank,
+                initialValue: _selectedBank,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.account_balance, color: Colors.blueGrey),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

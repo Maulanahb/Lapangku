@@ -19,9 +19,9 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   final Set<int> _selectedTimeIndices = {};
 
   bool _showFullDesc = false;
-  bool _isBooking = false;
+  final bool _isBooking = false;
   late TabController _tabController;
-  List<Map<String, String>> _dates = [];
+  final List<Map<String, String>> _dates = [];
 
   // Generate time labels 06:00 - 22:00
   final List<String> _allSlots = List.generate(16, (i) {

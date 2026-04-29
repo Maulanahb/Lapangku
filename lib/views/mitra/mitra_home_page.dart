@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../controllers/Mitra/mitra_controller.dart';
+import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 
 class MitraHomePage extends ConsumerStatefulWidget {
   const MitraHomePage({super.key});
@@ -140,9 +140,9 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
   }
 
   Widget _buildStatsGrid() {
-    final String MitraId =
+    final String mitraId =
         FirebaseAuth.instance.currentUser?.uid ?? 'dummy_mitra_id';
-    final fieldsAsyncValue = ref.watch(MitraFieldsProvider(MitraId));
+    final fieldsAsyncValue = ref.watch(mitraFieldsProvider(mitraId));
 
     return Column(children: [
       IntrinsicHeight(

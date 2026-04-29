@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/views/auth/mitra_register/mitra_register_page.dart';
 import 'package:lapangku/core/utils/navigation_helper.dart';
+import 'package:email_otp/email_otp.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -20,8 +21,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   String _selectedRole = 'customer'; // Default kembali ke customer (kiri)
-  final _MitraContactController =
-      TextEditingController(); // Controller khusus Mitra
+  final _ownerContactController =
+      TextEditingController(); // Controller khusus owner
+  bool _isSendingOtp = false;
 
   @override
   void dispose() {
@@ -30,7 +32,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _MitraContactController.dispose();
+    _ownerContactController.dispose();
     super.dispose();
   }
 
@@ -555,6 +557,53 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     );
   }
 
+  Future<void> _sendOtpAndNavigate() async {
+    final contact = _ownerContactController.text.trim();
+    if (contact.isEmpty || !contact.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Masukkan alamat email yang valid')),
+      );
+      return;
+    }
+
+    setState(() => _isSendingOtp = true);
+    try {
+      EmailOTP.config(
+        appName: "LapangKu Mitra",
+        otpType: OTPType.numeric,
+        otpLength: 6,
+      );
+
+      final success = await EmailOTP.sendOTP(email: contact);
+      if (success) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Kode OTP telah dikirim ke $contact')),
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => MitraRegisterPage(
+                    email: contact,
+                    otpAlreadySent: true,
+                  )),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal mengirim kode OTP. Coba lagi.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSendingOtp = false);
+    }
+  }
+
   Widget _buildMitraForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -577,7 +626,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         ),
         const SizedBox(height: 24),
         _buildTextField(
-          controller: _MitraContactController,
+          controller: _ownerContactController,
           hint: 'contoh@email.com / 0812...',
           label: 'EMAIL ATAU NOMOR HP',
         ),
@@ -586,34 +635,35 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const MitraRegisterPage()),
-              );
-            },
+            onPressed: _isSendingOtp ? null : _sendOtpAndNavigate,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF0F5A2F),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Kirim Kode OTP',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+            child: _isSendingOtp
+                ? const SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2.5),
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Kirim Kode OTP',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.arrow_forward, color: Colors.white, size: 18),
+                    ],
                   ),
-                ),
-                SizedBox(width: 8),
-                Icon(Icons.arrow_forward, color: Colors.white, size: 18),
-              ],
-            ),
           ),
         ),
       ],

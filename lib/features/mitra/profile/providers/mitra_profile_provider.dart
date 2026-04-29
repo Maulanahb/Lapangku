@@ -4,11 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/features/mitra/profile/models/mitra_profile_model.dart';
 import 'package:lapangku/features/mitra/profile/repositories/mitra_profile_repository.dart';
 import 'package:lapangku/services/firebase/mitra_service.dart';
+import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 
-final _MitraSvcProvider = Provider<MitraService>((ref) => MitraService());
-
-final MitraProfileRepositoryProvider = Provider<MitraProfileRepository>(
-    (ref) => MitraProfileRepository(ref.watch(_MitraSvcProvider)));
+final mitraProfileRepositoryProvider = Provider<MitraProfileRepository>(
+    (ref) => MitraProfileRepository(ref.watch(mitraServiceProvider)));
 
 // ── Notifier ───────────────────────────────────────────────────────
 class MitraProfileNotifier
@@ -138,6 +137,6 @@ class MitraProfileNotifier
 
 final mitraProfileProvider = StateNotifierProvider<MitraProfileNotifier,
     AsyncValue<MitraProfileModel>>((ref) {
-  final repo = ref.watch(MitraProfileRepositoryProvider);
+  final repo = ref.watch(mitraProfileRepositoryProvider);
   return MitraProfileNotifier(repo);
 });

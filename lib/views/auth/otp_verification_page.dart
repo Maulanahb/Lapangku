@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class OtpVerificationPage extends StatefulWidget {
-  const OtpVerificationPage({Key? key}) : super(key: key);
+  const OtpVerificationPage({super.key});
 
   @override
   State<OtpVerificationPage> createState() => _OtpVerificationPageState();
@@ -51,7 +51,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                 style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 40),
-              
+
               // 6 OTP Boxes
               Form(
                 child: Row(
@@ -69,7 +69,8 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                             FocusScope.of(context).previousFocus();
                           }
                         },
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
                         keyboardType: TextInputType.number,
                         textAlign: TextAlign.center,
                         inputFormatters: [
@@ -87,7 +88,8 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: primaryGreen, width: 2),
+                            borderSide:
+                                BorderSide(color: primaryGreen, width: 2),
                           ),
                           contentPadding: EdgeInsets.zero,
                         ),
@@ -96,9 +98,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Timer Text
               Center(
                 child: RichText(
@@ -117,9 +119,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 48),
-              
+
               // Verifikasi Button
               SizedBox(
                 width: double.infinity,

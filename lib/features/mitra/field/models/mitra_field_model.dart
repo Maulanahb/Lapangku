@@ -79,8 +79,8 @@ class MitraFieldModel {
   factory MitraFieldModel.fromMap(Map<String, dynamic> map, String id) {
     return MitraFieldModel(
       id: id,
-      MitraId: map['MitraId'] ?? '',
-      namaLapangan: map['namaLapangan'] ?? map['name'] ?? '',
+      MitraId: map['MitraId'] ?? map['uid'] ?? '',
+      namaLapangan: map['namaLapangan'] ?? map['businessName'] ?? map['namaBisnis'] ?? map['name'] ?? '',
       jenisLapangan: map['jenisLapangan'] ?? 'Futsal',
       hargaPerJam: (map['hargaPerJam'] ?? map['pricePerHour'] ?? 0) as int,
       deskripsi: map['deskripsi'] ?? '',

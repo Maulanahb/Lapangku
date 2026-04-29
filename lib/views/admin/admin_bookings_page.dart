@@ -20,12 +20,13 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
   Widget build(BuildContext context) {
     final bookingsAsync = ref.watch(bookingsProvider);
 
-    return SafeArea(
-      child: Column(
-        children: [
-          _buildHeader(),
-          _buildSearchFilter(),
-          Expanded(
+    return Column(
+      children: [
+        _buildHeader(),
+        _buildSearchFilter(),
+        Expanded(
+          child: Container(
+            color: const Color(0xFFF5F6FA),
             child: RefreshIndicator(
               color: _primary,
               onRefresh: () async =>
@@ -38,29 +39,46 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
       color: Colors.white,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Kelola Pesanan',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A2E),
-            ),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Kelola Pesanan',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF1A1A2E),
+                  letterSpacing: -0.5,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Pantau seluruh transaksi dan status booking.',
+                style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: _primary),
-            onPressed: () => ref.read(bookingsProvider.notifier).load(),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.refresh_rounded, color: _primary),
+              onPressed: () => ref.read(bookingsProvider.notifier).load(),
+            ),
           ),
         ],
       ),

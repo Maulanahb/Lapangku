@@ -1,12 +1,13 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/features/mitra/field/models/mitra_field_model.dart';
 import 'package:lapangku/features/mitra/profile/models/mitra_profile_model.dart';
 import 'package:lapangku/features/mitra/schedule/models/mitra_schedule_model.dart';
 
 class MitraService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db = FirestoreService.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // ─────────────────────────────────────────────
@@ -14,7 +15,8 @@ class MitraService {
   // ─────────────────────────────────────────────
 
   Future<MitraProfileModel> getProfile(String uid) async {
-    final doc = await _db.collection('Mitras').doc(uid).get();
+    // Mencari di koleksi 'mitra' sesuai pendaftaran
+    final doc = await _db.collection('mitra').doc(uid).get();
     if (!doc.exists || doc.data() == null) {
       return MitraProfileModel.empty(uid);
     }
@@ -22,12 +24,12 @@ class MitraService {
   }
 
   Future<void> createProfile(MitraProfileModel profile) async {
-    await _db.collection('Mitras').doc(profile.id).set(profile.toMap());
+    await _db.collection('owners').doc(profile.id).set(profile.toMap());
   }
 
   Future<void> updateProfile(MitraProfileModel profile) async {
     await _db
-        .collection('Mitras')
+        .collection('owners')
         .doc(profile.id)
         .set(profile.toMap(), SetOptions(merge: true));
   }
@@ -37,7 +39,7 @@ class MitraService {
     required bool orderNotif,
     required bool promoNotif,
   }) async {
-    await _db.collection('Mitras').doc(uid).update({
+    await _db.collection('owners').doc(uid).update({
       'notificationOrder': orderNotif,
       'notificationPromo': promoNotif,
     });
@@ -49,11 +51,10 @@ class MitraService {
     return await task.ref.getDownloadURL();
   }
 
-  Future<String> uploadDocument(
-      String uid, String docType, File file) async {
+  Future<String> uploadDocument(String uid, String docType, File file) async {
     final ext = file.path.split('.').last;
-    final ref =
-        _storage.ref().child('mitra_documents/$uid/${docType}_${DateTime.now().millisecondsSinceEpoch}.$ext');
+    final ref = _storage.ref().child(
+        'mitra_documents/$uid/${docType}_${DateTime.now().millisecondsSinceEpoch}.$ext');
     final task = await ref.putFile(file);
     return await task.ref.getDownloadURL();
   }
@@ -63,10 +64,20 @@ class MitraService {
   // ─────────────────────────────────────────────
 
   Future<List<MitraFieldModel>> getMitraFields(String MitraId) async {
+    // Pertama cari di koleksi 'fields'
     final snap = await _db
         .collection('fields')
         .where('MitraId', isEqualTo: MitraId)
         .get();
+
+    if (snap.docs.isEmpty) {
+      // Jika kosong, cek apakah data ada di koleksi 'mitra' (data dari pendaftaran awal)
+      final mitraDoc = await _db.collection('mitra').doc(MitraId).get();
+      if (mitraDoc.exists) {
+        return [MitraFieldModel.fromMap(mitraDoc.data()!, mitraDoc.id)];
+      }
+    }
+
     return snap.docs
         .map((d) => MitraFieldModel.fromMap(d.data(), d.id))
         .toList();
@@ -117,10 +128,7 @@ class MitraService {
   }
 
   Future<void> toggleFieldStatus(String fieldId, bool isActive) async {
-    await _db
-        .collection('fields')
-        .doc(fieldId)
-        .update({'isActive': isActive});
+    await _db.collection('fields').doc(fieldId).update({'isActive': isActive});
   }
 
   Future<List<String>> _uploadFieldPhotos(
@@ -179,7 +187,13 @@ class MitraService {
 
   static List<MitraScheduleModel> _defaultSchedule(String fieldId) {
     const days = [
-      'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu'
     ];
     return days
         .map((day) => MitraScheduleModel(

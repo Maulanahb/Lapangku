@@ -4,7 +4,8 @@ import 'package:lapangku/services/firebase/mitra_service.dart';
 import '../models/mitra_revenue_model.dart';
 import '../repositories/mitra_revenue_repository.dart';
 
-final MitraRevenueRepositoryProvider = Provider((ref) => MitraRevenueRepository(MitraService()));
+final mitraRevenueRepositoryProvider =
+    Provider((ref) => MitraRevenueRepository(MitraService()));
 
 class DateRange {
   final DateTime start;
@@ -14,20 +15,25 @@ class DateRange {
 
 final revenueDateRangeProvider = StateProvider<DateRange>((ref) {
   final now = DateTime.now();
-  return DateRange(DateTime(now.year, now.month, 1), DateTime(now.year, now.month + 1, 0)); // This month
+  return DateRange(DateTime(now.year, now.month, 1),
+      DateTime(now.year, now.month + 1, 0)); // This month
 });
 
-final mitraRevenueProvider = StateNotifierProvider<MitraRevenueNotifier, AsyncValue<MitraRevenueModel>>((ref) {
-  final repository = ref.watch(MitraRevenueRepositoryProvider);
+final mitraRevenueProvider =
+    StateNotifierProvider<MitraRevenueNotifier, AsyncValue<MitraRevenueModel>>(
+        (ref) {
+  final repository = ref.watch(mitraRevenueRepositoryProvider);
   final dateRange = ref.watch(revenueDateRangeProvider);
   return MitraRevenueNotifier(repository, dateRange);
 });
 
-class MitraRevenueNotifier extends StateNotifier<AsyncValue<MitraRevenueModel>> {
+class MitraRevenueNotifier
+    extends StateNotifier<AsyncValue<MitraRevenueModel>> {
   final MitraRevenueRepository _repository;
   final DateRange _dateRange;
 
-  MitraRevenueNotifier(this._repository, this._dateRange) : super(const AsyncLoading()) {
+  MitraRevenueNotifier(this._repository, this._dateRange)
+      : super(const AsyncLoading()) {
     loadRevenue();
   }
 
@@ -39,7 +45,8 @@ class MitraRevenueNotifier extends StateNotifier<AsyncValue<MitraRevenueModel>> 
     }
     state = const AsyncLoading();
     try {
-      final revenue = await _repository.getRevenue(uid, _dateRange.start, _dateRange.end);
+      final revenue =
+          await _repository.getRevenue(uid, _dateRange.start, _dateRange.end);
       state = AsyncData(revenue);
     } catch (e, st) {
       state = AsyncError(e, st);

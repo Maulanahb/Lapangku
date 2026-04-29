@@ -170,3 +170,25 @@ final bookingsProvider =
         (ref) {
   return BookingsNotifier(ref.watch(adminServiceProvider));
 });
+// ─── Recent Activities ────────────────────────────────────────────────────────
+class ActivitiesNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
+  final AdminService _service;
+
+  ActivitiesNotifier(this._service) : super(const AsyncValue.loading()) {
+    load();
+  }
+
+  Future<void> load() async {
+    state = const AsyncValue.loading();
+    try {
+      final activities = await _service.getRecentActivities();
+      state = AsyncValue.data(activities);
+    } catch (e, s) {
+      state = AsyncValue.error(e, s);
+    }
+  }
+}
+
+final activitiesProvider = StateNotifierProvider<ActivitiesNotifier, AsyncValue<List<Map<String, dynamic>>>>((ref) {
+  return ActivitiesNotifier(ref.watch(adminServiceProvider));
+});

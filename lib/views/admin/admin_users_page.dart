@@ -18,12 +18,13 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
   Widget build(BuildContext context) {
     final usersAsync = ref.watch(allUsersProvider);
 
-    return SafeArea(
-      child: Column(
-        children: [
-          _buildHeader(),
-          _buildSearchFilter(),
-          Expanded(
+    return Column(
+      children: [
+        _buildHeader(),
+        _buildSearchFilter(),
+        Expanded(
+          child: Container(
+            color: const Color(0xFFF5F6FA),
             child: RefreshIndicator(
               color: _primary,
               onRefresh: () async =>
@@ -36,46 +37,64 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
       color: Colors.white,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Kelola Pengguna',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A2E),
-            ),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Kelola Pengguna',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF1A1A2E),
+                  letterSpacing: -0.5,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Manajemen akun customer, mitra, dan admin.',
+                style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+              ),
+            ],
           ),
           Row(
             children: [
               ElevatedButton.icon(
                 onPressed: () => _showUserForm(null),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Tambah'),
+                icon: const Icon(Icons.add_rounded, size: 20),
+                label: const Text('User Baru'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primary,
                   foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  elevation: 8,
+                  shadowColor: _primary.withOpacity(0.4),
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded, color: _primary),
-                onPressed: () => ref.read(allUsersProvider.notifier).load(),
+              const SizedBox(width: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.refresh_rounded, color: _primary),
+                  onPressed: () => ref.read(allUsersProvider.notifier).load(),
+                ),
               ),
             ],
           ),
@@ -193,35 +212,49 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
     final roleColor = _roleColor(role);
 
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
+        border: Border.all(color: Colors.grey.shade100),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Avatar
-          CircleAvatar(
-            radius: 26,
-            backgroundColor: roleColor.withOpacity(0.15),
-            child: Text(
-              initials,
-              style: TextStyle(
-                color: roleColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: roleColor.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: CircleAvatar(
+              radius: 28,
+              backgroundColor: roleColor.withOpacity(0.1),
+              child: Text(
+                initials,
+                style: TextStyle(
+                  color: roleColor,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 18),
           // Info
           Expanded(
             child: Column(
@@ -230,52 +263,72 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                 Text(
                   name,
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: Color(0xFF1A1A2E)),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: Color(0xFF1A1A2E),
+                      letterSpacing: -0.3),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  email,
-                  style: const TextStyle(
-                      fontSize: 12, color: Color(0xFF718096)),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.email_outlined, size: 12, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      email,
+                      style: const TextStyle(
+                          fontSize: 12, color: Color(0xFF718096), fontWeight: FontWeight.w500),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: roleColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(6),
+                        color: roleColor.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        _roleLabel(role),
+                        _roleLabel(role).toUpperCase(),
                         style: TextStyle(
                           color: roleColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
                     if (statusVerifikasi.isNotEmpty) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: _verifikasiColor(statusVerifikasi)
-                              .withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(6),
+                              .withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(
-                          _verifikasiLabel(statusVerifikasi),
-                          style: TextStyle(
-                            color: _verifikasiColor(statusVerifikasi),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              statusVerifikasi == 'aktif' ? Icons.verified_rounded : Icons.pending_rounded,
+                              size: 10,
+                              color: _verifikasiColor(statusVerifikasi),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _verifikasiLabel(statusVerifikasi).toUpperCase(),
+                              style: TextStyle(
+                                color: _verifikasiColor(statusVerifikasi),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -288,31 +341,23 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (role.toLowerCase() == 'Mitra' && statusVerifikasi == 'menunggu') ...[
-                Row(
-                  children: [
-                    _actionBtn(Icons.check, Colors.green, 'Setujui', () {
-                      _updateVerifikasi(uid, name, 'aktif');
-                    }),
-                    const SizedBox(width: 6),
-                    _actionBtn(Icons.close, Colors.red, 'Tolak', () {
-                      _updateVerifikasi(uid, name, 'ditolak');
-                    }),
-                  ],
-                ),
+              if (role.toLowerCase() == 'mitra' && statusVerifikasi == 'menunggu') ...[
+                _actionBtn(Icons.check_circle_rounded, Colors.green, 'Setujui', () {
+                  _updateVerifikasi(uid, name, 'aktif');
+                }),
+                const SizedBox(width: 8),
+                _actionBtn(Icons.cancel_rounded, Colors.red, 'Tolak', () {
+                  _updateVerifikasi(uid, name, 'ditolak');
+                }),
                 const SizedBox(width: 8),
               ],
-              Row(
-                children: [
-                  _actionBtn(Icons.edit, Colors.blue, 'Edit', () {
-                    _showUserForm(user);
-                  }),
-                  const SizedBox(width: 6),
-                  _actionBtn(Icons.delete, Colors.red, 'Hapus', () {
-                    _deleteUser(uid, name);
-                  }),
-                ],
-              ),
+              _actionBtn(Icons.edit_note_rounded, Colors.blue, 'Edit', () {
+                _showUserForm(user);
+              }),
+              const SizedBox(width: 8),
+              _actionBtn(Icons.delete_sweep_rounded, Colors.redAccent, 'Hapus', () {
+                _deleteUser(uid, name);
+              }),
             ],
           ),
         ],
@@ -515,7 +560,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                           Navigator.pop(context);
 
                           if (isEdit) {
-                            await ref.read(allUsersProvider.notifier).updateUser(user!['uid'], data);
+                            await ref.read(allUsersProvider.notifier).updateUser(user['uid'], data);
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Pengguna berhasil diperbarui'), backgroundColor: _primary),

@@ -5,12 +5,12 @@ import 'package:lapangku/services/firebase/mitra_service.dart';
 
 class MitraRevenueRepository {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final MitraService _MitraService;
+  final MitraService _mitraService;
 
-  MitraRevenueRepository(this._MitraService);
+  MitraRevenueRepository(this._mitraService);
 
   Future<MitraRevenueModel> getRevenue(String MitraId, DateTime startDate, DateTime endDate) async {
-    final fields = await _MitraService.getMitraFields(MitraId);
+    final fields = await _mitraService.getMitraFields(MitraId);
     if (fields.isEmpty) {
       return const MitraRevenueModel(totalRevenue: 0, totalOrders: 0, transactions: []);
     }

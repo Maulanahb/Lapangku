@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/admin/admin_field_model.dart';
 import 'package:lapangku/models/admin/booking_model.dart';
@@ -14,7 +15,7 @@ class AdminService {
 
     final results = await Future.wait([
       _firestore.collection('users').where('role', isEqualTo: 'customer').get(),
-      _firestore.collection('Mitras').get(),
+      _firestore.collection('mitra').get(),
       _firestore
           .collection('bookings')
           .where('tanggal',
@@ -49,28 +50,35 @@ class AdminService {
   }
 
   Future<List<AdminFieldModel>> getAllFields() async {
-    final snap = await _firestore.collection('Mitras').get();
-    return snap.docs.map((d) {
-      final data = d.data();
-      // Map isVerified to statusVerifikasi if statusVerifikasi is not present
-      String status = data['statusVerifikasi'] ?? 'menunggu';
-      if (!data.containsKey('statusVerifikasi')) {
-        status = (data['isVerified'] == true) ? 'aktif' : 'menunggu';
-      }
+    try {
+      final snap = await _firestore.collection('mitra').get();
+      return snap.docs.map((d) {
+        final data = d.data();
+        
+        String status = (data['statusVerifikasi'] ?? 'menunggu').toString().toLowerCase().trim();
+        if (!data.containsKey('statusVerifikasi')) {
+          status = (data['isVerified'] == true) ? 'aktif' : 'menunggu';
+        }
 
-      return AdminFieldModel(
-        fieldId: d.id, // Using Mitra UID as fieldId since we verify Mitras
-        mitraUid: d.id,
-        namaLapangan: data['businessName'] ?? data['namaBisnis'] ?? 'Bisnis Baru',
-        namaMitra: data['MitraName'] ?? data['nama'] ?? 'Mitra',
-        emailPemilik: data['email'] ?? 'mitra@example.com',
-        lokasi: data['alamat'] ?? 'Alamat belum diatur',
-        hargaPerJam: 0,
-        jenis: 'Semua Lapangan',
-        statusVerifikasi: status,
-        createdAt: data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate() : DateTime.now().subtract(const Duration(days: 2)),
-      );
-    }).toList();
+        return AdminFieldModel(
+          fieldId: d.id,
+          mitraUid: d.id,
+          namaLapangan: data['namaLapangan'] ?? data['businessName'] ?? data['namaBisnis'] ?? 'Bisnis Baru',
+          namaMitra: data['ownerName'] ?? data['mitraName'] ?? data['nama'] ?? 'Mitra',
+          emailPemilik: data['email'] ?? 'mitra@example.com',
+          lokasi: data['alamat'] ?? 'Alamat belum diatur',
+          hargaPerJam: data['hargaPerJam'] ?? 0,
+          jenis: data['sport'] ?? 'Semua Lapangan',
+          statusVerifikasi: status,
+          createdAt: data['createdAt'] != null 
+              ? (data['createdAt'] as Timestamp).toDate() 
+              : DateTime.now(),
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('Error getAllFields: $e');
+      return [];
+    }
   }
 
   Future<List<BookingModel>> getAllBookings() async {
@@ -104,7 +112,7 @@ class AdminService {
     final docRef = _firestore.collection('users').doc();
     data['uid'] = docRef.id;
     data['createdAt'] = FieldValue.serverTimestamp();
-    data['isVerified'] = data['role'] == 'Mitra' ? false : true;
+    data['isVerified'] = data['role'] == 'mitra' ? false : true;
     await docRef.set(data);
   }
 
@@ -114,9 +122,9 @@ class AdminService {
 
   Future<void> deleteUser(String uid) async {
     await _firestore.collection('users').doc(uid).delete();
-    // Also try to delete from Mitras if it exists
+    // Also try to delete from mitra if it exists
     try {
-      await _firestore.collection('Mitras').doc(uid).delete();
+      await _firestore.collection('mitra').doc(uid).delete();
     } catch (_) {}
   }
 
@@ -128,9 +136,9 @@ class AdminService {
     final batch = _firestore.batch();
     final isVerified = status == 'aktif';
 
-    // Update the Mitras collection
+    // Update the mitra collection
     batch.update(
-      _firestore.collection('Mitras').doc(mitraUid),
+      _firestore.collection('mitra').doc(mitraUid),
       {
         'statusVerifikasi': status,
         'isVerified': isVerified,
@@ -170,4 +178,75 @@ class AdminService {
     }
     return hasil;
   }
+
+  Future<List<Map<String, dynamic>>> getRecentActivities() async {
+    try {
+      final results = await Future.wait([
+        _firestore
+            .collection('bookings')
+            .orderBy('tanggal', descending: true)
+            .limit(10)
+            .get(),
+        _firestore
+            .collection('mitra')
+            .limit(20)
+            .get(),
+      ]);
+
+      final List<Map<String, dynamic>> activities = [];
+
+      // Bookings
+      final bookingsSnap = results[0] as QuerySnapshot;
+      for (var doc in bookingsSnap.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final dynamic t = data['tanggal'];
+        DateTime time = DateTime.now();
+        if (t is Timestamp) {
+          time = t.toDate();
+        }
+
+        activities.add({
+          'time': time,
+          'user': data['namaPenyewa'] ?? 'Penyewa',
+          'action': 'New Booking',
+          'detail': data['namaLapangan'] ?? '',
+          'status': data['status'] ?? 'menunggu',
+          'type': 'booking',
+        });
+      }
+
+      // New Owners (Mitra)
+      final ownersSnap = results[1] as QuerySnapshot;
+      for (var doc in ownersSnap.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final dynamic t = data['createdAt'];
+        DateTime time = DateTime.now().subtract(const Duration(days: 365)); // Default old
+        
+        if (t is Timestamp) {
+          time = t.toDate();
+        } else if (data['isVerified'] == false) {
+          // Jika belum verifikasi dan gapunya createdAt, anggap baru
+          time = DateTime.now();
+        }
+
+        activities.add({
+          'time': time,
+          'user': data['ownerName'] ?? data['businessName'] ?? 'Pemilik Baru',
+          'action': 'Pendaftaran Pemilik',
+          'detail': data['businessName'] ?? '',
+          'status': data['statusVerifikasi'] ?? 'menunggu',
+          'type': 'registration',
+        });
+      }
+
+      // Sort by time (Newest first)
+      activities.sort((a, b) => (b['time'] as DateTime).compareTo(a['time'] as DateTime));
+
+      return activities.take(10).toList();
+    } catch (e) {
+      debugPrint('Error getRecentActivities: $e');
+      return [];
+    }
+  }
 }
+

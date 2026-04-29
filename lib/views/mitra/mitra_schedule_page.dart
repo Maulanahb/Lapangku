@@ -49,7 +49,7 @@ class MitraSchedulePage extends ConsumerWidget {
                 color: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: DropdownButtonFormField<String>(
-                  value: scheduleState.selectedFieldId,
+                  initialValue: scheduleState.selectedFieldId,
                   decoration: InputDecoration(
                     labelText: 'Pilih Lapangan',
                     prefixIcon: const Icon(Icons.stadium_outlined,
