@@ -14,7 +14,7 @@ class AdminService {
 
     final results = await Future.wait([
       _firestore.collection('users').where('role', isEqualTo: 'customer').get(),
-      _firestore.collection('users').where('role', isEqualTo: 'mitra').get(),
+      _firestore.collection('owners').get(),
       _firestore
           .collection('bookings')
           .where('tanggal',
@@ -98,6 +98,26 @@ class AdminService {
         .collection('users')
         .doc(uid)
         .update({'statusVerifikasi': status});
+  }
+
+  Future<void> addUser(Map<String, dynamic> data) async {
+    final docRef = _firestore.collection('users').doc();
+    data['uid'] = docRef.id;
+    data['createdAt'] = FieldValue.serverTimestamp();
+    data['isVerified'] = data['role'] == 'owner' ? false : true;
+    await docRef.set(data);
+  }
+
+  Future<void> updateUserData(String uid, Map<String, dynamic> data) async {
+    await _firestore.collection('users').doc(uid).update(data);
+  }
+
+  Future<void> deleteUser(String uid) async {
+    await _firestore.collection('users').doc(uid).delete();
+    // Also try to delete from owners if it exists
+    try {
+      await _firestore.collection('owners').doc(uid).delete();
+    } catch (_) {}
   }
 
   Future<void> updateFieldVerifikasi({

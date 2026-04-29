@@ -55,7 +55,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Verifikasi Pemilik Lapangan (Mitra)',
+                'Verifikasi Pemilik Lapangan',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
