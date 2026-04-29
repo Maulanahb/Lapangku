@@ -12,6 +12,8 @@ import 'views/auth/onboarding_page.dart';
 import 'views/auth/login_page.dart';
 import 'views/auth/register_page.dart';
 import 'views/auth/forgot_password_page.dart';
+import 'views/auth/otp_verification_page.dart';
+import 'views/auth/reset_password_page.dart';
 import 'views/customer/customer_main_page.dart';
 import 'views/owner/owner_main_page.dart';
 import 'views/admin/admin_dashboard_page.dart';
@@ -71,6 +73,8 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/forgot-password': (context) => const ForgotPasswordPage(),
+        '/otp-verification': (context) => const OtpVerificationPage(),
+        '/reset-password': (context) => const ResetPasswordPage(),
         '/customer-home': (context) => const CustomerMainPage(),
         '/owner-home': (context) => const OwnerMainPage(),
         '/admin-login': (context) => const AdminLoginPage(),

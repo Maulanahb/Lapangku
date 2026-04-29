@@ -14,7 +14,7 @@ class AdminService {
 
     final results = await Future.wait([
       _firestore.collection('users').where('role', isEqualTo: 'customer').get(),
-      _firestore.collection('users').where('role', isEqualTo: 'mitra').get(),
+      _firestore.collection('owners').get(),
       _firestore
           .collection('bookings')
           .where('tanggal',
@@ -49,18 +49,26 @@ class AdminService {
   }
 
   Future<List<AdminFieldModel>> getAllFields() async {
-    final snap = await _firestore.collection('fields').get();
+    final snap = await _firestore.collection('owners').get();
     return snap.docs.map((d) {
       final data = d.data();
+      // Map isVerified to statusVerifikasi if statusVerifikasi is not present
+      String status = data['statusVerifikasi'] ?? 'menunggu';
+      if (!data.containsKey('statusVerifikasi')) {
+        status = (data['isVerified'] == true) ? 'aktif' : 'menunggu';
+      }
+
       return AdminFieldModel(
-        fieldId: d.id,
-        ownerUid: data['ownerUid'] ?? '',
-        namaLapangan: data['namaLapangan'] ?? '',
-        namaMitra: data['namaMitra'] ?? '',
-        lokasi: data['lokasi'] ?? '',
-        hargaPerJam: (data['hargaPerJam'] ?? 0) as int,
-        jenis: data['jenis'] ?? '',
-        statusVerifikasi: data['statusVerifikasi'] ?? 'menunggu',
+        fieldId: d.id, // Using owner UID as fieldId since we verify owners
+        ownerUid: d.id,
+        namaLapangan: data['businessName'] ?? data['namaBisnis'] ?? 'Bisnis Baru',
+        namaMitra: data['ownerName'] ?? data['nama'] ?? 'Owner',
+        emailPemilik: data['email'] ?? 'mitra@example.com',
+        lokasi: data['alamat'] ?? 'Alamat belum diatur',
+        hargaPerJam: 0,
+        jenis: 'Semua Lapangan',
+        statusVerifikasi: status,
+        createdAt: data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate() : DateTime.now().subtract(const Duration(days: 2)),
       );
     }).toList();
   }
@@ -92,20 +100,52 @@ class AdminService {
         .update({'statusVerifikasi': status});
   }
 
+  Future<void> addUser(Map<String, dynamic> data) async {
+    final docRef = _firestore.collection('users').doc();
+    data['uid'] = docRef.id;
+    data['createdAt'] = FieldValue.serverTimestamp();
+    data['isVerified'] = data['role'] == 'owner' ? false : true;
+    await docRef.set(data);
+  }
+
+  Future<void> updateUserData(String uid, Map<String, dynamic> data) async {
+    await _firestore.collection('users').doc(uid).update(data);
+  }
+
+  Future<void> deleteUser(String uid) async {
+    await _firestore.collection('users').doc(uid).delete();
+    // Also try to delete from owners if it exists
+    try {
+      await _firestore.collection('owners').doc(uid).delete();
+    } catch (_) {}
+  }
+
   Future<void> updateFieldVerifikasi({
     required String fieldId,
     required String ownerUid,
     required String status,
   }) async {
     final batch = _firestore.batch();
+    final isVerified = status == 'aktif';
+
+    // Update the owners collection
     batch.update(
-      _firestore.collection('fields').doc(fieldId),
-      {'statusVerifikasi': status},
+      _firestore.collection('owners').doc(ownerUid),
+      {
+        'statusVerifikasi': status,
+        'isVerified': isVerified,
+      },
     );
+    
+    // Update the users collection
     batch.update(
       _firestore.collection('users').doc(ownerUid),
-      {'statusVerifikasi': status},
+      {
+        'statusVerifikasi': status,
+        'isVerified': isVerified,
+      },
     );
+    
     await batch.commit();
   }
 

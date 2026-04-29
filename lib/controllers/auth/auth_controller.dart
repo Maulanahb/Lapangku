@@ -122,6 +122,42 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
     }
   }
+
+  Future<void> updateProfile({
+    required String uid,
+    required String name,
+    required String email,
+    required String phone,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _service.updateProfile(uid: uid, name: name, email: email, phone: phone);
+      state = state.copyWith(isLoading: false, clearError: true);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Gagal mengupdate profil: $e',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _service.changePassword(oldPassword: oldPassword, newPassword: newPassword);
+      state = state.copyWith(isLoading: false, clearError: true);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+      );
+      rethrow;
+    }
+  }
 }
 
 // Provider utama yang dipakai UI

@@ -112,6 +112,65 @@ class AuthService {
   Future<void> sendPasswordReset(String email) =>
       _auth.sendPasswordResetEmail(email: email);
 
+  Future<void> updateProfile({
+    required String uid,
+    required String name,
+    required String email,
+    required String phone,
+  }) async {
+    // 1. Update Firestore
+    await _db.collection('users').doc(uid).update({
+      'nama': name,
+      'email': email,
+      'phone': phone,
+    }).timeout(const Duration(seconds: 10), onTimeout: () {
+      throw Exception('Waktu koneksi habis. Periksa internet Anda.');
+    });
+
+    // 2. Update FirebaseAuth email if it changed (might require re-auth in some cases)
+    final user = _auth.currentUser;
+    if (user != null && user.email != email) {
+      try {
+        await user.verifyBeforeUpdateEmail(email).timeout(const Duration(seconds: 10), onTimeout: () {
+          throw Exception('Waktu koneksi habis saat update email.');
+        });
+      } catch (e) {
+        // We log or throw if we strictly want to enforce email update
+        throw Exception('Gagal mengubah email Auth: $e');
+      }
+    }
+  }
+
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Pengguna tidak terautentikasi.');
+
+    try {
+      final cred = EmailAuthProvider.credential(
+        email: user.email!,
+        password: oldPassword,
+      );
+      await user.reauthenticateWithCredential(cred).timeout(const Duration(seconds: 10), onTimeout: () {
+        throw Exception('Waktu koneksi habis saat verifikasi password.');
+      });
+      await user.updatePassword(newPassword).timeout(const Duration(seconds: 10), onTimeout: () {
+        throw Exception('Waktu koneksi habis saat mengubah password.');
+      });
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password') {
+        throw Exception('Password lama salah.');
+      } else if (e.code == 'invalid-credential') {
+        throw Exception('Kredensial tidak valid atau akun Google/SSO.');
+      }
+      throw Exception('Gagal mengubah password: ${e.message}');
+    } catch (e) {
+      throw Exception('Terjadi kesalahan: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> getUserData(String uid) async {
     // Tambahkan timeout agar tidak loading terus-menerus jika koneksi/Firestore bermasalah
     final doc = await _db.collection('users').doc(uid).get().timeout(

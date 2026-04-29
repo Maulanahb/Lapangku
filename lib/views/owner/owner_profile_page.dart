@@ -1,100 +1,185 @@
-// lib/views/owner/owner_profile_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
+import 'package:lapangku/features/owner/profile/providers/owner_profile_provider.dart';
+import 'package:lapangku/features/owner/profile/models/owner_profile_model.dart';
+import 'package:lapangku/utils/snackbar_helper.dart';
 
-class OwnerProfilePage extends ConsumerStatefulWidget {
+// Import newly created pages
+import 'widgets/owner_menu_tile.dart';
+import 'owner_profile_document_page.dart';
+import 'owner_fields_page.dart';
+import 'owner_schedule_page.dart';
+import 'owner_payout_page.dart';
+import 'owner_revenue_page.dart';
+import 'owner_reviews_page.dart';
+import 'owner_help_page.dart';
+import 'owner_language_page.dart';
+
+class OwnerProfilePage extends ConsumerWidget {
   const OwnerProfilePage({super.key});
 
-  @override
-  ConsumerState<OwnerProfilePage> createState() => _OwnerProfilePageState();
-}
-
-class _OwnerProfilePageState extends ConsumerState<OwnerProfilePage> {
-  final Color _primaryGreen = const Color(0xFF0F5A3C);
+  final Color _primaryGreen = const Color(0xFF1B6B3A);
   final Color _lightGreen = const Color(0xFFD1FAE5);
 
-  bool _notifPesanan = true;
-  bool _notifPromo = false;
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(ownerProfileProvider);
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildProfileHeader(),
-            _buildStatsBar(),
-            const SizedBox(height: 8),
-            _buildSectionTitle('BISNIS'),
-            _buildMenuItem(
-              icon: Icons.description_outlined,
-              title: 'Profil & Dokumen',
-              subtitle: 'KTP, NPWP, dll',
-            ),
-            _buildMenuItem(
-              icon: Icons.stadium_outlined,
-              title: 'Lapangan Saya',
-              subtitle: '3 lapangan aktif',
-            ),
-            _buildMenuItem(
-              icon: Icons.calendar_today_outlined,
-              title: 'Jadwal & Ketersediaan',
-            ),
-            _buildMenuItem(
-              icon: Icons.account_balance_outlined,
-              title: 'Rekening Payout',
-              subtitle: 'BCA · 123-456-789',
-            ),
-            _buildDivider(),
-            _buildSectionTitle('LAPORAN'),
-            _buildMenuItem(
-              icon: Icons.bar_chart_rounded,
-              title: 'Laporan Pendapatan',
-            ),
-            _buildMenuItem(
-              icon: Icons.star_outline_rounded,
-              title: 'Ulasan Pelanggan',
-              subtitle: '4.8 ⭐ rata-rata',
-            ),
-            _buildDivider(),
-            _buildSectionTitle('PENGATURAN'),
-            _buildToggleItem(
-              icon: Icons.notifications_outlined,
-              title: 'Notifikasi Pesanan',
-              value: _notifPesanan,
-              onChanged: (v) => setState(() => _notifPesanan = v),
-            ),
-            _buildToggleItem(
-              icon: Icons.campaign_outlined,
-              title: 'Notifikasi Promo',
-              value: _notifPromo,
-              onChanged: (v) => setState(() => _notifPromo = v),
-            ),
-            _buildMenuItem(
-              icon: Icons.language_rounded,
-              title: 'Bahasa',
-              trailing: Text('Indonesia',
-                  style: TextStyle(
-                      color: Colors.grey[500],
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500)),
-            ),
-            _buildMenuItem(
-              icon: Icons.help_outline_rounded,
-              title: 'Bantuan & FAQ',
-            ),
-            _buildDivider(),
-            _buildLogoutButton(),
-            const SizedBox(height: 32),
-          ],
+      backgroundColor: const Color(0xFFF7F8FA),
+      body: profileAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF1B6B3A))),
+        error: (err, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 16),
+              Text('Gagal memuat profil', style: TextStyle(color: Colors.grey.shade700)),
+              TextButton(
+                onPressed: () => ref.read(ownerProfileProvider.notifier).loadProfile('mock_uid_123'),
+                child: const Text('Coba Lagi', style: TextStyle(color: Color(0xFF1B6B3A))),
+              )
+            ],
+          ),
+        ),
+        data: (profileState) => SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildProfileHeader(context, profileState),
+              _buildStatsBar(profileState),
+              const SizedBox(height: 8),
+              _buildSectionTitle('BISNIS'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    OwnerMenuTile(
+                      icon: Icons.description_outlined,
+                      title: 'Profil & Dokumen',
+                      subtitle: 'KTP, NPWP, dll',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OwnerProfileDocumentPage())),
+                    ),
+                    OwnerMenuTile(
+                      icon: Icons.stadium_outlined,
+                      title: 'Lapangan Saya',
+                      subtitle: '${profileState.totalFields} lapangan',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OwnerFieldsPage())),
+                    ),
+                    OwnerMenuTile(
+                      icon: Icons.calendar_today_outlined,
+                      title: 'Jadwal & Ketersediaan',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OwnerSchedulePage())),
+                    ),
+                    OwnerMenuTile(
+                      icon: Icons.account_balance_outlined,
+                      title: 'Rekening Payout',
+                      subtitle: profileState.bankName.isNotEmpty
+                          ? '${profileState.bankName} · ${profileState.bankAccount}'
+                          : 'Belum diatur',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OwnerPayoutPage())),
+                    ),
+                  ],
+                ),
+              ),
+              _buildSectionTitle('LAPORAN'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    OwnerMenuTile(
+                      icon: Icons.bar_chart_rounded,
+                      title: 'Laporan Pendapatan',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OwnerRevenuePage())),
+                    ),
+                    OwnerMenuTile(
+                      icon: Icons.star_outline_rounded,
+                      title: 'Ulasan Pelanggan',
+                      subtitle: '${profileState.rating} ⭐ rata-rata',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OwnerReviewsPage())),
+                    ),
+                  ],
+                ),
+              ),
+              _buildSectionTitle('PENGATURAN'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    OwnerMenuTile(
+                      icon: Icons.notifications_outlined,
+                      title: 'Notifikasi Pesanan',
+                      trailing: Switch(
+                        value: profileState.notificationOrder,
+                        onChanged: (v) => _toggleOrderNotif(context, ref, profileState),
+                        activeThumbColor: Colors.white,
+                        activeTrackColor: _primaryGreen,
+                        inactiveThumbColor: Colors.white,
+                        inactiveTrackColor: Colors.grey[300],
+                      ),
+                      onTap: () => _toggleOrderNotif(context, ref, profileState),
+                    ),
+                    OwnerMenuTile(
+                      icon: Icons.campaign_outlined,
+                      title: 'Notifikasi Promo',
+                      trailing: Switch(
+                        value: profileState.notificationPromo,
+                        onChanged: (v) => _togglePromoNotif(context, ref, profileState),
+                        activeThumbColor: Colors.white,
+                        activeTrackColor: _primaryGreen,
+                        inactiveThumbColor: Colors.white,
+                        inactiveTrackColor: Colors.grey[300],
+                      ),
+                      onTap: () => _togglePromoNotif(context, ref, profileState),
+                    ),
+                    OwnerMenuTile(
+                      icon: Icons.language_rounded,
+                      title: 'Bahasa',
+                      trailing: Text('Indonesia', style: TextStyle(color: Colors.grey[500], fontSize: 14, fontWeight: FontWeight.w500)),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OwnerLanguagePage())),
+                    ),
+                    OwnerMenuTile(
+                      icon: Icons.help_outline_rounded,
+                      title: 'Bantuan & FAQ',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OwnerHelpPage())),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildLogoutButton(context, ref),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildProfileHeader() {
+  void _toggleOrderNotif(BuildContext context, WidgetRef ref, OwnerProfileModel state) async {
+    try {
+      await ref.read(ownerProfileProvider.notifier).toggleNotificationOrder();
+      if (context.mounted) {
+        SnackbarHelper.showSuccess(context, 'Notifikasi pesanan ${!state.notificationOrder ? "diaktifkan" : "dimatikan"}');
+      }
+    } catch (e) {
+      if (context.mounted) SnackbarHelper.showError(context, 'Gagal mengubah notifikasi');
+    }
+  }
+
+  void _togglePromoNotif(BuildContext context, WidgetRef ref, OwnerProfileModel state) async {
+    try {
+      await ref.read(ownerProfileProvider.notifier).toggleNotificationPromo();
+      if (context.mounted) {
+        SnackbarHelper.showSuccess(context, 'Notifikasi promo ${!state.notificationPromo ? "diaktifkan" : "dimatikan"}');
+      }
+    } catch (e) {
+      if (context.mounted) SnackbarHelper.showError(context, 'Gagal mengubah notifikasi');
+    }
+  }
+
+  Widget _buildProfileHeader(BuildContext context, OwnerProfileModel state) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -110,7 +195,6 @@ class _OwnerProfilePageState extends ConsumerState<OwnerProfilePage> {
           padding: const EdgeInsets.only(top: 24, bottom: 40),
           child: Column(
             children: [
-              // Avatar
               Container(
                 width: 72,
                 height: 72,
@@ -119,99 +203,62 @@ class _OwnerProfilePageState extends ConsumerState<OwnerProfilePage> {
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 3),
                   boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, 4)),
                   ],
                 ),
                 child: Center(
                   child: Text(
-                    'GOR',
-                    style: TextStyle(
-                      color: _primaryGreen,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
+                    state.businessName.isNotEmpty ? state.businessName[0].toUpperCase() : 'G',
+                    style: TextStyle(color: _primaryGreen, fontSize: 24, fontWeight: FontWeight.w900),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
-              // Name + Verified badge
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    'GOR Diponegoro',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  Text(
+                    state.businessName,
+                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900),
                   ),
-                  const SizedBox(width: 6),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: _lightGreen,
-                      borderRadius: BorderRadius.circular(12),
+                  if (state.isVerified) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: _lightGreen, borderRadius: BorderRadius.circular(12)),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle, color: _primaryGreen, size: 12),
+                          const SizedBox(width: 3),
+                          Text('Terverifikasi', style: TextStyle(color: _primaryGreen, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle,
-                            color: _primaryGreen, size: 12),
-                        const SizedBox(width: 3),
-                        Text(
-                          'Terverifikasi',
-                          style: TextStyle(
-                            color: _primaryGreen,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ],
               ),
               const SizedBox(height: 4),
               Text(
-                'Andi Pratama',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                state.ownerName,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
-              // Edit Profile Button
               GestureDetector(
-                onTap: () {},
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OwnerProfileDocumentPage())),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                        color: Colors.white.withOpacity(0.4), width: 1),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.edit, color: Colors.white, size: 14),
                       SizedBox(width: 6),
-                      Text(
-                        'Edit Profil Bisnis',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      Text('Edit Profil Bisnis', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
                     ],
                   ),
                 ),
@@ -223,7 +270,7 @@ class _OwnerProfilePageState extends ConsumerState<OwnerProfilePage> {
     );
   }
 
-  Widget _buildStatsBar() {
+  Widget _buildStatsBar(OwnerProfileModel state) {
     return Transform.translate(
       offset: const Offset(0, -24),
       child: Container(
@@ -231,22 +278,18 @@ class _OwnerProfilePageState extends ConsumerState<OwnerProfilePage> {
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
         child: Row(
           children: [
-            _buildStatItem('3', 'Lapangan'),
+            _buildStatItem('${state.totalFields}', 'Lapangan'),
             _buildStatDivider(),
-            _buildStatItem('67', 'Pesanan'),
+            _buildStatItem('${state.totalOrders}', 'Pesanan'),
             _buildStatDivider(),
-            _buildStatItemWithStar('4.8', 'Rating'),
+            _buildStatItemWithStar('${state.rating}', 'Rating'),
           ],
         ),
       ),
@@ -257,23 +300,9 @@ class _OwnerProfilePageState extends ConsumerState<OwnerProfilePage> {
     return Expanded(
       child: Column(
         children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: Colors.black,
-            ),
-          ),
+          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black)),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[500],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[500], fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -288,199 +317,92 @@ class _OwnerProfilePageState extends ConsumerState<OwnerProfilePage> {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.black,
-                ),
-              ),
+              Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black)),
               const SizedBox(width: 3),
               const Icon(Icons.star, color: Color(0xFFFFB800), size: 16),
             ],
           ),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[500],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[500], fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
   Widget _buildStatDivider() {
-    return Container(
-      width: 1,
-      height: 36,
-      color: Colors.grey[200],
-    );
+    return Container(width: 1, height: 36, color: Colors.grey[200]);
   }
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
           title,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: Colors.grey[500],
-            letterSpacing: 0.8,
-          ),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.grey[500], letterSpacing: 0.8),
         ),
       ),
     );
   }
 
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String title,
-    String? subtitle,
-    Widget? trailing,
-  }) {
+  Widget _buildLogoutButton(BuildContext context, WidgetRef ref) {
     return InkWell(
-      onTap: () {},
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: _primaryGreen, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (trailing != null) trailing,
-            const SizedBox(width: 4),
-            Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
+      onTap: () => _showLogoutDialog(context, ref),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildToggleItem({
-    required IconData icon,
-    required String title,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: _primaryGreen, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: Colors.white,
-            activeTrackColor: _primaryGreen,
-            inactiveThumbColor: Colors.white,
-            inactiveTrackColor: Colors.grey[300],
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      child: Divider(color: Colors.grey[200], thickness: 1),
-    );
-  }
-
-  Widget _buildLogoutButton() {
-    return InkWell(
-      onTap: () {
-        // TODO: implement logout
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
           children: [
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEE8E7),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.logout_rounded,
-                  color: Color(0xFFE04443), size: 20),
+              decoration: BoxDecoration(color: const Color(0xFFFEE8E7), borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.logout_rounded, color: Color(0xFFE04443), size: 20),
             ),
             const SizedBox(width: 14),
             const Expanded(
               child: Text(
                 'Keluar dari Akun',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFFE04443),
-                ),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFFE04443)),
               ),
             ),
             Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Keluar'),
+        content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
+          ),
+          TextButton(
+            onPressed: () async {
+              final nav = Navigator.of(context);
+              nav.pop();
+              await ref.read(authProvider.notifier).logout();
+              nav.pushNamedAndRemoveUntil('/login', (route) => false);
+            },
+            child: const Text('Keluar', style: TextStyle(color: Color(0xFFE04443), fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }

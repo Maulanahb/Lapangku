@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lapangku/controllers/admin/admin_controller.dart';
 import 'package:lapangku/models/admin/admin_field_model.dart';
 
@@ -12,296 +13,368 @@ class AdminFieldsPage extends ConsumerStatefulWidget {
 
 class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
   static const _primary = Color(0xFF1B6B3A);
-  String _searchQuery = '';
-  String _filterStatus = 'semua';
+  String _filterStatus = 'menunggu';
 
   @override
   Widget build(BuildContext context) {
     final fieldsAsync = ref.watch(adminFieldsProvider);
 
-    return SafeArea(
-      child: Column(
-        children: [
-          // ─── App Bar ──────────────────────────────────────────────────
-          _buildHeader(),
-          // ─── Search & Filter ──────────────────────────────────────────
-          _buildSearchFilter(),
-          // ─── List ─────────────────────────────────────────────────────
-          Expanded(
-            child: RefreshIndicator(
-              color: _primary,
-              onRefresh: () async =>
-                  ref.read(adminFieldsProvider.notifier).load(),
-              child: fieldsAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator(color: _primary)),
-                error: (e, _) => Center(child: Text('Error: $e')),
-                data: (fields) => _buildList(fields),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      color: Colors.white,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
-            'Kelola Lapangan',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A2E),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: _primary),
-            onPressed: () => ref.read(adminFieldsProvider.notifier).load(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchFilter() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Column(
-        children: [
-          // Search
-          TextField(
-            onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
-            decoration: InputDecoration(
-              hintText: 'Cari lapangan...',
-              hintStyle: const TextStyle(color: Color(0xFFADB5BD), fontSize: 13),
-              prefixIcon:
-                  const Icon(Icons.search, color: Color(0xFFADB5BD), size: 20),
-              filled: true,
-              fillColor: const Color(0xFFF0F2F5),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          // Filter chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: ['semua', 'menunggu', 'aktif', 'ditolak'].map((status) {
-                final selected = _filterStatus == status;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: GestureDetector(
-                    onTap: () => setState(() => _filterStatus = status),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: selected ? _primary : const Color(0xFFF0F2F5),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        _chipLabel(status),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: selected ? Colors.white : const Color(0xFF718096),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildList(List<AdminFieldModel> fields) {
-    var filtered = fields.where((f) {
-      final matchSearch = f.namaLapangan.toLowerCase().contains(_searchQuery) ||
-          f.namaMitra.toLowerCase().contains(_searchQuery) ||
-          f.lokasi.toLowerCase().contains(_searchQuery);
-      final matchStatus =
-          _filterStatus == 'semua' || f.statusVerifikasi == _filterStatus;
-      return matchSearch && matchStatus;
-    }).toList();
-
-    if (filtered.isEmpty) {
-      return Center(
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F6FA),
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.sports_soccer, size: 64, color: Colors.grey[300]),
-            const SizedBox(height: 12),
-            Text(
-              'Tidak ada lapangan ditemukan',
-              style: TextStyle(color: Colors.grey[500]),
+            _buildHeader(fieldsAsync),
+            _buildTabs(fieldsAsync),
+            Expanded(
+              child: fieldsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator(color: _primary)),
+                error: (e, _) => Center(child: Text('Error: $e')),
+                data: (fields) => _buildContent(fields),
+              ),
             ),
           ],
         ),
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: filtered.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => _buildFieldCard(filtered[i]),
+      ),
     );
   }
 
-  Widget _buildFieldCard(AdminFieldModel field) {
-    final statusColor = _statusColor(field.statusVerifikasi);
-    final statusLabel = _statusLabel(field.statusVerifikasi);
+  Widget _buildHeader(AsyncValue<List<AdminFieldModel>> fieldsAsync) {
+    int pendingCount = 0;
+    if (fieldsAsync.hasValue) {
+      pendingCount = fieldsAsync.value!.where((f) => f.statusVerifikasi == 'menunggu').length;
+    }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row: name + status
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: _primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+              const Text(
+                'Verifikasi Pemilik Lapangan',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1A2E),
                 ),
-                child: const Icon(Icons.sports_soccer,
-                    color: _primary, size: 22),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => ref.read(adminFieldsProvider.notifier).load(),
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Refresh Data'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
+                ),
+              )
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              const Text(
+                'Verifikasi Pemilik Lapangan',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1A2E),
+                ),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      field.namaLapangan,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: Color(0xFF1A1A2E)),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      field.namaMitra,
-                      style: const TextStyle(
-                          color: Color(0xFF718096), fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
-                  statusLabel,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 11,
+                  '$pendingCount Menunggu Verifikasi',
+                  style: const TextStyle(
+                    color: Color(0xFFD97706),
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Info row
-          Wrap(
-            spacing: 16,
-            runSpacing: 6,
-            children: [
-              _infoChip(Icons.location_on_outlined, field.lokasi),
-              _infoChip(Icons.category_outlined, field.jenis),
-              _infoChip(Icons.attach_money_rounded,
-                  'Rp ${_formatHarga(field.hargaPerJam)}/jam'),
-            ],
-          ),
-          // Action buttons for "menunggu"
-          if (field.statusVerifikasi == 'menunggu') ...[
-            const SizedBox(height: 14),
-            const Divider(height: 1),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _updateStatus(field, 'ditolak'),
-                    icon: const Icon(Icons.close, size: 16),
-                    label: const Text('Tolak'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _updateStatus(field, 'aktif'),
-                    icon: const Icon(Icons.check, size: 16),
-                    label: const Text('Setujui'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                    ),
-                  ),
-                ),
-              ],
+          const SizedBox(height: 8),
+          const Text(
+            'Tinjau dan setujui pengajuan pemilik lapangan baru untuk ditayangkan di platform.',
+            style: TextStyle(
+              color: Color(0xFF6B7280),
+              fontSize: 14,
             ),
-          ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _infoChip(IconData icon, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 13, color: const Color(0xFF718096)),
-        const SizedBox(width: 4),
-        Text(label,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF718096))),
+  Widget _buildTabs(AsyncValue<List<AdminFieldModel>> fieldsAsync) {
+    int pendingCount = 0;
+    if (fieldsAsync.hasValue) {
+      pendingCount = fieldsAsync.value!.where((f) => f.statusVerifikasi == 'menunggu').length;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+      child: Row(
+        children: [
+          _buildTabItem('Semua', 'semua', null),
+          const SizedBox(width: 12),
+          _buildTabItem('Menunggu ($pendingCount)', 'menunggu', pendingCount),
+          const SizedBox(width: 12),
+          _buildTabItem('Terverifikasi', 'aktif', null),
+          const SizedBox(width: 12),
+          _buildTabItem('Ditolak', 'ditolak', null),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabItem(String label, String status, int? count) {
+    final isSelected = _filterStatus == status;
+    return GestureDetector(
+      onTap: () => setState(() => _filterStatus = status),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? _primary : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? _primary : Colors.grey.shade300,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? Colors.white : Colors.grey.shade700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(List<AdminFieldModel> fields) {
+    final filtered = fields.where((f) {
+      if (_filterStatus == 'semua') return true;
+      return f.statusVerifikasi == _filterStatus;
+    }).toList();
+
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minWidth: MediaQuery.of(context).size.width - 48,
+                ),
+                child: DataTable(
+                  horizontalMargin: 24,
+                  columnSpacing: 24,
+                  headingRowColor: MaterialStateProperty.all(const Color(0xFFF3F4F6)),
+                  dataRowMaxHeight: 72,
+                  dataRowMinHeight: 72,
+                  columns: const [
+                    DataColumn(label: Text('NAMA BISNIS/LAPANGAN', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('PEMILIK', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('LOKASI', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('TANGGAL PENGAJUAN', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('AKSI', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
+                  ],
+                  rows: filtered.map((f) => _buildRow(f)).toList(),
+                ),
+              ),
+            ),
+            if (filtered.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Center(
+                  child: Text('Tidak ada data.', style: TextStyle(color: Colors.grey)),
+                ),
+              ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Menampilkan ${filtered.length} pengajuan', style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
+                  Row(
+                    children: [
+                      IconButton(icon: const Icon(Icons.chevron_left, size: 20), onPressed: () {}, color: Colors.grey),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: _primary, shape: BoxShape.circle),
+                        child: const Text('1', style: TextStyle(color: Colors.white, fontSize: 12)),
+                      ),
+                      IconButton(icon: const Icon(Icons.chevron_right, size: 20), onPressed: () {}, color: Colors.grey),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  DataRow _buildRow(AdminFieldModel field) {
+    final dateFormat = DateFormat('dd MMM yyyy');
+    final dateStr = field.createdAt != null ? dateFormat.format(field.createdAt!) : '-';
+    
+    String timeAgo = '-';
+    Color timeAgoColor = Colors.grey;
+    if (field.createdAt != null) {
+      final diff = DateTime.now().difference(field.createdAt!);
+      if (diff.inDays == 0) {
+        timeAgo = 'Hari ini';
+        timeAgoColor = const Color(0xFF10B981);
+      } else {
+        timeAgo = '${diff.inDays} hari lalu';
+        timeAgoColor = const Color(0xFFF59E0B);
+      }
+    }
+
+    return DataRow(
+      cells: [
+        DataCell(Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.sports_soccer, color: _primary, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(field.namaLapangan, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF111827))),
+                Text(field.jenis, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+              ],
+            ),
+          ],
+        )),
+        DataCell(Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(field.namaMitra, style: const TextStyle(fontSize: 14, color: Color(0xFF111827))),
+            Text(field.emailPemilik, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+          ],
+        )),
+        DataCell(Row(
+          children: [
+            const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF6B7280)),
+            const SizedBox(width: 4),
+            Text(field.lokasi, style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563))),
+          ],
+        )),
+        DataCell(Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(dateStr, style: const TextStyle(fontSize: 14, color: Color(0xFF111827))),
+            Text(timeAgo, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: timeAgoColor)),
+          ],
+        )),
+        DataCell(Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (field.statusVerifikasi == 'menunggu') ...[
+              ElevatedButton.icon(
+                onPressed: () => _updateStatus(field, 'aktif'),
+                icon: const Icon(Icons.check, size: 14),
+                label: const Text('Verifikasi'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF10B981),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  minimumSize: const Size(0, 32),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  elevation: 0,
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () => _updateStatus(field, 'ditolak'),
+                icon: const Icon(Icons.close, size: 14),
+                label: const Text('Tolak'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFEF4444),
+                  side: const BorderSide(color: Color(0xFFEF4444)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  minimumSize: const Size(0, 32),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            if (field.statusVerifikasi != 'menunggu') ...[
+               Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                 decoration: BoxDecoration(
+                   color: field.statusVerifikasi == 'aktif' ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2),
+                   borderRadius: BorderRadius.circular(6),
+                 ),
+                 child: Text(
+                   field.statusVerifikasi == 'aktif' ? 'Terverifikasi' : 'Ditolak',
+                   style: TextStyle(
+                     color: field.statusVerifikasi == 'aktif' ? const Color(0xFF065F46) : const Color(0xFF991B1B),
+                     fontWeight: FontWeight.bold,
+                     fontSize: 12,
+                   ),
+                 ),
+               ),
+               const SizedBox(width: 8),
+            ],
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFDBEAFE),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.remove_red_eye, size: 16, color: Color(0xFF1E3A8A)),
+                onPressed: () {
+                  // View details
+                },
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        )),
       ],
     );
   }
@@ -310,27 +383,23 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(status == 'aktif' ? 'Setujui Lapangan' : 'Tolak Lapangan'),
+        title: Text(status == 'aktif' ? 'Verifikasi Pemilik Lapangan' : 'Tolak Pemilik Lapangan'),
         content: Text(
           status == 'aktif'
-              ? 'Setujui lapangan "${field.namaLapangan}"?'
-              : 'Tolak lapangan "${field.namaLapangan}"?',
+              ? 'Anda yakin ingin memverifikasi pemilik lapangan ini?'
+              : 'Anda yakin ingin menolak pemilik lapangan ini?',
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Batal')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: status == 'aktif' ? _primary : Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              elevation: 0,
+              backgroundColor: status == 'aktif' ? const Color(0xFF10B981) : const Color(0xFFEF4444),
             ),
-            child: Text(status == 'aktif' ? 'Setujui' : 'Tolak'),
+            child: Text(status == 'aktif' ? 'Verifikasi' : 'Tolak'),
           ),
         ],
       ),
@@ -342,57 +411,6 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
             ownerUid: field.ownerUid,
             status: status,
           );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(status == 'aktif'
-              ? 'Lapangan berhasil disetujui'
-              : 'Lapangan berhasil ditolak'),
-          backgroundColor: status == 'aktif' ? _primary : Colors.red,
-        ));
-      }
     }
-  }
-
-  String _chipLabel(String s) {
-    switch (s) {
-      case 'semua':
-        return 'Semua';
-      case 'menunggu':
-        return 'Menunggu';
-      case 'aktif':
-        return 'Aktif';
-      case 'ditolak':
-        return 'Ditolak';
-      default:
-        return s;
-    }
-  }
-
-  Color _statusColor(String s) {
-    switch (s) {
-      case 'aktif':
-        return Colors.green;
-      case 'ditolak':
-        return Colors.red;
-      default:
-        return const Color(0xFFFFB74D);
-    }
-  }
-
-  String _statusLabel(String s) {
-    switch (s) {
-      case 'aktif':
-        return 'Aktif';
-      case 'ditolak':
-        return 'Ditolak';
-      default:
-        return 'Menunggu';
-    }
-  }
-
-  String _formatHarga(int h) {
-    if (h >= 1000000) return '${(h / 1000000).toStringAsFixed(1)}jt';
-    if (h >= 1000) return '${(h / 1000).toStringAsFixed(0)}rb';
-    return h.toString();
   }
 }

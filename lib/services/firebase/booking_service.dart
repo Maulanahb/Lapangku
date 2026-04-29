@@ -183,4 +183,77 @@ class BookingService {
       'updatedAt': Timestamp.fromDate(now),
     });
   }
+
+  // ─────────────────────────────────────────────────────────────────
+  // OWNER ACTIONS
+  // ─────────────────────────────────────────────────────────────────
+
+  /// Stream semua booking milik owner berdasarkan list fieldId
+  Stream<List<BookingModel>> streamOwnerBookings(
+    List<String> fieldIds, {
+    String? statusFilter,
+  }) {
+    if (fieldIds.isEmpty) {
+      return Stream.value([]);
+    }
+    // Firestore whereIn maksimal 30 item
+    final ids = fieldIds.take(30).toList();
+    Query query = _db
+        .collection('bookings')
+        .where('fieldId', whereIn: ids)
+        .orderBy('createdAt', descending: true);
+
+    if (statusFilter != null) {
+      query = _db
+          .collection('bookings')
+          .where('fieldId', whereIn: ids)
+          .where('status', isEqualTo: statusFilter)
+          .orderBy('createdAt', descending: true);
+    }
+
+    return query.snapshots().map((snap) =>
+        snap.docs.map((d) => BookingModel.fromFirestore(d)).toList());
+  }
+
+  /// Konfirmasi booking oleh owner
+  Future<void> confirmBooking(String bookingId) async {
+    final doc = await _db.collection('bookings').doc(bookingId).get();
+    if (!doc.exists) throw Exception('Booking tidak ditemukan');
+
+    final now = DateTime.now();
+    final timeline = List<Map<String, dynamic>>.from(
+        doc.data()?['statusTimeline'] ?? []);
+    timeline.add({
+      'status': 'dikonfirmasi',
+      'waktu': Timestamp.fromDate(now),
+    });
+
+    await _db.collection('bookings').doc(bookingId).update({
+      'status': 'dikonfirmasi',
+      'statusTimeline': timeline,
+      'updatedAt': Timestamp.fromDate(now),
+    });
+  }
+
+  /// Tolak booking oleh owner (dengan alasan opsional)
+  Future<void> rejectBooking(String bookingId, {String? reason}) async {
+    final doc = await _db.collection('bookings').doc(bookingId).get();
+    if (!doc.exists) throw Exception('Booking tidak ditemukan');
+
+    final now = DateTime.now();
+    final timeline = List<Map<String, dynamic>>.from(
+        doc.data()?['statusTimeline'] ?? []);
+    timeline.add({
+      'status': 'ditolak',
+      'waktu': Timestamp.fromDate(now),
+      if (reason != null && reason.isNotEmpty) 'alasan': reason,
+    });
+
+    await _db.collection('bookings').doc(bookingId).update({
+      'status': 'ditolak',
+      'alasanPenolakan': reason ?? '',
+      'statusTimeline': timeline,
+      'updatedAt': Timestamp.fromDate(now),
+    });
+  }
 }

@@ -1,102 +1,134 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/controllers/auth/auth_controller.dart';
 
-class ForgotPasswordPage extends ConsumerStatefulWidget {
-  const ForgotPasswordPage({super.key});
+class ForgotPasswordPage extends StatefulWidget {
+  const ForgotPasswordPage({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
-  final _emailController = TextEditingController();
-  bool _emailSent = false;
-  String _sentEmail = '';
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  String selectedMethod = 'email'; // 'email' atau 'phone'
+  final TextEditingController inputController = TextEditingController();
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _sendReset() async {
-    final email = _emailController.text.trim();
-    
-    // Validasi kosong
-    if (email.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email wajib diisi')),
-      );
-      return;
-    }
-
-    // Validasi Regex Email
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(email)) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Format email tidak valid. Periksa kembali email Anda.')),
-      );
-      return;
-    }
-
-    // Call Controller
-    await ref.read(authProvider.notifier).sendPasswordReset(email);
-
-    if (!mounted) return;
-    
-    final authState = ref.read(authProvider);
-
-    // Tangani Error Firebase Exception
-    if (authState.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authState.errorMessage!)),
-      );
-      return;
-    }
-
-    setState(() {
-      _sentEmail = email;
-      _emailSent = true;
-    });
-    _emailController.clear(); 
-  }
+  final Color primaryGreen = const Color(0xFF1B6B3A);
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios,
-              color: Color(0xFF2D3748), size: 20),
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Lupa Kata Sandi',
+          'Lupa Password',
           style: TextStyle(
-            color: Color(0xFF2D3748),
-            fontSize: 16,
+            color: Colors.black87,
             fontWeight: FontWeight.bold,
           ),
         ),
+        centerTitle: true,
       ),
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                sliver: SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _emailSent ? _buildSuccessState() : _buildFormState(authState),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Lupa Password?',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Pilih metode untuk reset password Anda. Kami akan mengirimkan kode OTP untuk verifikasi.',
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 32),
+              
+              // Metode Pilihan
+              _buildSelectionCard(
+                method: 'email',
+                icon: Icons.email_outlined,
+                title: 'Gunakan Email',
+              ),
+              const SizedBox(height: 16),
+              _buildSelectionCard(
+                method: 'phone',
+                icon: Icons.phone_android_outlined,
+                title: 'Gunakan Nomor HP',
+              ),
+              
+              const SizedBox(height: 32),
+              
+              // Input Field Dinamis
+              Text(
+                selectedMethod == 'email' ? 'Email' : 'Nomor HP',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: inputController,
+                keyboardType: selectedMethod == 'email' 
+                    ? TextInputType.emailAddress 
+                    : TextInputType.phone,
+                decoration: InputDecoration(
+                  hintText: selectedMethod == 'email' 
+                      ? 'Masukkan email Anda' 
+                      : 'Masukkan nomor HP Anda',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: primaryGreen),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+              ),
+              
+              const SizedBox(height: 48),
+              
+              // Tombol Kirim
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Logika untuk mengirim link/OTP digantikan navigasi dummy
+                    Navigator.pushNamed(context, '/otp-verification');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryGreen,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Kirim Link Reset',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -106,105 +138,62 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     );
   }
 
-  Widget _buildFormState(AuthState authState) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 32),
-        Center(
-          child: Container(
-            width: 80, height: 80,
-            decoration: BoxDecoration(color: const Color(0xFFE8F5EC), borderRadius: BorderRadius.circular(20)),
-            child: const Icon(Icons.lock_reset, color: Color(0xFF1B6B3A), size: 40),
+  Widget _buildSelectionCard({required String method, required IconData icon, required String title}) {
+    bool isSelected = selectedMethod == method;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedMethod = method;
+          inputController.clear();
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? primaryGreen : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
           ),
+          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? primaryGreen.withOpacity(0.05) : Colors.white,
         ),
-        const SizedBox(height: 24),
-        const Center(child: Text('Lupa Password?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)))),
-        const SizedBox(height: 12),
-        const Center(
-          child: Text('Masukkan emailmu dan kami kirimkan link\nreset password untuk mengamankan\nakunmu kembali.',
-            textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Color(0xFF718096), height: 1.6)),
-        ),
-        const SizedBox(height: 40),
-        const Text('EMAIL KAMU', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF718096), letterSpacing: 0.5)),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            hintText: 'nama@email.com',
-            hintStyle: const TextStyle(color: Color(0xFF718096)),
-            prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF718096), size: 20),
-            filled: true, fillColor: const Color(0xFFF7F8FA),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-          ),
-        ),
-        const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity, height: 52,
-          child: ElevatedButton(
-            onPressed: authState.isLoading ? null : _sendReset,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1B6B3A), foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              disabledBackgroundColor: const Color(0xFF1B6B3A).withOpacity(0.6),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected ? primaryGreen.withOpacity(0.1) : Colors.grey.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? primaryGreen : Colors.grey.shade600,
+              ),
             ),
-            child: authState.isLoading
-                ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
-                : const Text('Kirim Link Reset →', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Center(
-          child: TextButton.icon(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, size: 16, color: Color(0xFF1B6B3A)),
-            label: const Text('Kembali ke Login', style: TextStyle(color: Color(0xFF1B6B3A), fontWeight: FontWeight.bold)),
-          ),
-        ),
-        const Spacer(),
-        Center(child: Text('Butuh bantuan lebih lanjut? Hubungi Support', style: TextStyle(fontSize: 12, color: Colors.grey[400]))),
-        const SizedBox(height: 24),
-      ],
-    );
-  }
-
-  Widget _buildSuccessState() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 80, height: 80,
-          decoration: BoxDecoration(color: const Color(0xFFE8F5EC), borderRadius: BorderRadius.circular(20)),
-          child: const Icon(Icons.mark_email_read_outlined, color: Color(0xFF1B6B3A), size: 40),
-        ),
-        const SizedBox(height: 24),
-        const Text('Email Terkirim!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF2D3748))),
-        const SizedBox(height: 16),
-        RichText(
-          textAlign: TextAlign.center,
-          text: TextSpan(
-            style: const TextStyle(fontSize: 14, color: Color(0xFF718096), height: 1.6),
-            children: [
-              const TextSpan(text: 'Link reset password telah dikirim ke email\n'),
-              TextSpan(text: '$_sentEmail\n\n', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2D3748))),
-              const TextSpan(text: 'Silakan cek kotak masuk atau folder spam di aplikasi Email Anda, lalu klik link tersebut untuk membuat password baru.'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 48),
-        SizedBox(
-          width: double.infinity, height: 52,
-          child: ElevatedButton(
-            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1B6B3A), foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-            child: const Text('Kembali ke Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ),
+            Radio<String>(
+              value: method,
+              groupValue: selectedMethod,
+              activeColor: primaryGreen,
+              onChanged: (value) {
+                setState(() {
+                  selectedMethod = value!;
+                  inputController.clear();
+                });
+              },
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
