@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
-import 'owner_home_page.dart';
+import 'Mitra_home_page.dart';
 import 'manage_fields_page.dart';
-import 'owner_profile_page.dart';
+import 'Mitra_profile_page.dart';
 
-class OwnerMainPage extends StatefulWidget {
-  const OwnerMainPage({super.key});
+class MitraMainPage extends StatefulWidget {
+  const MitraMainPage({super.key});
 
   @override
-  State<OwnerMainPage> createState() => _OwnerMainPageState();
+  State<MitraMainPage> createState() => _MitraMainPageState();
 }
 
-class _OwnerMainPageState extends State<OwnerMainPage> {
+class _MitraMainPageState extends State<MitraMainPage> {
   int _currentIndex = 0;
   final Color _primaryGreen = const Color(0xFF0F5A3C);
 
   final List<Widget> _pages = [
-    const OwnerHomePage(key: ValueKey('home')),
+    const MitraHomePage(key: ValueKey('home')),
     const ManageFieldsPage(key: ValueKey('fields')),
     const Center(key: ValueKey('orders'), child: Text('Halaman Orders (Belum Ada)')),
-    const OwnerProfilePage(key: ValueKey('profile')),
+    const MitraProfilePage(key: ValueKey('profile')),
   ];
 
   void _onNavTapped(int index) {

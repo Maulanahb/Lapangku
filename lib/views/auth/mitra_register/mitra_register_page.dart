@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:lapangku/views/owner/owner_main_page.dart';
+import 'package:lapangku/views/Mitra/Mitra_main_page.dart';
 
 // Import Langkah-langkah (Sekarang satu folder)
 import 'step1_account.dart';
@@ -15,14 +15,14 @@ import 'step5_photos.dart';
 import 'step6_schedule.dart';
 import 'step7_review.dart';
 
-class OwnerRegisterPage extends StatefulWidget {
-  const OwnerRegisterPage({super.key});
+class MitraRegisterPage extends StatefulWidget {
+  const MitraRegisterPage({super.key});
 
   @override
-  State<OwnerRegisterPage> createState() => _OwnerRegisterPageState();
+  State<MitraRegisterPage> createState() => _MitraRegisterPageState();
 }
 
-class _OwnerRegisterPageState extends State<OwnerRegisterPage> {
+class _MitraRegisterPageState extends State<MitraRegisterPage> {
   int _currentStep = 1;
   final int _totalSteps = 7;
 
@@ -140,7 +140,7 @@ class _OwnerRegisterPageState extends State<OwnerRegisterPage> {
     Future.delayed(const Duration(seconds: 1), () {
       Navigator.of(context).pop();
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const OwnerMainPage()),
+        MaterialPageRoute(builder: (context) => const MitraMainPage()),
         (route) => false,
       );
     });

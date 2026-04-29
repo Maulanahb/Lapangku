@@ -1,18 +1,18 @@
-// lib/views/owner/owner_home_page.dart
+// lib/views/Mitra/Mitra_home_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../controllers/owner/owner_controller.dart';
+import '../../controllers/Mitra/Mitra_controller.dart';
 
-class OwnerHomePage extends ConsumerStatefulWidget {
-  const OwnerHomePage({super.key});
+class MitraHomePage extends ConsumerStatefulWidget {
+  const MitraHomePage({super.key});
 
   @override
-  ConsumerState<OwnerHomePage> createState() => _OwnerHomePageState();
+  ConsumerState<MitraHomePage> createState() => _MitraHomePageState();
 }
 
-class _OwnerHomePageState extends ConsumerState<OwnerHomePage> {
+class _MitraHomePageState extends ConsumerState<MitraHomePage> {
   final Color _primaryGreen = const Color(0xFF0F5A3C);
   final Color _bgLightGreen = const Color(0xFFE8F5EF);
   final Color _bgLightRed = const Color(0xFFFEE8E7);
@@ -140,9 +140,9 @@ class _OwnerHomePageState extends ConsumerState<OwnerHomePage> {
   }
 
   Widget _buildStatsGrid() {
-    final String ownerId =
-        FirebaseAuth.instance.currentUser?.uid ?? 'dummy_owner_id';
-    final fieldsAsyncValue = ref.watch(ownerFieldsProvider(ownerId));
+    final String MitraId =
+        FirebaseAuth.instance.currentUser?.uid ?? 'dummy_Mitra_id';
+    final fieldsAsyncValue = ref.watch(MitraFieldsProvider(MitraId));
 
     return Column(children: [
       IntrinsicHeight(

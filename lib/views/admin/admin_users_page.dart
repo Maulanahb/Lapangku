@@ -92,7 +92,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: ['semua', 'customer', 'owner', 'admin'].map((role) {
+              children: ['semua', 'customer', 'mitra', 'admin'].map((role) {
                 final selected = _filterRole == role;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -266,7 +266,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
             ),
           ),
           // Action
-          if (role.toLowerCase() == 'owner' &&
+          if (role.toLowerCase() == 'mitra' &&
               statusVerifikasi == 'menunggu') ...[
             Column(
               children: [
@@ -309,11 +309,11 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(status == 'aktif' ? 'Verifikasi Owner' : 'Tolak Owner'),
+        title: Text(status == 'aktif' ? 'Verifikasi Mitra' : 'Tolak Mitra'),
         content: Text(
           status == 'aktif'
-              ? 'Verifikasi akun owner "$name"?'
-              : 'Tolak akun owner "$name"?',
+              ? 'Verifikasi akun mitra "$name"?'
+              : 'Tolak akun mitra "$name"?',
         ),
         actions: [
           TextButton(
@@ -341,8 +341,8 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(status == 'aktif'
-              ? 'Owner berhasil diverifikasi'
-              : 'Owner berhasil ditolak'),
+              ? 'Mitra berhasil diverifikasi'
+              : 'Mitra berhasil ditolak'),
           backgroundColor: status == 'aktif' ? _primary : Colors.red,
         ));
       }
@@ -353,8 +353,8 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
     switch (r.toLowerCase()) {
       case 'customer':
         return 'Customer';
-      case 'owner':
-        return 'Owner';
+      case 'mitra':
+        return 'Mitra';
       case 'admin':
         return 'Admin';
       case 'semua':
@@ -368,7 +368,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
     switch (r.toLowerCase()) {
       case 'customer':
         return const Color(0xFF2196F3);
-      case 'owner':
+      case 'mitra':
         return const Color(0xFF9C27B0);
       case 'admin':
         return const Color(0xFF1B6B3A);

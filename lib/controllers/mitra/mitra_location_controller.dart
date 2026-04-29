@@ -30,8 +30,8 @@ class LocationState {
   }
 }
 
-class OwnerLocationNotifier extends StateNotifier<LocationState> {
-  OwnerLocationNotifier() : super(LocationState());
+class MitraLocationNotifier extends StateNotifier<LocationState> {
+  MitraLocationNotifier() : super(LocationState());
 
   // Dipanggil saat tombol "Gunakan lokasi saya" ditekan
   Future<void> getCurrentLocation() async {
@@ -105,7 +105,7 @@ class OwnerLocationNotifier extends StateNotifier<LocationState> {
 }
 
 // Provider yang akan digunakan di UI
-final ownerLocationProvider =
-    StateNotifierProvider<OwnerLocationNotifier, LocationState>((ref) {
-  return OwnerLocationNotifier();
+final MitraLocationProvider =
+    StateNotifierProvider<MitraLocationNotifier, LocationState>((ref) {
+  return MitraLocationNotifier();
 });

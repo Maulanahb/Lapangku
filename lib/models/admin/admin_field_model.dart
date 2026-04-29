@@ -1,6 +1,6 @@
 class AdminFieldModel {
   final String fieldId;
-  final String ownerUid;
+  final String mitraUid;
   final String namaLapangan;
   final String namaMitra;
   final String lokasi;
@@ -10,7 +10,7 @@ class AdminFieldModel {
 
   const AdminFieldModel({
     required this.fieldId,
-    required this.ownerUid,
+    required this.mitraUid,
     required this.namaLapangan,
     required this.namaMitra,
     required this.lokasi,

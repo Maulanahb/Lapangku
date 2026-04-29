@@ -13,7 +13,7 @@ import 'views/auth/login_page.dart';
 import 'views/auth/register_page.dart';
 import 'views/auth/forgot_password_page.dart';
 import 'views/customer/customer_main_page.dart';
-import 'views/owner/owner_main_page.dart';
+import 'views/Mitra/Mitra_main_page.dart';
 import 'views/admin/admin_dashboard_page.dart';
 import 'views/admin/admin_login_page.dart';
 
@@ -72,7 +72,7 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
         '/forgot-password': (context) => const ForgotPasswordPage(),
         '/customer-home': (context) => const CustomerMainPage(),
-        '/owner-home': (context) => const OwnerMainPage(),
+        '/Mitra-home': (context) => const MitraMainPage(),
         '/admin-login': (context) => const AdminLoginPage(),
         '/admin-home': (context) => const AdminDashboardPage(),
         

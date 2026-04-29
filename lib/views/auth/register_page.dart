@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
-import 'package:lapangku/views/auth/owner_register/owner_register_page.dart';
+import 'package:lapangku/views/auth/Mitra_register/Mitra_register_page.dart';
 import 'package:lapangku/core/utils/navigation_helper.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
@@ -20,8 +20,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   String _selectedRole = 'customer'; // Default kembali ke customer (kiri)
-  final _ownerContactController =
-      TextEditingController(); // Controller khusus owner
+  final _MitraContactController =
+      TextEditingController(); // Controller khusus Mitra
 
   @override
   void dispose() {
@@ -30,7 +30,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _ownerContactController.dispose();
+    _MitraContactController.dispose();
     super.dispose();
   }
 
@@ -253,7 +253,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   padding: const EdgeInsets.all(24),
                   child: _selectedRole == 'customer'
                       ? _buildCustomerForm(authState) // Form buatan teman Anda
-                      : _buildOwnerForm(), // Form khusus owner (OTP)
+                      : _buildMitraForm(), // Form khusus Mitra (OTP)
                 ),
 
                 const SizedBox(height: 32),
@@ -555,7 +555,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     );
   }
 
-  Widget _buildOwnerForm() {
+  Widget _buildMitraForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -577,7 +577,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         ),
         const SizedBox(height: 24),
         _buildTextField(
-          controller: _ownerContactController,
+          controller: _MitraContactController,
           hint: 'contoh@email.com / 0812...',
           label: 'EMAIL ATAU NOMOR HP',
         ),
@@ -590,7 +590,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const OwnerRegisterPage()),
+                    builder: (context) => const MitraRegisterPage()),
               );
             },
             style: ElevatedButton.styleFrom(

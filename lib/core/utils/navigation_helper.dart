@@ -14,7 +14,7 @@ class NavigationHelper {
   static String _getRouteByRole(String role) {
     switch (role.toLowerCase().trim()) {
       case 'mitra':
-        return '/owner-home';
+        return '/Mitra-home';
       case 'admin':
         return '/admin-home';
       case 'customer':

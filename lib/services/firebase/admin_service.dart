@@ -54,7 +54,7 @@ class AdminService {
       final data = d.data();
       return AdminFieldModel(
         fieldId: d.id,
-        ownerUid: data['ownerUid'] ?? '',
+        mitraUid: data['ownerUid'] ?? '',
         namaLapangan: data['namaLapangan'] ?? '',
         namaMitra: data['namaMitra'] ?? '',
         lokasi: data['lokasi'] ?? '',
@@ -94,7 +94,7 @@ class AdminService {
 
   Future<void> updateFieldVerifikasi({
     required String fieldId,
-    required String ownerUid,
+    required String mitraUid,
     required String status,
   }) async {
     final batch = _firestore.batch();
@@ -103,7 +103,7 @@ class AdminService {
       {'statusVerifikasi': status},
     );
     batch.update(
-      _firestore.collection('users').doc(ownerUid),
+      _firestore.collection('users').doc(mitraUid),
       {'statusVerifikasi': status},
     );
     await batch.commit();

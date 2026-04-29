@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/controllers/owner/owner_location_controller.dart';
+import 'package:lapangku/controllers/Mitra/Mitra_location_controller.dart';
 import 'widgets/map_placeholder.dart';
 
 class Step4Location extends ConsumerStatefulWidget {
@@ -18,11 +18,11 @@ class Step4Location extends ConsumerStatefulWidget {
 class _Step4LocationState extends ConsumerState<Step4Location> {
   @override
   Widget build(BuildContext context) {
-    final locationState = ref.watch(ownerLocationProvider);
+    final locationState = ref.watch(MitraLocationProvider);
 
     // Gunakan ref.listen agar text controller hanya diupdate SAAT state berubah (selesai loading lokasi)
     // bukan setiap kali widget direbuild.
-    ref.listen<LocationState>(ownerLocationProvider, (previous, next) {
+    ref.listen<LocationState>(MitraLocationProvider, (previous, next) {
       if (previous?.address != next.address && next.address.isNotEmpty) {
         widget.addressController.text = next.address;
       }
@@ -67,7 +67,7 @@ class _Step4LocationState extends ConsumerState<Step4Location> {
           child: ElevatedButton.icon(
             onPressed: locationState.isLoading ? null : () async {
                try {
-                 await ref.read(ownerLocationProvider.notifier).getCurrentLocation();
+                 await ref.read(MitraLocationProvider.notifier).getCurrentLocation();
                } catch (e) {
                  if (context.mounted) {
                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));

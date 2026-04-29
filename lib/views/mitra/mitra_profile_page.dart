@@ -1,17 +1,17 @@
-// lib/views/owner/owner_profile_page.dart
+// lib/views/Mitra/Mitra_profile_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 
-class OwnerProfilePage extends ConsumerStatefulWidget {
-  const OwnerProfilePage({super.key});
+class MitraProfilePage extends ConsumerStatefulWidget {
+  const MitraProfilePage({super.key});
 
   @override
-  ConsumerState<OwnerProfilePage> createState() => _OwnerProfilePageState();
+  ConsumerState<MitraProfilePage> createState() => _MitraProfilePageState();
 }
 
-class _OwnerProfilePageState extends ConsumerState<OwnerProfilePage> {
+class _MitraProfilePageState extends ConsumerState<MitraProfilePage> {
   final Color _primaryGreen = const Color(0xFF0F5A3C);
   final Color _lightGreen = const Color(0xFFD1FAE5);
 

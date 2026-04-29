@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class OwnerRevenuePage extends ConsumerStatefulWidget {
-  const OwnerRevenuePage({super.key});
+class MitraBookingListPage extends ConsumerStatefulWidget {
+  const MitraBookingListPage({super.key});
 
   @override
-  ConsumerState<OwnerRevenuePage> createState() => _OwnerRevenuePageState();
+  ConsumerState<MitraBookingListPage> createState() => _MitraBookingListPageState();
 }
 
-class _OwnerRevenuePageState extends ConsumerState<OwnerRevenuePage> {
+class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          'Pendapatan',
+          'Daftar Pesanan',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: const Color(0xFF0F5A3C),
@@ -27,10 +27,10 @@ class _OwnerRevenuePageState extends ConsumerState<OwnerRevenuePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.monetization_on_outlined, size: 80, color: Color(0xFFD1D5DB)),
+            Icon(Icons.receipt_long_outlined, size: 80, color: Color(0xFFD1D5DB)),
             SizedBox(height: 16),
             Text(
-              'Ringkasan Pendapatan',
+              'Daftar Pesanan Mitra',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)),
             ),
             SizedBox(height: 8),

@@ -1,26 +1,26 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:lapangku/models/owner/owner_field_model.dart';
+import 'package:lapangku/models/Mitra/Mitra_field_model.dart';
 
-class OwnerService {
+class MitraService {
   final FirebaseFirestore _firestore;
 
-  OwnerService({FirebaseFirestore? firestore})
+  MitraService({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  Future<List<OwnerFieldModel>> getOwnerFields(String ownerId) async {
+  Future<List<MitraFieldModel>> getMitraFields(String MitraId) async {
     try {
-      // Ini query utama untuk ambil lapangan milik si owner
+      // Ini query utama untuk ambil lapangan milik si Mitra
       final snapshot = await _firestore
           .collection('fields')
-          .where('ownerId', isEqualTo: ownerId)
+          .where('MitraId', isEqualTo: MitraId)
           .get();
 
-      // Mapping data dari Firestore ke bentuk OwnerFieldModel
+      // Mapping data dari Firestore ke bentuk MitraFieldModel
       return snapshot.docs.map((doc) {
         final data = doc.data();
-        return OwnerFieldModel(
+        return MitraFieldModel(
           id: doc.id,
-          ownerId: data['ownerId'] ?? '',
+          MitraId: data['MitraId'] ?? '',
           name: data['name'] ?? '',
           location: data['location'] ?? '',
           pricePerHour: data['pricePerHour'] ?? 0,
@@ -32,11 +32,11 @@ class OwnerService {
     }
   }
 
-  Future<void> addField(OwnerFieldModel field) async {
+  Future<void> addField(MitraFieldModel field) async {
     // TODO: Nanti diisi untuk form tambah lapangan
   }
 
-  Future<void> updateField(OwnerFieldModel field) async {
+  Future<void> updateField(MitraFieldModel field) async {
     // TODO: Nanti diisi untuk form edit lapangan
   }
 
