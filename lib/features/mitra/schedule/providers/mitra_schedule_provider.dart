@@ -4,13 +4,10 @@ import 'package:lapangku/features/mitra/field/providers/mitra_field_provider.dar
 import 'package:lapangku/features/mitra/schedule/models/mitra_schedule_model.dart';
 import 'package:lapangku/features/mitra/schedule/repositories/mitra_schedule_repository.dart';
 import 'package:lapangku/services/firebase/mitra_service.dart';
+import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 
-final _MitraSvcForScheduleProvider =
-    Provider<MitraService>((ref) => MitraService());
-
-final MitraScheduleRepositoryProvider = Provider<MitraScheduleRepository>(
-    (ref) =>
-        MitraScheduleRepository(ref.watch(_MitraSvcForScheduleProvider)));
+final mitraScheduleRepositoryProvider = Provider<MitraScheduleRepository>(
+    (ref) => MitraScheduleRepository(ref.watch(mitraServiceProvider)));
 
 // ── State ──────────────────────────────────────────────────────────
 class MitraScheduleState {
@@ -89,6 +86,6 @@ class MitraScheduleNotifier extends StateNotifier<MitraScheduleState> {
 
 final mitraScheduleProvider =
     StateNotifierProvider<MitraScheduleNotifier, MitraScheduleState>((ref) {
-  final repo = ref.watch(MitraScheduleRepositoryProvider);
+  final repo = ref.watch(mitraScheduleRepositoryProvider);
   return MitraScheduleNotifier(repo);
 });

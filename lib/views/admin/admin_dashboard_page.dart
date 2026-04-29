@@ -67,55 +67,95 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
 
   Widget _buildSidebar() {
     return Container(
-      width: 250,
-      color: Colors.white,
+      width: 280,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 20,
+            offset: const Offset(5, 0),
+          ),
+        ],
+      ),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(24.0),
+          Container(
+            padding: const EdgeInsets.all(32.0),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: _primary,
-                    borderRadius: BorderRadius.circular(8),
+                    gradient: LinearGradient(
+                      colors: [_primary, _primary.withOpacity(0.8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: const Icon(Icons.sports_soccer, color: Colors.white, size: 24),
                 ),
-                const SizedBox(width: 12),
-                Column(
+                const SizedBox(width: 16),
+                const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text('LapangKu', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: _primary)),
-                    Text('Panel Admin', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  children: [
+                    Text('LapangKu',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 20,
+                            color: _primary,
+                            letterSpacing: -0.5)),
+                    Text('PRO PANEL',
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.grey,
+                            letterSpacing: 1.5)),
                   ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          _sidebarItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
-          _sidebarItem(1, Icons.people_outline, Icons.people, 'Kelola Akun Pengguna'),
-          _sidebarItem(2, Icons.storefront_outlined, Icons.storefront, 'Verifikasi Pemilik Lapangan'),
-          _sidebarItem(3, Icons.receipt_long_outlined, Icons.receipt_long, 'Pantau Transaksi'),
-          _sidebarItem(4, Icons.insert_chart_outlined, Icons.insert_chart, 'Lihat Laporan'),
-          const Spacer(),
+          const SizedBox(height: 8),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                _sidebarItem(0, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Dashboard'),
+                _sidebarItem(1, Icons.people_outline_rounded, Icons.people_rounded, 'Kelola Pengguna'),
+                _sidebarItem(2, Icons.domain_verification_rounded, Icons.domain_verification_rounded, 'Verifikasi Mitra'),
+                _sidebarItem(3, Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Daftar Pesanan'),
+                _sidebarItem(4, Icons.analytics_outlined, Icons.analytics_rounded, 'Laporan Analistik'),
+              ],
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(24.0),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                ref.read(authProvider.notifier).logout();
-                Navigator.pushReplacementNamed(context, '/admin-login');
-              },
-              icon: const Icon(Icons.logout, size: 18),
-              label: const Text('Keluar'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade50,
-                foregroundColor: Colors.red,
-                elevation: 0,
-                minimumSize: const Size(double.infinity, 44),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.red.withOpacity(0.05),
+              ),
+              child: ListTile(
+                onTap: () {
+                  ref.read(authProvider.notifier).logout();
+                  Navigator.pushReplacementNamed(context, '/admin-login');
+                },
+                leading: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 22),
+                title: const Text('Keluar',
+                    style: TextStyle(
+                        color: Colors.redAccent,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
             ),
           ),
@@ -126,36 +166,53 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
 
   Widget _sidebarItem(int index, IconData iconOutlined, IconData iconFilled, String label) {
     final isSelected = _selectedNav == index;
-    return InkWell(
-      onTap: () {
-        setState(() => _selectedNav = index);
-        if (MediaQuery.of(context).size.width < 800) Navigator.pop(context); // Close drawer on mobile
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? _primary.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Icon(isSelected ? iconFilled : iconOutlined, 
-                 color: isSelected ? _primary : Colors.grey.shade600, size: 20),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? _primary : Colors.grey.shade700,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 13,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: InkWell(
+        onTap: () {
+          setState(() => _selectedNav = index);
+          if (MediaQuery.of(context).size.width < 800) Navigator.pop(context);
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          decoration: BoxDecoration(
+            color: isSelected ? _primary.withOpacity(0.08) : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? _primary.withOpacity(0.1) : Colors.transparent,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(isSelected ? iconFilled : iconOutlined,
+                  color: isSelected ? _primary : Colors.grey.shade500,
+                  size: 22),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected ? _primary : Colors.grey.shade600,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                    fontSize: 14,
+                    letterSpacing: isSelected ? 0.2 : 0,
+                  ),
                 ),
               ),
-            ),
-            if (isSelected) 
-              Container(width: 4, height: 20, decoration: BoxDecoration(color: _primary, borderRadius: BorderRadius.circular(4)))
-          ],
+              if (isSelected)
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: _primary,
+                    shape: BoxShape.circle,
+                  ),
+                )
+            ],
+          ),
         ),
       ),
     );
@@ -173,6 +230,7 @@ class _DashboardBody extends ConsumerWidget {
     final statsAsync = ref.watch(adminStatsProvider);
     final chartAsync = ref.watch(bookingsChartProvider);
     final bookingsAsync = ref.watch(bookingsProvider);
+    final activitiesAsync = ref.watch(activitiesProvider);
     final authState = ref.watch(authProvider);
 
     return SafeArea(
@@ -182,6 +240,7 @@ class _DashboardBody extends ConsumerWidget {
           ref.read(adminStatsProvider.notifier).load();
           ref.read(bookingsChartProvider.notifier).load();
           ref.read(bookingsProvider.notifier).load();
+          ref.read(activitiesProvider.notifier).load();
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -215,10 +274,10 @@ class _DashboardBody extends ConsumerWidget {
               ],
               const SizedBox(height: 24),
 
-              bookingsAsync.when(
+              activitiesAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator(color: _primary)),
                 error: (_, __) => const SizedBox.shrink(),
-                data: (bookings) => _buildAktivitasTerbaru(context, bookings),
+                data: (activities) => _buildAktivitasTerbaru(context, activities),
               ),
             ],
           ),
@@ -451,7 +510,7 @@ class _DashboardBody extends ConsumerWidget {
 
     return BarChart(BarChartData(
       maxY: maxY,
-      barTouchData: BarTouchData(enabled: true),
+      barTouchData: const BarTouchData(enabled: true),
       titlesData: FlTitlesData(
         leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -470,7 +529,7 @@ class _DashboardBody extends ConsumerWidget {
           ),
         ),
       ),
-      gridData: FlGridData(show: false),
+      gridData: const FlGridData(show: false),
       borderData: FlBorderData(show: false),
       barGroups: List.generate(data.length, (i) {
         final isToday = i == data.length - 1;
@@ -581,8 +640,8 @@ class _DashboardBody extends ConsumerWidget {
     );
   }
 
-  Widget _buildAktivitasTerbaru(BuildContext context, dynamic bookings) {
-    final list = (bookings as List).take(5).toList();
+  Widget _buildAktivitasTerbaru(BuildContext context, List<Map<String, dynamic>> activities) {
+    final list = activities.take(5).toList();
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -594,10 +653,10 @@ class _DashboardBody extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Aktivitas Terkini', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text('Aktivitas Terkini', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               Text('Lihat Semua Aktivitas', style: TextStyle(color: _primary, fontWeight: FontWeight.bold, fontSize: 13)),
             ],
           ),
@@ -612,7 +671,7 @@ class _DashboardBody extends ConsumerWidget {
                 child: DataTable(
                   horizontalMargin: 0,
                   columnSpacing: 32,
-                  headingRowColor: MaterialStateProperty.all(const Color(0xFFF8F9FA)),
+                  headingRowColor: WidgetStateProperty.all(const Color(0xFFF8F9FA)),
                   columns: const [
                     DataColumn(label: Text('TIME', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
                     DataColumn(label: Text('USER', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
@@ -629,16 +688,14 @@ class _DashboardBody extends ConsumerWidget {
     );
   }
 
-  DataRow _buildDataRow(dynamic booking) {
-    final nama = booking.namaPenyewa as String;
+  DataRow _buildDataRow(Map<String, dynamic> activity) {
+    final String nama = activity['user'] as String;
     final inisial = nama.isNotEmpty ? nama.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase() : '?';
-    final statusColor = _statusColor(booking.status as String);
-    final jam = '${booking.tanggal.hour.toString().padLeft(2, '0')}:${booking.tanggal.minute.toString().padLeft(2, '0')} PM'; 
+    final statusColor = _statusColor(activity['status'] as String);
+    final DateTime time = activity['time'] as DateTime;
+    final String jam = DateFormat('HH:mm').format(time);
+    final isRegistration = activity['type'] == 'registration';
     
-    String action = 'New Booking';
-    if (booking.status == 'dibatalkan') action = 'Cancellation';
-    else if (booking.status == 'menunggu') action = 'Payment Pending';
-
     return DataRow(
       cells: [
         DataCell(Text(jam, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
@@ -649,12 +706,26 @@ class _DashboardBody extends ConsumerWidget {
             Text(nama, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
           ],
         )),
-        DataCell(Text(action, style: TextStyle(color: Colors.grey.shade700, fontSize: 13))),
-        DataCell(Text(booking.namaLapangan, style: TextStyle(color: Colors.grey.shade700, fontSize: 13))),
+        DataCell(Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: isRegistration ? Colors.blue.shade50 : Colors.transparent,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            activity['action'] as String,
+            style: TextStyle(
+              color: isRegistration ? Colors.blue.shade700 : Colors.grey.shade700,
+              fontSize: 13,
+              fontWeight: isRegistration ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        )),
+        DataCell(Text(activity['detail'] as String, style: TextStyle(color: Colors.grey.shade700, fontSize: 13))),
         DataCell(Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(color: statusColor.withOpacity(1), borderRadius: BorderRadius.circular(12)),
-          child: Text(_statusLabel(booking.status as String).toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+          decoration: BoxDecoration(color: statusColor, borderRadius: BorderRadius.circular(12)),
+          child: Text(_statusLabel(activity['status'] as String).toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
         )),
       ],
     );
@@ -662,9 +733,11 @@ class _DashboardBody extends ConsumerWidget {
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'selesai': return const Color(0xFF1B6B3A);
+      case 'selesai':
+      case 'aktif': return const Color(0xFF1B6B3A);
       case 'dikonfirmasi': return const Color(0xFF4285F4);
-      case 'dibatalkan': return Colors.red;
+      case 'dibatalkan':
+      case 'ditolak': return Colors.red;
       default: return const Color(0xFFFF9800);
     }
   }
@@ -672,9 +745,12 @@ class _DashboardBody extends ConsumerWidget {
   String _statusLabel(String status) {
     switch (status) {
       case 'selesai': return 'Completed';
+      case 'aktif': return 'Verified';
       case 'dibatalkan': return 'Cancelled';
+      case 'ditolak': return 'Rejected';
       case 'dikonfirmasi': return 'Confirmed';
-      default: return 'Pending';
+      case 'menunggu': return 'Pending';
+      default: return status;
     }
   }
 
@@ -693,5 +769,6 @@ class _StatData {
   final Color color;
   final String? subtext;
   final bool isGreen;
-  const _StatData(this.label, this.value, this.icon, this.color, {this.subtext, this.isGreen = false});
+  const _StatData(this.label, this.value, this.icon, this.color,
+      {this.subtext, this.isGreen = false});
 }

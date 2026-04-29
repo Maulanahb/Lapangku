@@ -138,9 +138,9 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                       ),
                     ),
                     const SizedBox(width: 14),
-                    Column(
+                    const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
                           'Selamat Datang',
                           style: TextStyle(

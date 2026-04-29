@@ -163,7 +163,7 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: _selectedJenis,
+                    initialValue: _selectedJenis,
                     decoration: _inputDecor('Jenis Lapangan', Icons.sports_soccer),
                     items: _jenisOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                     onChanged: (v) => setState(() => _selectedJenis = v!),
@@ -197,8 +197,11 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
                         labelStyle: TextStyle(color: isSelected ? const Color(0xFF1B6B3A) : Colors.black87),
                         onSelected: (bool selected) {
                           setState(() {
-                            if (selected) _selectedFasilitas.add(fasilitas);
-                            else _selectedFasilitas.remove(fasilitas);
+                            if (selected) {
+                              _selectedFasilitas.add(fasilitas);
+                            } else {
+                              _selectedFasilitas.remove(fasilitas);
+                            }
                           });
                         },
                       );

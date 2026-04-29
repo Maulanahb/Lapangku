@@ -37,8 +37,9 @@ class AuthService {
       'nama': nama,
       'phone': phone,
       'role': role,
-      'avatarUrl': null, // Diupdate dari 'photoUrl' ke 'avatarUrl'
-      'isVerified': false, // Diupdate dari 'statusVerifikasi' ke 'isVerified'
+      'avatarUrl': null,
+      'isVerified': false,
+      'statusVerifikasi': role == 'mitra' ? 'menunggu' : 'aktif',
       'bankInfo': null,
       'idLapangan': null,
       'createdAt': FieldValue.serverTimestamp(),
@@ -187,8 +188,12 @@ class AuthService {
   Stream<UserModel?> get authStateChanges {
     return _auth.authStateChanges().asyncMap((user) async {
       if (user == null) return null;
-      final data = await getUserData(user.uid);
-      return UserModel.fromFirestore(data);
+      try {
+        final data = await getUserData(user.uid);
+        return UserModel.fromFirestore(data);
+      } catch (e) {
+        return null;
+      }
     });
   }
 }

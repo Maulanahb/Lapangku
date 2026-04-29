@@ -155,7 +155,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
                               final tx = revenue.transactions[index];
                               return _buildTransactionItem(
                                 tx.customerName, 
-                                '${tx.fieldName}',
+                                tx.fieldName,
                                 _currencyFormat.format(tx.amount), 
                                 DateFormat('dd MMM yyyy, HH:mm').format(tx.date),
                               );

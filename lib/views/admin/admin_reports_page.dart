@@ -20,48 +20,44 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
   Widget build(BuildContext context) {
     final bookingsAsync = ref.watch(bookingsProvider);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            _buildTabs(),
-            Expanded(
-              child: bookingsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator(color: _primary)),
-                error: (e, _) => Center(child: Text('Error: $e')),
-                data: (bookings) => _buildReportContent(bookings),
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(),
+        _buildTabs(),
+        Expanded(
+          child: Container(
+            color: const Color(0xFFF5F6FA),
+            child: bookingsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator(color: _primary)),
+              error: (e, _) => Center(child: Text('Error: $e')),
+              data: (bookings) => _buildReportContent(bookings),
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(24, 24, 24, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           Text(
-            'Laporan Statistik',
+            'Laporan Analistik',
             style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
               color: Color(0xFF1A1A2E),
+              letterSpacing: -0.5,
             ),
           ),
-          SizedBox(height: 8),
+          SizedBox(height: 4),
           Text(
-            'Analisis performa platform berdasarkan data transaksi dan booking.',
-            style: TextStyle(
-              color: Color(0xFF6B7280),
-              fontSize: 14,
-            ),
+            'Analisis performa platform dan statistik transaksi.',
+            style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -292,7 +288,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
             child: ConstrainedBox(
               constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 48),
               child: DataTable(
-                headingRowColor: MaterialStateProperty.all(const Color(0xFFF8F9FA)),
+                headingRowColor: WidgetStateProperty.all(const Color(0xFFF8F9FA)),
                 dataRowMaxHeight: 64,
                 dataRowMinHeight: 64,
                 horizontalMargin: 24,

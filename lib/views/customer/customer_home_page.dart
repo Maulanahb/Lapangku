@@ -13,7 +13,7 @@ class CustomerHomePage extends ConsumerStatefulWidget {
 }
 
 class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
-  String _searchQuery = '';
+  final String _searchQuery = '';
   String _selectedCategory = 'Semua';
 
   final List<String> _categories = [

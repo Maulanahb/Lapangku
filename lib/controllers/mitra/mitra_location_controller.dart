@@ -78,20 +78,26 @@ class MitraLocationNotifier extends StateNotifier<LocationState> {
         Placemark place = placemarks[0];
 
         List<String> addressParts = [];
-        if (place.street != null && place.street!.isNotEmpty)
+        if (place.street != null && place.street!.isNotEmpty) {
           addressParts.add(place.street!);
-        if (place.subLocality != null && place.subLocality!.isNotEmpty)
+        }
+        if (place.subLocality != null && place.subLocality!.isNotEmpty) {
           addressParts.add(place.subLocality!);
-        if (place.locality != null && place.locality!.isNotEmpty)
+        }
+        if (place.locality != null && place.locality!.isNotEmpty) {
           addressParts.add(place.locality!);
+        }
         if (place.subAdministrativeArea != null &&
-            place.subAdministrativeArea!.isNotEmpty)
+            place.subAdministrativeArea!.isNotEmpty) {
           addressParts.add(place.subAdministrativeArea!);
+        }
         if (place.administrativeArea != null &&
-            place.administrativeArea!.isNotEmpty)
+            place.administrativeArea!.isNotEmpty) {
           addressParts.add(place.administrativeArea!);
-        if (place.postalCode != null && place.postalCode!.isNotEmpty)
+        }
+        if (place.postalCode != null && place.postalCode!.isNotEmpty) {
           addressParts.add(place.postalCode!);
+        }
 
         String address = addressParts.join(', ');
         state = state.copyWith(address: address, isLoading: false);
@@ -105,7 +111,7 @@ class MitraLocationNotifier extends StateNotifier<LocationState> {
 }
 
 // Provider yang akan digunakan di UI
-final MitraLocationProvider =
+final mitraLocationProvider =
     StateNotifierProvider<MitraLocationNotifier, LocationState>((ref) {
   return MitraLocationNotifier();
 });

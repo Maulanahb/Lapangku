@@ -19,24 +19,22 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
   Widget build(BuildContext context) {
     final fieldsAsync = ref.watch(adminFieldsProvider);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(fieldsAsync),
-            _buildTabs(fieldsAsync),
-            Expanded(
-              child: fieldsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator(color: _primary)),
-                error: (e, _) => Center(child: Text('Error: $e')),
-                data: (fields) => _buildContent(fields),
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(fieldsAsync),
+        _buildTabs(fieldsAsync),
+        Expanded(
+          child: Container(
+            color: const Color(0xFFF5F6FA),
+            child: fieldsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator(color: _primary)),
+              error: (e, _) => Center(child: Text('Error: $e')),
+              data: (fields) => _buildContent(fields),
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -54,23 +52,36 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Verifikasi Pemilik Lapangan',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A2E),
-                ),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Verifikasi Mitra',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF1A1A2E),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Tinjau pengajuan pendaftaran mitra baru.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+                  ),
+                ],
               ),
               ElevatedButton.icon(
                 onPressed: () => ref.read(adminFieldsProvider.notifier).load(),
-                icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Refresh Data'),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Segarkan'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 8,
+                  shadowColor: _primary.withOpacity(0.4),
                 ),
               )
             ],
@@ -78,39 +89,31 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
           const SizedBox(height: 24),
           Row(
             children: [
-              const Text(
-                'Verifikasi Pemilik Lapangan',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A2E),
-                ),
-              ),
-              const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  '$pendingCount Menunggu Verifikasi',
-                  style: const TextStyle(
-                    color: Color(0xFFD97706),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                  gradient: LinearGradient(
+                    colors: [const Color(0xFFFEF3C7), const Color(0xFFFEF3C7).withOpacity(0.8)],
                   ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.notification_important_rounded, color: Color(0xFFD97706), size: 14),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$pendingCount Menunggu Verifikasi',
+                      style: const TextStyle(
+                        color: Color(0xFF92400E),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Tinjau dan setujui pengajuan pemilik lapangan baru untuk ditayangkan di platform.',
-            style: TextStyle(
-              color: Color(0xFF6B7280),
-              fontSize: 14,
-            ),
           ),
         ],
       ),
@@ -167,7 +170,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
   Widget _buildContent(List<AdminFieldModel> fields) {
     final filtered = fields.where((f) {
       if (_filterStatus == 'semua') return true;
-      return f.statusVerifikasi == _filterStatus;
+      return f.statusVerifikasi.toLowerCase().trim() == _filterStatus.toLowerCase().trim();
     }).toList();
 
     return Padding(
@@ -197,7 +200,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                 child: DataTable(
                   horizontalMargin: 24,
                   columnSpacing: 24,
-                  headingRowColor: MaterialStateProperty.all(const Color(0xFFF3F4F6)),
+                  headingRowColor: WidgetStateProperty.all(const Color(0xFFF3F4F6)),
                   dataRowMaxHeight: 72,
                   dataRowMinHeight: 72,
                   columns: const [
@@ -230,7 +233,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                       IconButton(icon: const Icon(Icons.chevron_left, size: 20), onPressed: () {}, color: Colors.grey),
                       Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: _primary, shape: BoxShape.circle),
+                        decoration: const BoxDecoration(color: _primary, shape: BoxShape.circle),
                         child: const Text('1', style: TextStyle(color: Colors.white, fontSize: 12)),
                       ),
                       IconButton(icon: const Icon(Icons.chevron_right, size: 20), onPressed: () {}, color: Colors.grey),
@@ -312,7 +315,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
         DataCell(Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (field.statusVerifikasi == 'menunggu') ...[
+            if (field.statusVerifikasi.toLowerCase().trim() == 'menunggu') ...[
               ElevatedButton.icon(
                 onPressed: () => _updateStatus(field, 'aktif'),
                 icon: const Icon(Icons.check, size: 14),
@@ -341,7 +344,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
               ),
               const SizedBox(width: 8),
             ],
-            if (field.statusVerifikasi != 'menunggu') ...[
+            if (field.statusVerifikasi.toLowerCase().trim() != 'menunggu') ...[
                Container(
                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                  decoration: BoxDecoration(

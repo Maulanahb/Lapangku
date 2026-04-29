@@ -1,24 +1,29 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
+import 'package:email_otp/email_otp.dart';
 
 // Import Langkah-langkah
 import 'step1_account.dart';
-import 'step2_identity.dart';
-import 'step3_field_info.dart';
-import 'step4_location.dart';
-import 'step5_photos.dart';
-import 'step6_schedule.dart';
-import 'step7_review.dart';
+import 'step2_password.dart';
+import 'step3_identity.dart';
+import 'step4_field_info.dart';
+import 'step5_location.dart';
+import 'step6_photos.dart';
+import 'step7_schedule.dart';
+import 'step8_review.dart';
+import 'mitra_waiting_page.dart';
 
 class MitraRegisterPage extends ConsumerStatefulWidget {
-  const MitraRegisterPage({super.key});
+  final String? email;
+  final bool otpAlreadySent;
+  const MitraRegisterPage({super.key, this.email, this.otpAlreadySent = false});
 
   @override
   ConsumerState<MitraRegisterPage> createState() => _MitraRegisterPageState();
@@ -26,40 +31,103 @@ class MitraRegisterPage extends ConsumerStatefulWidget {
 
 class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
   int _currentStep = 1;
-  final int _totalSteps = 7;
+  final int _totalSteps = 8;
   bool _isSubmitting = false;
 
-  // Step 1: Account
+  // Controllers
   final _emailController = TextEditingController();
+  // Controllers
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _businessNameController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  // Step 3: Field Info
+  // OTP State
+  final List<TextEditingController> _otpControllers =
+      List.generate(6, (_) => TextEditingController());
+  final List<FocusNode> _otpFocusNodes = List.generate(6, (_) => FocusNode());
+  bool _isOtpSent = false;
+  bool _isSendingOtp = false;
+  bool _isOtpVerified = false;
+  int _resendTimer = 60;
+  Timer? _timer;
+
+  void _startTimer() => _startResendTimer();
+
+  void _startResendTimer() {
+    _resendTimer = 60;
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_resendTimer > 0) {
+        setState(() => _resendTimer--);
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  // Field Info
   final _fieldNameController = TextEditingController();
   final _fieldDescriptionController = TextEditingController();
   String _selectedSport = 'Futsal';
-  List<String> _selectedFacilities = ['Parkir', 'Wifi', 'Mushola'];
+  final List<String> _selectedFacilities = [];
 
-  // Step 4: Location
+  // Location
   final _addressController = TextEditingController();
 
-  // Step 6: Schedule
+  // Schedule
   final _priceController = TextEditingController();
   TimeOfDay _openingTime = const TimeOfDay(hour: 8, minute: 0);
   TimeOfDay _closingTime = const TimeOfDay(hour: 22, minute: 0);
-  List<String> _selectedDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+  final List<String> _selectedDays = [
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+    'Minggu'
+  ];
 
   // Photos
   File? _ktpPhoto;
   File? _selfiePhoto;
-  List<File> _fieldPhotos = [];
+  final List<File> _fieldPhotos = [];
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.email != null) {
+      _emailController.text = widget.email!;
+      if (widget.otpAlreadySent) {
+        _isOtpSent = true;
+        _startResendTimer();
+      } else {
+        // Auto send OTP on load
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _sendOtp();
+        });
+      }
+    }
+
+    // Add listeners to all OTP controllers
+    for (var controller in _otpControllers) {
+      controller.addListener(() {
+        if (mounted) setState(() {});
+      });
+    }
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
+    for (var c in _otpControllers) {
+      c.dispose();
+    }
+    for (var f in _otpFocusNodes) {
+      f.dispose();
+    }
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _businessNameController.dispose();
@@ -69,6 +137,36 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
     _addressController.dispose();
     _priceController.dispose();
     super.dispose();
+  }
+
+  Future<void> _sendOtp() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      SnackbarHelper.showError(context, 'Alamat email tidak valid');
+      return;
+    }
+
+    setState(() => _isSendingOtp = true);
+    try {
+      EmailOTP.config(
+        appName: "LapangKu Mitra",
+        otpType: OTPType.numeric,
+        otpLength: 6,
+      );
+
+      final success = await EmailOTP.sendOTP(email: email);
+      if (success) {
+        setState(() => _isOtpSent = true);
+        _startResendTimer();
+        SnackbarHelper.showSuccess(context, 'Kode OTP telah dikirim ke $email');
+      } else {
+        SnackbarHelper.showError(context, 'Gagal mengirim OTP. Coba lagi.');
+      }
+    } catch (e) {
+      SnackbarHelper.showError(context, 'Error: $e');
+    } finally {
+      setState(() => _isSendingOtp = false);
+    }
   }
 
   Future<void> _pickImage(ImageSource source, {required bool isKtp}) async {
@@ -94,15 +192,72 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
     }
   }
 
-  void _nextStep() {
-    // Validasi step 1 sebelum lanjut
+  void _nextStep() async {
     if (_currentStep == 1) {
-      final err = _validateStep1();
-      if (err != null) {
-        SnackbarHelper.showError(context, err);
+      final otpCode = _otpControllers.map((c) => c.text).join();
+      if (!_isOtpSent) {
+        return SnackbarHelper.showError(
+            context, 'Silakan kirim kode OTP terlebih dahulu');
+      } else if (otpCode.length != 6) {
+        return SnackbarHelper.showError(context, 'Masukkan 6 digit kode OTP');
+      } else if (!_isOtpVerified) {
+        setState(() => _isSubmitting = true);
+        final res = await EmailOTP.verifyOTP(otp: otpCode);
+        setState(() => _isSubmitting = false);
+
+        if (res) {
+          _isOtpVerified = true;
+          setState(() => _currentStep++);
+          return;
+        } else {
+          return SnackbarHelper.showError(
+              context, 'Kode OTP tidak valid atau sudah kadaluarsa');
+        }
+      } else {
+        setState(() => _currentStep++);
         return;
       }
+    } else if (_currentStep == 2) {
+      // Validate Profile & Password step
+      if (_passwordController.text.length < 8)
+        return SnackbarHelper.showError(context, 'Password minimal 8 karakter');
+      if (_passwordController.text != _confirmPasswordController.text)
+        return SnackbarHelper.showError(
+            context, 'Konfirmasi password tidak cocok');
+    } else if (_currentStep == 3) {
+      // Validate Identity step
+      if (_ktpPhoto == null)
+        return SnackbarHelper.showError(context, 'Foto KTP wajib diunggah');
+      if (_selfiePhoto == null)
+        return SnackbarHelper.showError(context, 'Foto Selfie wajib diunggah');
+    } else if (_currentStep == 4) {
+      // Validate Field Info step
+      if (_businessNameController.text.trim().isEmpty)
+        return SnackbarHelper.showError(context, 'Nama pemilik wajib diisi');
+      if (_phoneController.text.trim().isEmpty)
+        return SnackbarHelper.showError(context, 'Nomor WhatsApp wajib diisi');
+      if (_fieldNameController.text.trim().isEmpty)
+        return SnackbarHelper.showError(context, 'Nama lapangan wajib diisi');
+      if (_selectedSport.isEmpty)
+        return SnackbarHelper.showError(context, 'Pilih jenis olahraga');
+    } else if (_currentStep == 5) {
+      // Validate Location
+      if (_addressController.text.trim().isEmpty)
+        return SnackbarHelper.showError(context, 'Alamat wajib diisi');
+    } else if (_currentStep == 6) {
+      // Validate Photos
+      if (_fieldPhotos.isEmpty)
+        return SnackbarHelper.showError(
+            context, 'Unggah minimal satu foto lapangan');
+    } else if (_currentStep == 7) {
+      // Validate Price & Schedule
+      if (_priceController.text.trim().isEmpty)
+        return SnackbarHelper.showError(context, 'Harga sewa wajib diisi');
+      if (_selectedDays.isEmpty)
+        return SnackbarHelper.showError(
+            context, 'Pilih minimal satu hari operasional');
     }
+
     if (_currentStep < _totalSteps) {
       setState(() => _currentStep++);
     } else {
@@ -110,23 +265,74 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
     }
   }
 
-  String? _validateStep1() {
-    if (_businessNameController.text.trim().isEmpty) {
+  Widget _buildLabeledField({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    required String hint,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF4A5568)),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7FAFC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            decoration: InputDecoration(
+              hintText: hint,
+              prefixIcon: Icon(icon, color: const Color(0xFF1B6B3A), size: 20),
+              border: InputBorder.none,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String? _validateStep2() {
+    if (_businessNameController.text.trim().isEmpty)
       return 'Nama bisnis wajib diisi';
-    }
-    if (_emailController.text.trim().isEmpty ||
-        !_emailController.text.contains('@')) {
-      return 'Email tidak valid';
-    }
-    if (_phoneController.text.trim().isEmpty) {
-      return 'No. telepon wajib diisi';
-    }
-    if (_passwordController.text.length < 6) {
-      return 'Password minimal 6 karakter';
-    }
-    if (_passwordController.text != _confirmPasswordController.text) {
+    if (_phoneController.text.trim().isEmpty) return 'No. telepon wajib diisi';
+    if (_passwordController.text.length < 8)
+      return 'Password minimal 8 karakter';
+    if (_passwordController.text != _confirmPasswordController.text)
       return 'Konfirmasi password tidak cocok';
-    }
+    if (_ktpPhoto == null) return 'Foto KTP wajib diunggah';
+    if (_selfiePhoto == null) return 'Foto Selfie wajib diunggah';
+    return null;
+  }
+
+  String? _validateStep3() {
+    if (_fieldNameController.text.trim().isEmpty)
+      return 'Nama lapangan wajib diisi';
+    if (_priceController.text.trim().isEmpty) return 'Harga sewa wajib diisi';
+    if (_selectedDays.isEmpty) return 'Pilih minimal satu hari operasional';
+    return null;
+  }
+
+  String? _validateStep4() {
+    if (_addressController.text.trim().isEmpty) return 'Alamat wajib diisi';
+    return null;
+  }
+
+  String? _validateStep5() {
+    if (_fieldPhotos.isEmpty) return 'Unggah minimal satu foto lapangan';
     return null;
   }
 
@@ -141,72 +347,60 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
   Future<void> _submitRegistration() async {
     setState(() => _isSubmitting = true);
     try {
-      // 1. Buat akun di Firebase Auth
-      final credential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
+      final credential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
       final uid = credential.user!.uid;
 
-      // 2. Simpan profil Mitra ke koleksi 'Mitras'
-      await FirebaseFirestore.instance.collection('Mitras').doc(uid).set({
-        'uid': uid,
-        'email': _emailController.text.trim(),
-        'businessName': _businessNameController.text.trim(),
-        'namaBisnis': _businessNameController.text.trim(),
-        'MitraName': _businessNameController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'telepon': _phoneController.text.trim(),
-        'isVerified': false,
-        'notificationOrder': true,
-        'notificationPromo': false,
-        'totalFields': 0,
-        'totalOrders': 0,
-        'rating': 0.0,
-        'bankName': '',
-        'bankAccount': '',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      final db = FirestoreService.instance;
 
-      // 3. Simpan user ke koleksi 'users' (untuk auth routing)
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({
-        'uid': uid,
-        'email': _emailController.text.trim(),
-        'nama': _businessNameController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'role': 'Mitra',
-        'isVerified': false,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      await Future.wait([
+        db.collection('mitra').doc(uid).set({
+          'uid': uid,
+          'email': _emailController.text.trim(),
+          'ownerName': _businessNameController.text.trim(),
+          'businessName': _businessNameController.text.trim(),
+          'namaBisnis': _businessNameController.text.trim(),
+          'mitraName': _businessNameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'whatsapp': _phoneController.text.trim(),
+          'isVerified': false,
+          'statusVerifikasi': 'menunggu',
+          'createdAt': FieldValue.serverTimestamp(),
+          'namaLapangan': _fieldNameController.text.trim(),
+          'deskripsi': _fieldDescriptionController.text.trim(),
+          'alamat': _addressController.text.trim(),
+          'hargaPerJam': int.tryParse(_priceController.text) ?? 0,
+          'sport': _selectedSport,
+          'facilities': _selectedFacilities,
+          'jamOperasional':
+              '${_openingTime.format(context)} - ${_closingTime.format(context)}',
+          'hariOperasional': _selectedDays,
+        }),
+        db.collection('users').doc(uid).set({
+          'uid': uid,
+          'email': _emailController.text.trim(),
+          'nama': _businessNameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'role': 'mitra',
+          'isVerified': false,
+          'statusVerifikasi': 'menunggu',
+          'createdAt': FieldValue.serverTimestamp(),
+        }),
+      ]);
 
-      // 4. Logout lalu minta login ulang agar role terbaca dengan benar
       await FirebaseAuth.instance.signOut();
 
       if (mounted) {
         SnackbarHelper.showSuccess(
+            context, 'Pendaftaran Berhasil! Silakan tunggu verifikasi admin.');
+        Navigator.pushAndRemoveUntil(
           context,
-          'Akun berhasil dibuat! Silakan login.',
+          MaterialPageRoute(builder: (context) => const MitraWaitingPage()),
+          (route) => false,
         );
-        await Future.delayed(const Duration(seconds: 1));
-        if (mounted) {
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/login',
-            (route) => false,
-          );
-        }
-      }
-    } on FirebaseAuthException catch (e) {
-      if (mounted) {
-        String msg = 'Terjadi kesalahan. Coba lagi.';
-        if (e.code == 'email-already-in-use') {
-          msg = 'Email sudah digunakan. Gunakan email lain.';
-        } else if (e.code == 'weak-password') {
-          msg = 'Password terlalu lemah. Minimal 6 karakter.';
-        } else if (e.code == 'invalid-email') {
-          msg = 'Format email tidak valid.';
-        }
-        SnackbarHelper.showError(context, msg);
       }
     } catch (e) {
       if (mounted) {
@@ -244,46 +438,66 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
+      shape: Border(
+          bottom: BorderSide(color: Colors.grey.withOpacity(0.1), width: 1)),
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Color(0xFF2D3748)),
+        icon: const Icon(Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF2D3748), size: 20),
         onPressed: _isSubmitting ? null : _prevStep,
       ),
-      title: const Text(
-        'LapangKu',
-        style: TextStyle(
-          color: Color(0xFF1B6B3A),
-          fontWeight: FontWeight.bold,
-          fontSize: 18,
-        ),
-      ),
+      title: const Text('LapangKu',
+          style: TextStyle(
+              color: Color(0xFF1B6B3A),
+              fontWeight: FontWeight.w900,
+              fontSize: 22,
+              letterSpacing: -1.0)),
       centerTitle: true,
+      actions: [
+        IconButton(
+          icon:
+              const Icon(Icons.help_outline_rounded, color: Color(0xFF2D3748)),
+          onPressed: () {},
+        ),
+      ],
     );
   }
 
   Widget _buildProgressBar() {
-    if (_currentStep == _totalSteps) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+    if (_currentStep == 8) return const SizedBox.shrink();
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Langkah $_currentStep dari $_totalSteps',
-            style: const TextStyle(
-                color: Color(0xFF1B6B3A),
-                fontWeight: FontWeight.bold,
-                fontSize: 12),
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: _currentStep / _totalSteps,
-              backgroundColor: const Color(0xFFEDF2F7),
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(Color(0xFF1B6B3A)),
-              minHeight: 6,
-            ),
+          Text('Langkah $_currentStep dari 7',
+              style: const TextStyle(
+                  color: Color(0xFF1B6B3A),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13)),
+          const SizedBox(height: 12),
+          Stack(
+            children: [
+              Container(
+                height: 6,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                height: 6,
+                width: (MediaQuery.of(context).size.width - 48) *
+                    (_currentStep / 7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1B6B3A),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -294,21 +508,27 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
     switch (_currentStep) {
       case 1:
         return Step1Account(
-          emailController: _emailController,
-          passwordController: _passwordController,
-          confirmPasswordController: _confirmPasswordController,
-          businessNameController: _businessNameController,
-          phoneController: _phoneController,
+          otpControllers: _otpControllers,
+          otpFocusNodes: _otpFocusNodes,
+          resendTimer: _resendTimer,
+          onResend: _startTimer,
         );
       case 2:
-        return Step2Identity(
+        return Step2Password(
+          passwordController: _passwordController,
+          confirmPasswordController: _confirmPasswordController,
+        );
+      case 3:
+        return Step3Identity(
           ktpPhoto: _ktpPhoto,
           selfiePhoto: _selfiePhoto,
           onPickKtp: () => _pickImage(ImageSource.gallery, isKtp: true),
           onPickSelfie: () => _pickImage(ImageSource.camera, isKtp: false),
         );
-      case 3:
-        return Step3FieldInfo(
+      case 4:
+        return Step4FieldInfo(
+          ownerNameController: _businessNameController,
+          whatsappController: _phoneController,
           nameController: _fieldNameController,
           descriptionController: _fieldDescriptionController,
           selectedSport: _selectedSport,
@@ -324,30 +544,32 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
             });
           },
         );
-      case 4:
-        return Step4Location(addressController: _addressController);
       case 5:
-        return Step5Photos(
-          fieldPhotos: _fieldPhotos,
-          onPickPhotos: _pickFieldPhotos,
-          onRemovePhoto: (index) {
-            setState(() => _fieldPhotos.removeAt(index));
-          },
+        return Step5Location(
+          addressController: _addressController,
         );
       case 6:
-        return Step6Schedule(
+        return Step6Photos(
+          fieldPhotos: _fieldPhotos,
+          onPickPhotos: _pickFieldPhotos,
+          onRemovePhoto: (index) =>
+              setState(() => _fieldPhotos.removeAt(index)),
+        );
+      case 7:
+        return Step7Schedule(
           priceController: _priceController,
           openingTime: _openingTime,
           closingTime: _closingTime,
           selectedDays: _selectedDays,
+          selectedFacilities: _selectedFacilities,
           onPickOpeningTime: () async {
-            final time =
-                await showTimePicker(context: context, initialTime: _openingTime);
+            final time = await showTimePicker(
+                context: context, initialTime: _openingTime);
             if (time != null) setState(() => _openingTime = time);
           },
           onPickClosingTime: () async {
-            final time =
-                await showTimePicker(context: context, initialTime: _closingTime);
+            final time = await showTimePicker(
+                context: context, initialTime: _closingTime);
             if (time != null) setState(() => _closingTime = time);
           },
           onDayToggled: (day) {
@@ -359,13 +581,24 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
               }
             });
           },
+          onFacilityToggled: (facility) {
+            setState(() {
+              if (_selectedFacilities.contains(facility)) {
+                _selectedFacilities.remove(facility);
+              } else {
+                _selectedFacilities.add(facility);
+              }
+            });
+          },
         );
-      case 7:
-        return Step7Review(
-          contact: _phoneController.text,
-          fieldName: _fieldNameController.text,
-          fieldDescription: _fieldDescriptionController.text,
-          address: _addressController.text,
+      case 8:
+        return Step8Review(
+          businessName: _businessNameController.text.trim(),
+          email: _emailController.text.trim(),
+          contact: _phoneController.text.trim(),
+          fieldName: _fieldNameController.text.trim(),
+          fieldDescription: _fieldDescriptionController.text.trim(),
+          address: _addressController.text.trim(),
           price: _priceController.text,
           ktpPhoto: _ktpPhoto,
           selfiePhoto: _selfiePhoto,
@@ -378,42 +611,55 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
   }
 
   Widget _buildBottomButton() {
+    final isStep1 = _currentStep == 1;
     final isLastStep = _currentStep == _totalSteps;
+
+    // Logic to disable button in Step 1 if OTP is incomplete
+    bool isEnabled = !_isSubmitting;
+    if (isStep1) {
+      final otpCode = _otpControllers.map((c) => c.text).join();
+      if (otpCode.length != 6) {
+        isEnabled = false;
+      }
+    }
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: SizedBox(
         width: double.infinity,
-        height: 56,
+        height: 64,
         child: ElevatedButton(
-          onPressed: _isSubmitting ? null : _nextStep,
+          onPressed: isEnabled ? _nextStep : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF0F5A2F),
-            disabledBackgroundColor: Colors.grey.shade300,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            backgroundColor: const Color(0xFF134D2E),
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: const Color(0xFFE5E7EB),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            elevation: 0,
           ),
           child: _isSubmitting
               ? const SizedBox(
-                  height: 22,
-                  width: 22,
+                  height: 24,
+                  width: 24,
                   child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2.5),
+                      color: Colors.white, strokeWidth: 3),
                 )
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      isLastStep ? 'Daftar Sekarang' : 'Lanjutkan',
+                      isStep1
+                          ? 'Verifikasi'
+                          : (isLastStep ? 'Daftar Sekarang' : 'Lanjutkan'),
                       style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white),
+                          fontSize: 18, fontWeight: FontWeight.w900),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Icon(
                       isLastStep
-                          ? Icons.check_circle
-                          : Icons.arrow_forward,
+                          ? Icons.check_circle_rounded
+                          : Icons.arrow_forward_ios_rounded,
                       color: Colors.white,
                       size: 18,
                     ),
