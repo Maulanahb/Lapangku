@@ -12,6 +12,7 @@ import 'about_page.dart';
 import 'customer_orders_page.dart';
 
 import 'package:lapangku/controllers/profile/profile_provider.dart';
+import 'package:lapangku/controllers/favorite/favorite_controller.dart';
 import 'widgets/profile_menu_tile.dart';
 
 class CustomerProfilePage extends ConsumerStatefulWidget {
@@ -178,7 +179,14 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
                                   width: 1,
                                   color: Colors.grey[200],
                                 ),
-                                _buildStatItem(profileState.favoritesCount.toString(), 'Favorit'),
+                                _buildStatItem(
+                                  ref.watch(favoritesCountProvider).when(
+                                    data: (count) => count.toString(),
+                                    loading: () => '...',
+                                    error: (_, __) => '0',
+                                  ),
+                                  'Favorit',
+                                ),
                               ],
                             ),
                     ),
