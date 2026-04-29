@@ -1,6 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
+import 'personal_info_page.dart';
+import 'payment_method_page.dart';
+import 'security_page.dart';
+import 'favorites_page.dart';
+import 'reviews_page.dart';
+import 'help_page.dart';
+import 'terms_page.dart';
+import 'about_page.dart';
+import 'customer_orders_page.dart';
+
+import 'package:lapangku/controllers/profile/profile_provider.dart';
+import 'widgets/profile_menu_tile.dart';
 
 class CustomerProfilePage extends ConsumerStatefulWidget {
   const CustomerProfilePage({super.key});
@@ -10,9 +22,6 @@ class CustomerProfilePage extends ConsumerStatefulWidget {
 }
 
 class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
-  // State untuk toggle Notifikasi
-  bool _isNotificationOn = true;
-
   // Definisi warna yang digunakan
   final Color primaryGreen = const Color(0xFF1B5E20); // Hijau Tua
   final Color lightGreen = const Color(
@@ -23,6 +32,7 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
   Widget build(BuildContext context) {
     final userAsync = ref.watch(authStateProvider);
     final user = userAsync.value;
+    final profileState = ref.watch(profileStateProvider);
 
     return Scaffold(
       backgroundColor: Colors.grey[200], // Background abu-abu muda
@@ -77,7 +87,7 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
                     // Tombol Edit Profil
                     InkWell(
                       onTap: () {
-                        print('Tombol Edit Profil ditekan');
+                        // TODO: Navigate to Edit Profile Page
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -136,7 +146,7 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
+                            color: Colors.grey.withValues(alpha: 0.1),
                             spreadRadius: 2,
                             blurRadius: 10,
                             offset: const Offset(
@@ -146,93 +156,102 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
                           ),
                         ],
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildStatItem('12', 'Pesanan'),
-                          Container(
-                            height: 40,
-                            width: 1,
-                            color: Colors.grey[200],
-                          ),
-                          _buildStatItemWithStar('4.9', 'Rating'),
-                          Container(
-                            height: 40,
-                            width: 1,
-                            color: Colors.grey[200],
-                          ),
-                          _buildStatItem('3', 'Favorit'),
-                        ],
-                      ),
+                      child: profileState.isLoading
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildStatItem(profileState.totalOrders.toString(), 'Pesanan'),
+                                Container(
+                                  height: 40,
+                                  width: 1,
+                                  color: Colors.grey[200],
+                                ),
+                                _buildStatItemWithStar(profileState.rating.toString(), 'Rating'),
+                                Container(
+                                  height: 40,
+                                  width: 1,
+                                  color: Colors.grey[200],
+                                ),
+                                _buildStatItem(profileState.favoritesCount.toString(), 'Favorit'),
+                              ],
+                            ),
                     ),
                     const SizedBox(height: 30),
 
                     // Grup Akun
                     _buildSectionTitle('Akun'),
-                    _buildMenuTile(
-                      Icons.person_outline,
-                      'Informasi Pribadi',
-                      null,
-                      true,
+                    ProfileMenuTile(
+                      icon: Icons.person_outline,
+                      title: 'Informasi Pribadi',
+                      showDivider: true,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalInfoPage())),
                     ),
-                    _buildMenuTile(
-                      Icons.payments_outlined,
-                      'Metode Pembayaran',
-                      'BCA, GoPay',
-                      true,
+                    ProfileMenuTile(
+                      icon: Icons.payments_outlined,
+                      title: 'Metode Pembayaran',
+                      subtitle: 'BCA, GoPay',
+                      showDivider: true,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentMethodPage())),
                     ),
-                    _buildNotificationTile(),
-                    _buildMenuTile(
-                      Icons.shield_outlined,
-                      'Keamanan',
-                      null,
-                      false,
+                    _buildNotificationTile(context, profileState),
+                    ProfileMenuTile(
+                      icon: Icons.shield_outlined,
+                      title: 'Keamanan',
+                      showDivider: false,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SecurityPage())),
                     ),
 
                     const SizedBox(height: 24),
 
                     // Grup Aktivitas
                     _buildSectionTitle('Aktivitas'),
-                    _buildMenuTile(
-                      Icons.history,
-                      'Riwayat Pesanan',
-                      null,
-                      true,
+                    ProfileMenuTile(
+                      icon: Icons.history,
+                      title: 'Riwayat Pesanan',
+                      showDivider: true,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerOrdersPage())),
                     ),
-                    _buildMenuTile(
-                      Icons.favorite_border,
-                      'Lapangan Favorit',
-                      null,
-                      true,
+                    ProfileMenuTile(
+                      icon: Icons.favorite_border,
+                      title: 'Lapangan Favorit',
+                      showDivider: true,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FavoritesPage())),
                     ),
-                    _buildMenuTile(
-                      Icons.rate_review_outlined,
-                      'Ulasan Saya',
-                      null,
-                      false,
+                    ProfileMenuTile(
+                      icon: Icons.rate_review_outlined,
+                      title: 'Ulasan Saya',
+                      showDivider: false,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewsPage())),
                     ),
 
                     const SizedBox(height: 24),
 
                     // Grup Lainnya
                     _buildSectionTitle('Lainnya'),
-                    _buildMenuTile(
-                      Icons.help_outline,
-                      'Bantuan & FAQ',
-                      null,
-                      true,
+                    ProfileMenuTile(
+                      icon: Icons.help_outline,
+                      title: 'Bantuan & FAQ',
+                      showDivider: true,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpPage())),
                     ),
-                    _buildMenuTile(
-                      Icons.gavel_outlined,
-                      'Syarat & Ketentuan',
-                      null,
-                      true,
+                    ProfileMenuTile(
+                      icon: Icons.gavel_outlined,
+                      title: 'Syarat & Ketentuan',
+                      showDivider: true,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TermsPage())),
                     ),
-                    _buildMenuTile(
-                      Icons.info_outline,
-                      'Tentang LapangKu',
-                      'v1.0.0',
-                      false,
+                    ProfileMenuTile(
+                      icon: Icons.info_outline,
+                      title: 'Tentang LapangKu',
+                      subtitle: 'v1.0.0',
+                      showDivider: false,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPage())),
                     ),
 
                     const SizedBox(height: 40),
@@ -250,8 +269,35 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
                           ),
                         ),
                         onPressed: () {
-                          ref.read(authProvider.notifier).logout();
-                          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Konfirmasi Logout'),
+                              content: const Text('Apakah Anda yakin ingin keluar dari akun ini?'),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    ref.read(authProvider.notifier).logout();
+                                    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                                  },
+                                  child: const Text('Keluar', style: TextStyle(color: Colors.white)),
+                                ),
+                              ],
+                            ),
+                          );
                         },
                         icon: const Icon(Icons.logout, color: Colors.red),
                         label: const Text(
@@ -348,47 +394,8 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
     );
   }
 
-  Widget _buildMenuTile(
-    IconData icon,
-    String title,
-    String? subtitle,
-    bool showDivider,
-  ) {
-    return Column(
-      children: [
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(icon, color: Colors.blueGrey, size: 24),
-          title: Text(
-            title,
-            style: const TextStyle(
-              color: Colors.black87,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
-          subtitle: subtitle != null
-              ? Text(
-                  subtitle,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                )
-              : null,
-          trailing: const Icon(
-            Icons.arrow_forward_ios,
-            color: Colors.grey,
-            size: 16,
-          ),
-          onTap: () {
-            print('Membuka halaman: $title');
-          },
-        ),
-        if (showDivider)
-          const Divider(height: 1, color: Color(0xFFEEEEEE), thickness: 1),
-      ],
-    );
-  }
 
-  Widget _buildNotificationTile() {
+  Widget _buildNotificationTile(BuildContext context, ProfileState state) {
     return Column(
       children: [
         ListTile(
@@ -407,14 +414,20 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
             ),
           ),
           trailing: Switch(
-            value: _isNotificationOn,
-            activeColor: Colors.white,
+            value: state.isNotificationOn,
+            activeThumbColor: Colors.white,
             activeTrackColor: primaryGreen,
             onChanged: (value) {
-              setState(() {
-                _isNotificationOn = value;
-              });
-              print('Status Notifikasi diubah menjadi: $value');
+              ref.read(profileStateProvider.notifier).toggleNotification();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    value ? 'Notifikasi diaktifkan' : 'Notifikasi dinonaktifkan',
+                  ),
+                  duration: const Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             },
           ),
         ),

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'customer_home_page.dart';
-
-// [RESOLVED] Menggabungkan import dari server (Profile) dan dari stash-mu (Orders)
-import 'customer_profile_page.dart';
 import 'customer_orders_page.dart';
+import 'customer_profile_page.dart';
+import 'favorites_page.dart';
 
 class CustomerMainPage extends ConsumerStatefulWidget {
   const CustomerMainPage({super.key});
@@ -19,14 +18,17 @@ class _CustomerMainPageState extends ConsumerState<CustomerMainPage> {
   final List<Widget> _pages = [
     const CustomerHomePage(),
     const CustomerOrdersPage(),
-    const _DummyPage(title: 'Favorit', icon: Icons.favorite),
+    const FavoritesPage(),
     const CustomerProfilePage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -102,50 +104,6 @@ class _CustomerMainPageState extends ConsumerState<CustomerMainPage> {
                 child: Icon(Icons.person),
               ),
               label: 'Profil',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DummyPage extends StatelessWidget {
-  final String title;
-  final IconData icon;
-
-  const _DummyPage({required this.title, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
-      appBar: AppBar(
-        title: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: const Color(0xFF1B6B3A),
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 80, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(
-              'Halaman $title\nSegera Hadir!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
-              ),
             ),
           ],
         ),
