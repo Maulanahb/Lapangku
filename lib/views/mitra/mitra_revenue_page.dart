@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lapangku/features/mitra/revenue/providers/mitra_revenue_provider.dart';
+import 'package:lapangku/controllers/mitra/mitra_revenue_provider.dart';
 
 class MitraRevenuePage extends ConsumerStatefulWidget {
   const MitraRevenuePage({super.key});

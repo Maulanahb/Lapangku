@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/models/field/field_model.dart';
@@ -70,7 +70,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     );
   }
 
-  // ── HERO ──
+  // â”€â”€ HERO â”€â”€
   Widget _heroAppBar() {
     final imgs = widget.field.fotoGaleri;
     return SliverAppBar(
@@ -138,7 +138,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   );
   Widget _ph() => Container(color: const Color(0xFFE8F5EC), child: const Center(child: Icon(Icons.sports_soccer, size: 60, color: Color(0xFF1B6B3A))));
 
-  // ── BODY ──
+  // â”€â”€ BODY â”€â”€
   Widget _body() {
     return Transform.translate(
       offset: const Offset(0, -28),
@@ -152,7 +152,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     );
   }
 
-  // ── HEADER ──
+  // â”€â”€ HEADER â”€â”€
   Widget _headerInfo() {
     final f = widget.field;
     return Padding(
@@ -184,7 +184,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
             child: const Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.circle, size: 8, color: Color(0xFF1B6B3A)),
               SizedBox(width: 4),
-              Text('Buka · 06:00-22:00', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
+              Text('Buka Â· 06:00-22:00', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
             ]),
           ),
         ]),
@@ -193,7 +193,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     );
   }
 
-  // ── TABS ──
+  // â”€â”€ TABS â”€â”€
   Widget _tabBarW() => TabBar(
     controller: _tabController, onTap: (_) => setState(() {}),
     labelColor: const Color(0xFF1B6B3A), unselectedLabelColor: const Color(0xFF718096),
@@ -292,7 +292,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       Expanded(child: Text(widget.field.alamat, style: const TextStyle(fontSize: 13, color: Color(0xFF4A5568))))]),
   ]));
 
-  // ── SCHEDULER (REAL-TIME) ──
+  // â”€â”€ SCHEDULER (REAL-TIME) â”€â”€
   Widget _scheduler() {
     final bookedAsync = ref.watch(bookedSlotsProvider(_providerKey));
 
@@ -327,7 +327,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
           },
         )),
         const SizedBox(height: 20),
-        // Time Slots — real-time dari Firestore
+        // Time Slots â€” real-time dari Firestore
         bookedAsync.when(
           loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: Color(0xFF1B6B3A)))),
           error: (e, _) => Padding(padding: const EdgeInsets.all(16), child: Text('Gagal memuat jadwal: $e', style: const TextStyle(color: Colors.red))),
@@ -370,7 +370,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     );
   }
 
-  // ── BOTTOM BAR ──
+  // â”€â”€ BOTTOM BAR â”€â”€
   Widget _bottomBar() {
     final hasSel = _selectedTimeIndices.isNotEmpty;
     return Container(
@@ -378,7 +378,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -4))]),
       child: Row(children: [
         Expanded(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(hasSel ? '${_dates[_selectedDateIndex]['full']} · ${_selectedTimeIndices.length} sesi' : 'Pilih jadwal terlebih dahulu',
+          Text(hasSel ? '${_dates[_selectedDateIndex]['full']} Â· ${_selectedTimeIndices.length} sesi' : 'Pilih jadwal terlebih dahulu',
               style: const TextStyle(fontSize: 11, color: Color(0xFF718096))),
           const SizedBox(height: 2),
           Text(hasSel ? _fmt(_totalHarga) : 'Rp -', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),

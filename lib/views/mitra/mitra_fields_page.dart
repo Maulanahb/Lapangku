@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/features/mitra/field/providers/mitra_field_provider.dart';
-import 'package:lapangku/features/mitra/field/models/mitra_field_model.dart';
+import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
+import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
-import 'package:lapangku/views/Mitra/widgets/mitra_field_form_sheet.dart';
+import 'package:lapangku/views/mitra/widgets/mitra_field_form_sheet.dart';
 
 class MitraFieldsPage extends ConsumerStatefulWidget {
   const MitraFieldsPage({super.key});

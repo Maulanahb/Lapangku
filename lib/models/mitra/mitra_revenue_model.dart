@@ -1,4 +1,4 @@
-class MitraTransactionModel {
+﻿class MitraTransactionModel {
   final String id;
   final String customerName;
   final String fieldName;

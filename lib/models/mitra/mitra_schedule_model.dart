@@ -1,4 +1,4 @@
-class MitraScheduleModel {
+﻿class MitraScheduleModel {
   final String id;
   final String fieldId;
   final String hari; // Senin, Selasa, ..., Minggu

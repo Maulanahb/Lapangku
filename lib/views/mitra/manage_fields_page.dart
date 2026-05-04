@@ -1,4 +1,4 @@
-// lib/views/Mitra/manage_fields_page.dart
+﻿// lib/views/Mitra/manage_fields_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -136,7 +136,7 @@ class _ManageFieldsPageState extends ConsumerState<ManageFieldsPage> {
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('Status Lapangan', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
               const SizedBox(height: 4),
-              Text('$status — $statusDetail', style: TextStyle(color: isActive ? const Color(0xFF059669) : _textGrey, fontSize: 13, fontWeight: FontWeight.w600)),
+              Text('$status â€” $statusDetail', style: TextStyle(color: isActive ? const Color(0xFF059669) : _textGrey, fontSize: 13, fontWeight: FontWeight.w600)),
             ]),
             Switch(value: isActive, onChanged: (val) {},
               activeThumbColor: Colors.white, activeTrackColor: const Color(0xFF166534),

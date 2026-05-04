@@ -1,11 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:lapangku/models/field/field_model.dart';
 
 class FieldService {
   final FirebaseFirestore _db = FirebaseFirestore.instanceFor(
     app: Firebase.app(),
-    databaseId: 'lapangku-db', // ✅ dipertahankan
+    databaseId: 'lapangku-db', // âœ… dipertahankan
   );
 
   Future<List<FieldModel>> getFields() async {

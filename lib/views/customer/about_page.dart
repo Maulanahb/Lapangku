@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
@@ -95,12 +95,12 @@ class AboutPage extends StatelessWidget {
             Divider(color: Colors.grey.shade200),
             const SizedBox(height: 20),
             Text(
-              '© 2026 LapangKu App',
+              'Â© 2026 LapangKu App',
               style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
             ),
             const SizedBox(height: 4),
             Text(
-              'Dibuat dengan ❤️ untuk olahraga Indonesia',
+              'Dibuat dengan â¤ï¸ untuk olahraga Indonesia',
               style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
             ),
             const SizedBox(height: 40),

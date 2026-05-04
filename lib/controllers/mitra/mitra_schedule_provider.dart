@@ -1,15 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/features/mitra/field/providers/mitra_field_provider.dart';
-import 'package:lapangku/features/mitra/schedule/models/mitra_schedule_model.dart';
-import 'package:lapangku/features/mitra/schedule/repositories/mitra_schedule_repository.dart';
-import 'package:lapangku/services/firebase/mitra_service.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lapangku/models/mitra/mitra_schedule_model.dart';
 import 'package:lapangku/controllers/mitra/mitra_controller.dart';
+import 'package:lapangku/services/firebase/mitra_service.dart';
 
-final mitraScheduleRepositoryProvider = Provider<MitraScheduleRepository>(
-    (ref) => MitraScheduleRepository(ref.watch(mitraServiceProvider)));
-
-// ── State ──────────────────────────────────────────────────────────
+// â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class MitraScheduleState {
   final String? selectedFieldId;
   final AsyncValue<List<MitraScheduleModel>> schedule;
@@ -33,11 +27,11 @@ class MitraScheduleState {
       );
 }
 
-// ── Notifier ───────────────────────────────────────────────────────
+// â”€â”€ Notifier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class MitraScheduleNotifier extends StateNotifier<MitraScheduleState> {
-  final MitraScheduleRepository _repository;
+  final MitraService _service;
 
-  MitraScheduleNotifier(this._repository) : super(const MitraScheduleState());
+  MitraScheduleNotifier(this._service) : super(const MitraScheduleState());
 
   Future<void> selectField(String fieldId) async {
     state = state.copyWith(
@@ -45,7 +39,7 @@ class MitraScheduleNotifier extends StateNotifier<MitraScheduleState> {
       schedule: const AsyncLoading(),
     );
     try {
-      final schedule = await _repository.getSchedule(fieldId);
+      final schedule = await _service.getSchedule(fieldId);
       // Sort by day order
       final dayOrder = [
         'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
@@ -77,7 +71,7 @@ class MitraScheduleNotifier extends StateNotifier<MitraScheduleState> {
 
     state = state.copyWith(isSaving: true);
     try {
-      await _repository.saveSchedule(fieldId, schedules);
+      await _service.saveSchedule(fieldId, schedules);
     } finally {
       state = state.copyWith(isSaving: false);
     }
@@ -86,6 +80,6 @@ class MitraScheduleNotifier extends StateNotifier<MitraScheduleState> {
 
 final mitraScheduleProvider =
     StateNotifierProvider<MitraScheduleNotifier, MitraScheduleState>((ref) {
-  final repo = ref.watch(mitraScheduleRepositoryProvider);
-  return MitraScheduleNotifier(repo);
+  final service = ref.watch(mitraServiceProvider);
+  return MitraScheduleNotifier(service);
 });

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -202,7 +202,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
         return SnackbarHelper.showError(context, 'Masukkan 6 digit kode OTP');
       } else if (!_isOtpVerified) {
         setState(() => _isSubmitting = true);
-        final res = await EmailOTP.verifyOTP(otp: otpCode);
+        final res = EmailOTP.verifyOTP(otp: otpCode);
         setState(() => _isSubmitting = false);
 
         if (res) {
@@ -219,43 +219,55 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
       }
     } else if (_currentStep == 2) {
       // Validate Profile & Password step
-      if (_passwordController.text.length < 8)
+      if (_passwordController.text.length < 8) {
         return SnackbarHelper.showError(context, 'Password minimal 8 karakter');
-      if (_passwordController.text != _confirmPasswordController.text)
+      }
+      if (_passwordController.text != _confirmPasswordController.text) {
         return SnackbarHelper.showError(
             context, 'Konfirmasi password tidak cocok');
+      }
     } else if (_currentStep == 3) {
       // Validate Identity step
-      if (_ktpPhoto == null)
+      if (_ktpPhoto == null) {
         return SnackbarHelper.showError(context, 'Foto KTP wajib diunggah');
-      if (_selfiePhoto == null)
+      }
+      if (_selfiePhoto == null) {
         return SnackbarHelper.showError(context, 'Foto Selfie wajib diunggah');
+      }
     } else if (_currentStep == 4) {
       // Validate Field Info step
-      if (_businessNameController.text.trim().isEmpty)
+      if (_businessNameController.text.trim().isEmpty) {
         return SnackbarHelper.showError(context, 'Nama pemilik wajib diisi');
-      if (_phoneController.text.trim().isEmpty)
+      }
+      if (_phoneController.text.trim().isEmpty) {
         return SnackbarHelper.showError(context, 'Nomor WhatsApp wajib diisi');
-      if (_fieldNameController.text.trim().isEmpty)
+      }
+      if (_fieldNameController.text.trim().isEmpty) {
         return SnackbarHelper.showError(context, 'Nama lapangan wajib diisi');
-      if (_selectedSport.isEmpty)
+      }
+      if (_selectedSport.isEmpty) {
         return SnackbarHelper.showError(context, 'Pilih jenis olahraga');
+      }
     } else if (_currentStep == 5) {
       // Validate Location
-      if (_addressController.text.trim().isEmpty)
+      if (_addressController.text.trim().isEmpty) {
         return SnackbarHelper.showError(context, 'Alamat wajib diisi');
+      }
     } else if (_currentStep == 6) {
       // Validate Photos
-      if (_fieldPhotos.isEmpty)
+      if (_fieldPhotos.isEmpty) {
         return SnackbarHelper.showError(
             context, 'Unggah minimal satu foto lapangan');
+      }
     } else if (_currentStep == 7) {
       // Validate Price & Schedule
-      if (_priceController.text.trim().isEmpty)
+      if (_priceController.text.trim().isEmpty) {
         return SnackbarHelper.showError(context, 'Harga sewa wajib diisi');
-      if (_selectedDays.isEmpty)
+      }
+      if (_selectedDays.isEmpty) {
         return SnackbarHelper.showError(
             context, 'Pilih minimal satu hari operasional');
+      }
     }
 
     if (_currentStep < _totalSteps) {
@@ -306,21 +318,25 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
   }
 
   String? _validateStep2() {
-    if (_businessNameController.text.trim().isEmpty)
+    if (_businessNameController.text.trim().isEmpty) {
       return 'Nama bisnis wajib diisi';
+    }
     if (_phoneController.text.trim().isEmpty) return 'No. telepon wajib diisi';
-    if (_passwordController.text.length < 8)
+    if (_passwordController.text.length < 8) {
       return 'Password minimal 8 karakter';
-    if (_passwordController.text != _confirmPasswordController.text)
+    }
+    if (_passwordController.text != _confirmPasswordController.text) {
       return 'Konfirmasi password tidak cocok';
+    }
     if (_ktpPhoto == null) return 'Foto KTP wajib diunggah';
     if (_selfiePhoto == null) return 'Foto Selfie wajib diunggah';
     return null;
   }
 
   String? _validateStep3() {
-    if (_fieldNameController.text.trim().isEmpty)
+    if (_fieldNameController.text.trim().isEmpty) {
       return 'Nama lapangan wajib diisi';
+    }
     if (_priceController.text.trim().isEmpty) return 'Harga sewa wajib diisi';
     if (_selectedDays.isEmpty) return 'Pilih minimal satu hari operasional';
     return null;

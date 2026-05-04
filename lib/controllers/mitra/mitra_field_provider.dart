@@ -1,17 +1,11 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/features/mitra/field/models/mitra_field_model.dart';
-import 'package:lapangku/features/mitra/field/repositories/mitra_field_repository.dart';
+import 'package:lapangku/controllers/mitra/mitra_controller.dart';
+import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/services/firebase/mitra_service.dart';
 
-// ── Service & Repository Providers ────────────────────────────────
-final MitraServiceProvider = Provider<MitraService>((ref) => MitraService());
-
-final MitraFieldRepositoryProvider = Provider<MitraFieldRepository>(
-    (ref) => MitraFieldRepository(ref.watch(MitraServiceProvider)));
-
-// ── State ──────────────────────────────────────────────────────────
+// â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class MitraFieldState {
   final AsyncValue<List<MitraFieldModel>> fields;
   final bool isMutating; // loading untuk add/edit/delete
@@ -31,11 +25,11 @@ class MitraFieldState {
       );
 }
 
-// ── Notifier ───────────────────────────────────────────────────────
+// â”€â”€ Notifier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
-  final MitraFieldRepository _repository;
+  final MitraService _service;
 
-  MitraFieldNotifier(this._repository) : super(const MitraFieldState()) {
+  MitraFieldNotifier(this._service) : super(const MitraFieldState()) {
     loadFields();
   }
 
@@ -48,7 +42,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     }
     state = state.copyWith(fields: const AsyncLoading());
     try {
-      final fields = await _repository.getFields(_uid);
+      final fields = await _service.getMitraFields(_uid);
       state = state.copyWith(fields: AsyncData(fields));
     } catch (e, st) {
       state = state.copyWith(fields: AsyncError(e, st));
@@ -76,7 +70,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
         alamat: alamat,
         fasilitas: fasilitas,
       );
-      await _repository.addField(field, photoFiles: photoFiles);
+      await _service.addField(field, photoFiles: photoFiles);
       await loadFields();
     } finally {
       state = state.copyWith(isMutating: false);
@@ -101,7 +95,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
         deskripsi: deskripsi,
         fasilitas: fasilitas,
       );
-      await _repository.updateField(updatedField, newPhotoFiles: newPhotoFiles);
+      await _service.updateField(updatedField, newPhotoFiles: newPhotoFiles);
       await loadFields();
     } finally {
       state = state.copyWith(isMutating: false);
@@ -111,7 +105,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
   Future<void> deleteField(String fieldId) async {
     state = state.copyWith(isMutating: true);
     try {
-      await _repository.deleteField(fieldId);
+      await _service.deleteField(fieldId);
       await loadFields();
     } finally {
       state = state.copyWith(isMutating: false);
@@ -127,7 +121,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
         .toList();
     state = state.copyWith(fields: AsyncData(updated));
     try {
-      await _repository.toggleStatus(fieldId, newStatus);
+      await _service.toggleFieldStatus(fieldId, newStatus);
     } catch (_) {
       // Revert
       state = state.copyWith(fields: AsyncData(currentList));
@@ -138,8 +132,8 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
 
 final mitraFieldProvider =
     StateNotifierProvider<MitraFieldNotifier, MitraFieldState>((ref) {
-  final repo = ref.watch(MitraFieldRepositoryProvider);
-  return MitraFieldNotifier(repo);
+  final service = ref.watch(mitraServiceProvider);
+  return MitraFieldNotifier(service);
 });
 
 // Convenience getter

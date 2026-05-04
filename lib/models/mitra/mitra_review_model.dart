@@ -1,4 +1,4 @@
-class MitraReviewModel {
+﻿class MitraReviewModel {
   final String id;
   final String userName;
   final int rating;

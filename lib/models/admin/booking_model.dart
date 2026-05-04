@@ -1,4 +1,4 @@
-class BookingModel {
+﻿class BookingModel {
   final String bookingId;
   final String namaLapangan;
   final String namaPenyewa;

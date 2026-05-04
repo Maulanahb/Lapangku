@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/core/utils/navigation_helper.dart';
@@ -272,7 +272,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       obscureText: _obscurePassword,
                       style: const TextStyle(fontWeight: FontWeight.w500, letterSpacing: 2.0),
                       decoration: InputDecoration(
-                        hintText: '••••••••',
+                        hintText: 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢',
                         hintStyle: const TextStyle(color: Color(0xFFA0AEC0), letterSpacing: 2.0),
                         filled: true,
                         fillColor: const Color(0xFFF1F4F8),

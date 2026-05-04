@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
-import 'package:lapangku/features/mitra/profile/providers/mitra_profile_provider.dart';
-import 'package:lapangku/features/mitra/profile/models/mitra_profile_model.dart';
+import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
+import 'package:lapangku/models/mitra/mitra_profile_model.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
 
 // Import newly created pages
@@ -76,7 +76,7 @@ class MitraProfilePage extends ConsumerWidget {
                       icon: Icons.account_balance_outlined,
                       title: 'Rekening Payout',
                       subtitle: profileState.bankName.isNotEmpty
-                          ? '${profileState.bankName} · ${profileState.bankAccount}'
+                          ? '${profileState.bankName} Â· ${profileState.bankAccount}'
                           : 'Belum diatur',
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MitraPayoutPage())),
                     ),
@@ -96,7 +96,7 @@ class MitraProfilePage extends ConsumerWidget {
                     MitraMenuTile(
                       icon: Icons.star_outline_rounded,
                       title: 'Ulasan Pelanggan',
-                      subtitle: '${profileState.rating} ⭐ rata-rata',
+                      subtitle: '${profileState.rating} â­ rata-rata',
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MitraReviewsPage())),
                     ),
                   ],

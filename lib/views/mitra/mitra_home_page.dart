@@ -1,4 +1,4 @@
-// lib/views/Mitra/mitra_home_page.dart
+﻿// lib/views/Mitra/mitra_home_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -151,7 +151,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
               child: _buildStatCard(
                   label: 'Pesanan Hari Ini',
                   value: '8',
-                  trend: '↑2',
+                  trend: 'â†‘2',
                   trendColor: Colors.green,
                   footer: 'dari kemarin')),
           const SizedBox(width: 12),
@@ -160,7 +160,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                   label: 'Pendapatan Hari Ini',
                   value: 'Rp 960K',
                   valueColor: _primaryGreen,
-                  trend: '↑15%',
+                  trend: 'â†‘15%',
                   trendColor: Colors.green,
                   footer: '')),
         ]),
@@ -370,7 +370,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                 const Text('Futsal A',
                     style:
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const Text('  •  ', style: TextStyle(color: Colors.grey)),
+                const Text('  â€¢  ', style: TextStyle(color: Colors.grey)),
                 const Text('Sabtu, 30 Mar',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500))
               ]),
@@ -378,7 +378,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
               Row(children: [
                 Icon(Icons.access_time, size: 16, color: _primaryGreen),
                 const SizedBox(width: 8),
-                const Text('19:00–20:00',
+                const Text('19:00â€“20:00',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500))
               ]),
             ])),

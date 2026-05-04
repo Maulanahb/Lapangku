@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/features/mitra/field/providers/mitra_field_provider.dart';
-import 'package:lapangku/features/mitra/schedule/models/mitra_schedule_model.dart';
-import 'package:lapangku/features/mitra/schedule/providers/mitra_schedule_provider.dart';
+import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
+import 'package:lapangku/models/mitra/mitra_schedule_model.dart';
+import 'package:lapangku/controllers/mitra/mitra_schedule_provider.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
 
 class MitraSchedulePage extends ConsumerWidget {
@@ -108,7 +108,7 @@ class MitraSchedulePage extends ConsumerWidget {
   }
 }
 
-// ── Daftar jadwal ──────────────────────────────────────────────────
+// â”€â”€ Daftar jadwal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _ScheduleList extends ConsumerWidget {
   final List<MitraScheduleModel> schedules;
 
@@ -200,7 +200,7 @@ class _ScheduleList extends ConsumerWidget {
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Text('—',
+                      child: Text('â€”',
                           style: TextStyle(
                               color: Colors.grey, fontSize: 18)),
                     ),
@@ -241,7 +241,7 @@ class _ScheduleList extends ConsumerWidget {
   }
 }
 
-// ── Time picker button ─────────────────────────────────────────────
+// â”€â”€ Time picker button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _TimePickerButton extends StatelessWidget {
   final String label;
   final String time;
@@ -291,7 +291,7 @@ class _TimePickerButton extends StatelessWidget {
   }
 }
 
-// ── Save button ────────────────────────────────────────────────────
+// â”€â”€ Save button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _SaveButton extends ConsumerWidget {
   final bool isSaving;
 

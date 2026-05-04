@@ -1,4 +1,4 @@
-class MitraProfileModel {
+﻿class MitraProfileModel {
   final String id;
   final String businessName;
   final String MitraName;
