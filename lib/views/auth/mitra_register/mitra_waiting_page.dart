@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 
@@ -66,14 +66,14 @@ class MitraWaitingPage extends ConsumerWidget {
                   color: const Color(0xFFE8F5E9),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.access_time_filled_rounded,
+                    Icon(Icons.access_time_filled_rounded,
                         size: 18, color: primary),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Estimasi 1–2 hari kerja',
+                    SizedBox(width: 8),
+                    Text(
+                      'Estimasi 1â€“2 hari kerja',
                       style: TextStyle(
                         color: primary,
                         fontWeight: FontWeight.w800,

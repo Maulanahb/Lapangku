@@ -1,11 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lapangku/services/firebase/mitra_service.dart';
-import '../models/mitra_revenue_model.dart';
-import '../repositories/mitra_revenue_repository.dart';
-
-final mitraRevenueRepositoryProvider =
-    Provider((ref) => MitraRevenueRepository(MitraService()));
+import 'package:lapangku/controllers/mitra/mitra_controller.dart';
+import 'package:lapangku/models/mitra/mitra_revenue_model.dart';
 
 class DateRange {
   final DateTime start;
@@ -22,17 +19,17 @@ final revenueDateRangeProvider = StateProvider<DateRange>((ref) {
 final mitraRevenueProvider =
     StateNotifierProvider<MitraRevenueNotifier, AsyncValue<MitraRevenueModel>>(
         (ref) {
-  final repository = ref.watch(mitraRevenueRepositoryProvider);
+  final service = ref.watch(mitraServiceProvider);
   final dateRange = ref.watch(revenueDateRangeProvider);
-  return MitraRevenueNotifier(repository, dateRange);
+  return MitraRevenueNotifier(service, dateRange);
 });
 
 class MitraRevenueNotifier
     extends StateNotifier<AsyncValue<MitraRevenueModel>> {
-  final MitraRevenueRepository _repository;
+  final MitraService _service;
   final DateRange _dateRange;
 
-  MitraRevenueNotifier(this._repository, this._dateRange)
+  MitraRevenueNotifier(this._service, this._dateRange)
       : super(const AsyncLoading()) {
     loadRevenue();
   }
@@ -46,7 +43,7 @@ class MitraRevenueNotifier
     state = const AsyncLoading();
     try {
       final revenue =
-          await _repository.getRevenue(uid, _dateRange.start, _dateRange.end);
+          await _service.getRevenue(uid, _dateRange.start, _dateRange.end);
       state = AsyncData(revenue);
     } catch (e, st) {
       state = AsyncError(e, st);

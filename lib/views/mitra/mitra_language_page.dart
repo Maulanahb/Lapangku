@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class MitraLanguagePage extends StatefulWidget {
   const MitraLanguagePage({super.key});
@@ -35,13 +35,13 @@ class _MitraLanguagePageState extends State<MitraLanguagePage> {
               _buildLanguageOption(
                 code: 'id',
                 title: 'Bahasa Indonesia',
-                flag: '🇮🇩',
+                flag: 'ðŸ‡®ðŸ‡©',
               ),
               const Divider(height: 1, color: Color(0xFFF0F0F0)),
               _buildLanguageOption(
                 code: 'en',
                 title: 'English',
-                flag: '🇬🇧',
+                flag: 'ðŸ‡¬ðŸ‡§',
               ),
             ],
           ),

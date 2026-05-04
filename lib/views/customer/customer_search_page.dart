@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/models/field/field_model.dart';
@@ -500,7 +500,7 @@ class _HorizontalFieldCard extends StatelessWidget {
                       const SizedBox(width: 2),
                       Expanded(
                         child: Text(
-                          '${field.alamat.split(',').first} • 1.2 km', // Mock distance
+                          '${field.alamat.split(',').first} â€¢ 1.2 km', // Mock distance
                           style: const TextStyle(fontSize: 11, color: Color(0xFF718096)),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

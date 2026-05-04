@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -121,7 +121,7 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ─── Header ───────────────────────────────────────────────
+                // â”€â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 Row(
                   children: [
                     Container(
@@ -162,7 +162,7 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                 ),
                 const SizedBox(height: 36),
 
-                // ─── Email Field ──────────────────────────────────────────
+                // â”€â”€â”€ Email Field â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 const Text(
                   'Email Admin',
                   style: TextStyle(
@@ -205,7 +205,7 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // ─── Password Field ───────────────────────────────────────
+                // â”€â”€â”€ Password Field â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 const Text(
                   'Password',
                   style: TextStyle(
@@ -220,7 +220,7 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                   obscureText: _obscurePassword,
                   style: const TextStyle(fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: '••••••••',
+                    hintText: 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢',
                     hintStyle: const TextStyle(color: Color(0xFFADB5BD)),
                     prefixIcon: const Icon(
                       Icons.lock_outline_rounded,
@@ -259,7 +259,7 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // ─── Remember Me & Lupa Password ─────────────────────────
+                // â”€â”€â”€ Remember Me & Lupa Password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -296,7 +296,7 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                 ),
                 const SizedBox(height: 28),
 
-                // ─── Login Button ─────────────────────────────────────────
+                // â”€â”€â”€ Login Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 SizedBox(
                   width: double.infinity,
                   height: 52,

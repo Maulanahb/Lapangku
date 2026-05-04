@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
@@ -169,7 +169,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
   }
 }
 
-// ── BOOKING CARD ──
+// â”€â”€ BOOKING CARD â”€â”€
 class _BookingCard extends StatelessWidget {
   final BookingModel booking;
   final VoidCallback onCancel;
@@ -242,7 +242,7 @@ class _BookingCard extends StatelessWidget {
                       Row(children: [
                         const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF718096)),
                         const SizedBox(width: 4),
-                        Expanded(child: Text('$dateStr · $timeStr', style: const TextStyle(fontSize: 12, color: Color(0xFF718096)))),
+                        Expanded(child: Text('$dateStr Â· $timeStr', style: const TextStyle(fontSize: 12, color: Color(0xFF718096)))),
                       ]),
                     ]),
                   ),

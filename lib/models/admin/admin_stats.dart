@@ -1,4 +1,4 @@
-class AdminStats {
+﻿class AdminStats {
   final int totalUsers;
   final int lapanganAktif;
   final int pesananHariIni;

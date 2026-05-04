@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
@@ -146,7 +146,7 @@ class BookingDetailPage extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text('Jadwal Main', style: TextStyle(fontSize: 11, color: Color(0xFF718096))),
-                          Text('$dateStr • $timeStr', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2D3748))),
+                          Text('$dateStr â€¢ $timeStr', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2D3748))),
                         ],
                       ),
                     ],

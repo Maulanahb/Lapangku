@@ -1,79 +1,28 @@
+﻿import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lapangku/models/mitra/mitra_profile_model.dart';
+import 'package:lapangku/controllers/mitra/mitra_controller.dart';
+import 'package:lapangku/services/firebase/mitra_service.dart';
 
-class MitraProfileState {
-  final String businessName;
-  final String MitraName;
-  final String email;
-  final String phone;
-  final bool isVerified;
-  final int totalFields;
-  final int totalOrders;
-  final double rating;
-  final bool notificationOrder;
-  final bool notificationPromo;
-  final Map<String, String>? bankAccount; // e.g. {'bank': 'BCA', 'account': '123-456-789'}
-  final bool isLoading;
-  final String? errorMessage;
+// â”€â”€ Notifier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+class MitraProfileNotifier
+    extends StateNotifier<AsyncValue<MitraProfileModel>> {
+  final MitraService _service;
 
-  const MitraProfileState({
-    this.businessName = 'GOR LapangKu',
-    this.MitraName = 'Budi Santoso',
-    this.email = 'budi@gorlapangku.com',
-    this.phone = '081234567890',
-    this.isVerified = true,
-    this.totalFields = 3,
-    this.totalOrders = 150,
-    this.rating = 4.8,
-    this.notificationOrder = true,
-    this.notificationPromo = false,
-    this.bankAccount = const {'bank': 'BCA', 'account': '123-456-789'},
-    this.isLoading = false,
-    this.errorMessage,
-  });
-
-  MitraProfileState copyWith({
-    String? businessName,
-    String? MitraName,
-    String? email,
-    String? phone,
-    bool? isVerified,
-    int? totalFields,
-    int? totalOrders,
-    double? rating,
-    bool? notificationOrder,
-    bool? notificationPromo,
-    Map<String, String>? bankAccount,
-    bool? isLoading,
-    String? errorMessage,
-    bool clearError = false,
-  }) {
-    return MitraProfileState(
-      businessName: businessName ?? this.businessName,
-      MitraName: MitraName ?? this.MitraName,
-      email: email ?? this.email,
-      phone: phone ?? this.phone,
-      isVerified: isVerified ?? this.isVerified,
-      totalFields: totalFields ?? this.totalFields,
-      totalOrders: totalOrders ?? this.totalOrders,
-      rating: rating ?? this.rating,
-      notificationOrder: notificationOrder ?? this.notificationOrder,
-      notificationPromo: notificationPromo ?? this.notificationPromo,
-      bankAccount: bankAccount ?? this.bankAccount,
-      isLoading: isLoading ?? this.isLoading,
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-    );
-  }
-}
-
-class MitraProfileNotifier extends StateNotifier<MitraProfileState> {
-  MitraProfileNotifier() : super(const MitraProfileState());
-
-  void toggleNotificationOrder() {
-    state = state.copyWith(notificationOrder: !state.notificationOrder);
+  MitraProfileNotifier(this._service) : super(const AsyncLoading()) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) loadProfile(uid);
   }
 
-  void toggleNotificationPromo() {
-    state = state.copyWith(notificationPromo: !state.notificationPromo);
+  Future<void> loadProfile(String uid) async {
+    state = const AsyncLoading();
+    try {
+      final profile = await _service.getProfile(uid);
+      state = AsyncData(profile);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
   }
 
   Future<void> updateProfile({
@@ -81,44 +30,109 @@ class MitraProfileNotifier extends StateNotifier<MitraProfileState> {
     required String MitraName,
     required String email,
     required String phone,
+    String? alamat,
+    String? description,
   }) async {
-    state = state.copyWith(isLoading: true, clearError: true);
+    if (state is! AsyncData) return;
+    final current = state.value!;
+    final updated = current.copyWith(
+      businessName: businessName,
+      MitraName: MitraName,
+      email: email,
+      phone: phone,
+      alamat: alamat,
+      description: description,
+    );
     try {
-      await Future.delayed(const Duration(seconds: 1)); // Simulate API
-      state = state.copyWith(
-        businessName: businessName,
-        MitraName: MitraName,
-        email: email,
-        phone: phone,
-        isLoading: false,
-      );
+      await _service.updateProfile(updated);
+      state = AsyncData(updated);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Gagal memperbarui profil: $e',
-      );
       rethrow;
     }
   }
 
-  Future<void> updateBankInfo(String bank, String account) async {
-    state = state.copyWith(isLoading: true, clearError: true);
+  Future<void> updateBankInfo(String bankName, String bankAccount) async {
+    if (state is! AsyncData) return;
+    final updated = state.value!.copyWith(
+      bankName: bankName,
+      bankAccount: bankAccount,
+    );
     try {
-      await Future.delayed(const Duration(seconds: 1)); // Simulate API
-      state = state.copyWith(
-        bankAccount: {'bank': bank, 'account': account},
-        isLoading: false,
+      await _service.updateProfile(updated);
+      state = AsyncData(updated);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> toggleNotificationOrder() async {
+    if (state is! AsyncData) return;
+    final current = state.value!;
+    final newVal = !current.notificationOrder;
+    state = AsyncData(current.copyWith(notificationOrder: newVal));
+    try {
+      await _service.updateNotificationSettings(
+        current.id,
+        orderNotif: newVal,
+        promoNotif: current.notificationPromo,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Gagal memperbarui rekening: $e',
+      state = AsyncData(current);
+      rethrow;
+    }
+  }
+
+  Future<void> toggleNotificationPromo() async {
+    if (state is! AsyncData) return;
+    final current = state.value!;
+    final newVal = !current.notificationPromo;
+    state = AsyncData(current.copyWith(notificationPromo: newVal));
+    try {
+      await _service.updateNotificationSettings(
+        current.id,
+        orderNotif: current.notificationOrder,
+        promoNotif: newVal,
       );
+    } catch (e) {
+      state = AsyncData(current);
+      rethrow;
+    }
+  }
+
+  Future<void> uploadLogo(File image) async {
+    if (state is! AsyncData) return;
+    final current = state.value!;
+    try {
+      final url = await _service.uploadLogo(current.id, image);
+      final updated = current.copyWith(logoUrl: url);
+      await _service.updateProfile(updated);
+      state = AsyncData(updated);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> uploadDocument(String docType, File file) async {
+    if (state is! AsyncData) return;
+    final current = state.value!;
+    try {
+      final url = await _service.uploadDocument(current.id, docType, file);
+      MitraProfileModel updated;
+      if (docType.toLowerCase() == 'ktp') {
+        updated = current.copyWith(ktpUrl: url);
+      } else {
+        updated = current.copyWith(npwpUrl: url);
+      }
+      await _service.updateProfile(updated);
+      state = AsyncData(updated);
+    } catch (e) {
       rethrow;
     }
   }
 }
 
-final mitraProfileProvider = StateNotifierProvider<MitraProfileNotifier, MitraProfileState>((ref) {
-  return MitraProfileNotifier();
+final mitraProfileProvider = StateNotifierProvider<MitraProfileNotifier,
+    AsyncValue<MitraProfileModel>>((ref) {
+  final service = ref.watch(mitraServiceProvider);
+  return MitraProfileNotifier(service);
 });

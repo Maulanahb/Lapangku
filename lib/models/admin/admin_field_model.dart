@@ -1,4 +1,4 @@
-class AdminFieldModel {
+﻿class AdminFieldModel {
   final String fieldId;
   final String mitraUid;
   final String namaLapangan;
