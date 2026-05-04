@@ -67,7 +67,7 @@ class BookingDetailPage extends ConsumerWidget {
         bgColor = Colors.orange.shade800;
         break;
       case 'menunggu_konfirmasi':
-        title = 'Menunggu Konfirmasi Admin';
+        title = 'Menunggu Konfirmasi Pembayaran';
         bgColor = const Color(0xFF1A365D);
         break;
       case 'dikonfirmasi':

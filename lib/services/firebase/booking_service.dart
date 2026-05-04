@@ -20,6 +20,7 @@ class BookingService {
   }
 
   /// Get booked slots for a specific field and date
+  /// Also auto-expires bookings past payment deadline
   Future<List<String>> getBookedSlots({
     required String fieldId,
     required DateTime date,
@@ -33,16 +34,28 @@ class BookingService {
         .get();
 
     final bookedSlots = <String>[];
+    final now = DateTime.now();
+
     for (final doc in snap.docs) {
       final data = doc.data();
       
       final tanggal = (data['tanggal'] as Timestamp?)?.toDate();
       if (tanggal == null) continue;
       if (tanggal.isBefore(startOfDay) || tanggal.isAfter(endOfDay)) continue;
-      
+
       final status = data['status'] ?? '';
-      // Exclude dibatalkan and expired
-      if (status == 'dibatalkan' || status == 'expired') continue;
+      // Exclude dibatalkan, expired, dan ditolak
+      if (status == 'dibatalkan' || status == 'expired' || status == 'ditolak') continue;
+
+      // Auto-expire: jika masih menunggu_bayar tapi sudah lewat batas waktu
+      if (status == 'menunggu_bayar') {
+        final batasWaktu = (data['batasWaktuBayar'] as Timestamp?)?.toDate();
+        if (batasWaktu != null && now.isAfter(batasWaktu)) {
+          // Update status ke expired (fire-and-forget)
+          _expireBooking(doc.id, data['statusTimeline']);
+          continue; // Skip slot ini, sudah expired
+        }
+      }
       
       final timeSlots = data['timeSlots'];
       if (timeSlots != null) {
@@ -57,6 +70,25 @@ class BookingService {
       }
     }
     return bookedSlots;
+  }
+
+  /// Auto-expire a booking that passed payment deadline
+  Future<void> _expireBooking(String docId, dynamic existingTimeline) async {
+    try {
+      final now = DateTime.now();
+      final timeline = existingTimeline != null 
+          ? List<Map<String, dynamic>>.from(existingTimeline)
+          : <Map<String, dynamic>>[];
+      timeline.add({'status': 'expired', 'waktu': Timestamp.fromDate(now)});
+
+      await _db.collection('bookings').doc(docId).update({
+        'status': 'expired',
+        'statusTimeline': timeline,
+        'updatedAt': Timestamp.fromDate(now),
+      });
+    } catch (_) {
+      // Silent fail — akan di-expire pada request berikutnya
+    }
   }
 
   /// Create a new booking
@@ -163,6 +195,31 @@ class BookingService {
     });
   }
 
+  /// Upload DUMMY payment proof (For Testing Only)
+  Future<void> uploadDummyPaymentProof(String bookingId) async {
+    final doc = await _db.collection('bookings').doc(bookingId).get();
+    if (!doc.exists) throw Exception('Booking tidak ditemukan');
+    
+    final status = doc.data()?['status'] ?? '';
+    if (status != 'menunggu_bayar') {
+      throw Exception('Booking tidak dalam status menunggu bayar');
+    }
+
+    final now = DateTime.now();
+    final timeline = List<Map<String, dynamic>>.from(doc.data()?['statusTimeline'] ?? []);
+    timeline.add({'status': 'menunggu_konfirmasi', 'waktu': Timestamp.fromDate(now)});
+
+    // Placeholder image URL for testing
+    const dummyUrl = 'https://firebasestorage.googleapis.com/v0/b/lapangku-4e610.firebasestorage.app/o/placeholder%2Fdummy_payment.png?alt=media';
+
+    await _db.collection('bookings').doc(bookingId).update({
+      'buktiTransferUrl': dummyUrl,
+      'status': 'menunggu_konfirmasi',
+      'statusTimeline': timeline,
+      'updatedAt': Timestamp.fromDate(now),
+    });
+  }
+
   /// Cancel booking
   Future<void> cancelBooking(String bookingId) async {
     final doc = await _db.collection('bookings').doc(bookingId).get();
@@ -179,6 +236,28 @@ class BookingService {
 
     await _db.collection('bookings').doc(bookingId).update({
       'status': 'dibatalkan',
+      'statusTimeline': timeline,
+      'updatedAt': Timestamp.fromDate(now),
+    });
+  }
+
+  /// Konfirmasi pembayaran QRIS (tanpa bukti transfer)
+  /// Update status dari menunggu_bayar ke menunggu_konfirmasi
+  Future<void> confirmQrisPayment(String bookingId) async {
+    final doc = await _db.collection('bookings').doc(bookingId).get();
+    if (!doc.exists) throw Exception('Booking tidak ditemukan');
+
+    final status = doc.data()?['status'] ?? '';
+    if (status != 'menunggu_bayar') {
+      throw Exception('Booking tidak dalam status menunggu bayar');
+    }
+
+    final now = DateTime.now();
+    final timeline = List<Map<String, dynamic>>.from(doc.data()?['statusTimeline'] ?? []);
+    timeline.add({'status': 'menunggu_konfirmasi', 'waktu': Timestamp.fromDate(now)});
+
+    await _db.collection('bookings').doc(bookingId).update({
+      'status': 'menunggu_konfirmasi',
       'statusTimeline': timeline,
       'updatedAt': Timestamp.fromDate(now),
     });

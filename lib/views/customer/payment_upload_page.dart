@@ -20,6 +20,7 @@ class _State extends ConsumerState<PaymentUploadPage> {
   Timer? _timer;
   Duration _timeLeft = const Duration();
   File? _imageFile;
+  bool _isDummyImage = false;
   bool _isUploading = false;
   
   // Dummy bank details (Ideally from Firestore settings)
@@ -202,28 +203,54 @@ class _State extends ConsumerState<PaymentUploadPage> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
             ),
-            child: _imageFile != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.file(_imageFile!, fit: BoxFit.cover),
-                        Container(color: Colors.black.withOpacity(0.3)),
-                        const Center(child: Icon(Icons.check_circle, color: Colors.white, size: 48)),
-                      ],
-                    ),
-                  )
-                : Column(
+            child: _isDummyImage
+                ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.cloud_upload_outlined, size: 48, color: Colors.grey.shade400),
+                      const Icon(Icons.check_circle, color: Color(0xFF1B6B3A), size: 48),
                       const SizedBox(height: 8),
-                      Text('Ketuk untuk ambil/pilih foto', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                      const Text('Foto Dummy Dipilih', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
                       const SizedBox(height: 4),
-                      Text('Format JPG, PNG (Max 5MB)', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+                      Text('Siap untuk diupload', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                     ],
-                  ),
+                  )
+                : _imageFile != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.file(_imageFile!, fit: BoxFit.cover),
+                            Container(color: Colors.black.withOpacity(0.3)),
+                            const Center(child: Icon(Icons.check_circle, color: Colors.white, size: 48)),
+                          ],
+                        ),
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.cloud_upload_outlined, size: 48, color: Colors.grey.shade400),
+                          const SizedBox(height: 8),
+                          Text('Ketuk untuk ambil/pilih foto', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 4),
+                          Text('Format JPG, PNG (Max 5MB)', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+                        ],
+                      ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // TOMBOL DUMMY UNTUK TESTING
+        Center(
+          child: TextButton.icon(
+            onPressed: () {
+              setState(() {
+                _isDummyImage = true;
+                _imageFile = null;
+              });
+            },
+            icon: const Icon(Icons.bug_report, size: 16),
+            label: const Text('Gunakan Foto Dummy (Testing)'),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange.shade800),
           ),
         ),
         const SizedBox(height: 100), // padding for bottom bar
@@ -328,7 +355,7 @@ class _State extends ConsumerState<PaymentUploadPage> {
       padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(context).padding.bottom + 14),
       decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -4))]),
       child: ElevatedButton(
-        onPressed: _imageFile == null || _isUploading ? null : _handleUpload,
+        onPressed: (_imageFile == null && !_isDummyImage) || _isUploading ? null : _handleUpload,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1B6B3A),
           disabledBackgroundColor: Colors.grey.shade300,
@@ -368,16 +395,19 @@ class _State extends ConsumerState<PaymentUploadPage> {
           ),
           const SizedBox(height: 12),
           ElevatedButton(
-            onPressed: () => _finishPayment(),
+            onPressed: _isUploading ? null : _handleQrisPayment,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1B6B3A),
+              disabledBackgroundColor: Colors.grey.shade300,
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 16),
               minimumSize: const Size(double.infinity, 0),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-            child: const Text('Selesai Bayar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            child: _isUploading
+                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Text('Selesai Bayar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ),
         ],
       ),
@@ -385,12 +415,17 @@ class _State extends ConsumerState<PaymentUploadPage> {
   }
 
   Future<void> _handleUpload() async {
-    if (_imageFile == null) return;
+    if (_imageFile == null && !_isDummyImage) return;
 
     setState(() => _isUploading = true);
     try {
       final service = ref.read(bookingServiceProvider);
-      await service.uploadPaymentProof(widget.booking.id, _imageFile!);
+      
+      if (_isDummyImage) {
+        await service.uploadDummyPaymentProof(widget.booking.id);
+      } else {
+        await service.uploadPaymentProof(widget.booking.id, _imageFile!);
+      }
 
       if (mounted) {
         setState(() => _isUploading = false);
@@ -400,6 +435,27 @@ class _State extends ConsumerState<PaymentUploadPage> {
       if (mounted) {
         setState(() => _isUploading = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal upload: $e'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  /// Handle QRIS payment — update status ke menunggu_konfirmasi
+  Future<void> _handleQrisPayment() async {
+    setState(() => _isUploading = true);
+    try {
+      final service = ref.read(bookingServiceProvider);
+      await service.confirmQrisPayment(widget.booking.id);
+
+      if (mounted) {
+        setState(() => _isUploading = false);
+        _finishPayment();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal konfirmasi pembayaran: $e'), backgroundColor: Colors.red),
+        );
       }
     }
   }

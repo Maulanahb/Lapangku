@@ -52,7 +52,10 @@ class AuthService {
   Future<UserModel> signInWithGoogle() async {
     try {
       // 1. Memicu proses autentikasi Google
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId: '1050784867568-a5m3diru6nburol3jt1t7238bkg9vors.apps.googleusercontent.com',
+      );
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         throw Exception('Login dibatalkan pengguna');
       }

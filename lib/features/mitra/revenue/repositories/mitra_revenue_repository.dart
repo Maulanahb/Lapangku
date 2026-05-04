@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/features/mitra/revenue/models/mitra_revenue_model.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/services/firebase/mitra_service.dart';
 
 class MitraRevenueRepository {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db = FirestoreService.instance;
   final MitraService _mitraService;
 
   MitraRevenueRepository(this._mitraService);
@@ -27,16 +28,18 @@ class MitraRevenueRepository {
       final snap = await _db
           .collection('bookings')
           .where('fieldId', whereIn: chunk)
-          .where('tanggal', isGreaterThanOrEqualTo: startTimestamp)
-          .where('tanggal', isLessThanOrEqualTo: endTimestamp)
           .get();
           
       allBookings.addAll(snap.docs.map((d) => BookingModel.fromFirestore(d)));
     }
     
-    final validBookings = allBookings.where((b) => 
-       b.status == 'dikonfirmasi' || b.status == 'selesai'
-    ).toList();
+    final validBookings = allBookings.where((b) {
+      // Local date filtering to avoid composite index requirement
+      final isDateValid = b.tanggal.isAfter(startDate.subtract(const Duration(days: 1))) && 
+                          b.tanggal.isBefore(endDate.add(const Duration(days: 1)));
+      
+      return isDateValid && (b.status == 'dikonfirmasi' || b.status == 'selesai');
+    }).toList();
     
     int totalRevenue = 0;
     List<MitraTransactionModel> transactions = [];
