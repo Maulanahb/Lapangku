@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/controllers/favorite/favorite_controller.dart';
@@ -130,12 +130,12 @@ class FavoritesPage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Belum ada lapangan favorit',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+              'Belum ada lapangan favorit.',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
             ),
             const SizedBox(height: 8),
             const Text(
-              'Tambahkan lapangan favoritmu\ndengan menekan ikon â¤ï¸ di halaman detail.',
+              'Tambahkan lapangan favoritmu\ndengan menekan ikon ❤️ di halaman detail.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.5),
             ),

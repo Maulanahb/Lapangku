@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/views/auth/mitra_register/mitra_register_page.dart';
@@ -389,7 +389,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           style:
               const TextStyle(fontWeight: FontWeight.w500, letterSpacing: 2.0),
           decoration: InputDecoration(
-            hintText: 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢',
+            hintText: '••••••••',
             hintStyle:
                 const TextStyle(color: Color(0xFFA0AEC0), letterSpacing: 2.0),
             filled: true,

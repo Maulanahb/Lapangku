@@ -138,7 +138,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   );
   Widget _ph() => Container(color: const Color(0xFFE8F5EC), child: const Center(child: Icon(Icons.sports_soccer, size: 60, color: Color(0xFF1B6B3A))));
 
-  // â”€â”€ BODY â”€â”€
+  
   Widget _body() {
     return Transform.translate(
       offset: const Offset(0, -28),
@@ -152,7 +152,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     );
   }
 
-  // â”€â”€ HEADER â”€â”€
+  
   Widget _headerInfo() {
     final f = widget.field;
     return Padding(
