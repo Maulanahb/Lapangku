@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
@@ -113,8 +113,23 @@ class AuthService {
     await _auth.signOut();
   }
 
-  Future<void> sendPasswordReset(String email) =>
-      _auth.sendPasswordResetEmail(email: email);
+  Future<void> sendPasswordReset(String email) async {
+    // Set bahasa ke Indonesia agar template email dari Firebase
+    // menggunakan bahasa Indonesia (lebih dipercaya Gmail untuk user ID)
+    await _auth.setLanguageCode('id');
+
+    await _auth.sendPasswordResetEmail(
+      email: email,
+      actionCodeSettings: ActionCodeSettings(
+        // URL redirect setelah user reset password
+        url: 'https://lapangku-4e610.firebaseapp.com',
+        handleCodeInApp: false,
+        androidPackageName: 'com.example.lapangku',
+        androidInstallApp: true,
+        androidMinimumVersion: '1',
+      ),
+    );
+  }
 
   Future<void> updateProfile({
     required String uid,
