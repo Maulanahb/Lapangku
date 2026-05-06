@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
@@ -279,19 +279,18 @@ class BookingService {
     final ids = fieldIds.take(30).toList();
     Query query = _db
         .collection('bookings')
-        .where('fieldId', whereIn: ids)
-        .orderBy('createdAt', descending: true);
+        .where('fieldId', whereIn: ids);
 
     if (statusFilter != null) {
-      query = _db
-          .collection('bookings')
-          .where('fieldId', whereIn: ids)
-          .where('status', isEqualTo: statusFilter)
-          .orderBy('createdAt', descending: true);
+      query = query.where('status', isEqualTo: statusFilter);
     }
 
-    return query.snapshots().map((snap) =>
-        snap.docs.map((d) => BookingModel.fromFirestore(d)).toList());
+    return query.snapshots().map((snap) {
+      final bookings = snap.docs.map((d) => BookingModel.fromFirestore(d)).toList();
+      // Sort by createdAt descending in memory
+      bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return bookings;
+    });
   }
 
   /// Konfirmasi booking oleh Mitra
