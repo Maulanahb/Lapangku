@@ -1,9 +1,14 @@
-﻿// lib/views/Mitra/mitra_home_page.dart
+// lib/views/Mitra/mitra_home_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lapangku/controllers/mitra/mitra_controller.dart';
+import 'package:lapangku/controllers/mitra/mitra_stats_controller.dart';
+import 'package:lapangku/controllers/mitra/mitra_booking_provider.dart';
+import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
+import 'package:lapangku/models/booking/booking_model.dart';
+import 'package:intl/intl.dart';
 
 class MitraHomePage extends ConsumerStatefulWidget {
   const MitraHomePage({super.key});
@@ -17,6 +22,14 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
   final Color _bgLightGreen = const Color(0xFFE8F5EF);
   final Color _bgLightRed = const Color(0xFFFEE8E7);
   final Color _textRed = const Color(0xFFE04443);
+
+  final _currencyFormat = NumberFormat.currency(
+    locale: 'id',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
+
+  String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
   Widget build(BuildContext context) {
@@ -140,55 +153,63 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
   }
 
   Widget _buildStatsGrid() {
-    final String mitraId =
-        FirebaseAuth.instance.currentUser?.uid ?? 'dummy_mitra_id';
-    final fieldsAsyncValue = ref.watch(mitraFieldsProvider(mitraId));
+    final todayStats = ref.watch(mitraTodayStatsProvider(_uid));
 
     return Column(children: [
       IntrinsicHeight(
         child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Expanded(
-              child: _buildStatCard(
-                  label: 'Pesanan Hari Ini',
-                  value: '8',
-                  trend: 'â†‘2',
-                  trendColor: Colors.green,
-                  footer: 'dari kemarin')),
+            child: _buildStatCard(
+              label: 'Pesanan Hari Ini',
+              value: '${todayStats['count']}',
+              trend: todayStats['count'] > 0 ? '↑${todayStats['count']}' : null,
+              trendColor: Colors.green,
+              footer: 'hari ini',
+            ),
+          ),
           const SizedBox(width: 12),
           Expanded(
-              child: _buildStatCard(
-                  label: 'Pendapatan Hari Ini',
-                  value: 'Rp 960K',
-                  valueColor: _primaryGreen,
-                  trend: 'â†‘15%',
-                  trendColor: Colors.green,
-                  footer: '')),
+            child: _buildStatCard(
+              label: 'Pendapatan Hari Ini',
+              value: todayStats['revenue'] >= 1000000
+                  ? 'Rp ${(todayStats['revenue'] / 1000000).toStringAsFixed(1)}M'
+                  : _currencyFormat.format(todayStats['revenue']),
+              valueColor: _primaryGreen,
+              trend: todayStats['revenue'] > 0 ? '↑' : null,
+              trendColor: Colors.green,
+              footer: 'total bruto',
+            ),
+          ),
         ]),
       ),
       const SizedBox(height: 12),
       IntrinsicHeight(
         child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Expanded(
-            child: fieldsAsyncValue.when(
-              data: (fields) => _buildStatCard(
-                  label: 'Lapangan Aktif',
-                  value: '${fields.length}',
-                  footer: 'dari total lapangan'),
-              loading: () => _buildStatCard(
-                  label: 'Lapangan Aktif',
-                  value: '...',
-                  footer: 'Memuat data...'),
-              error: (error, stack) => _buildStatCard(
-                  label: 'Lapangan Aktif', value: '-', footer: 'Gagal memuat'),
-            ),
+            child: ref.watch(mitraFieldProvider).fields.when(
+                  data: (fields) => _buildStatCard(
+                      label: 'Lapangan Aktif',
+                      value: '${fields.where((f) => f.isActive).length}',
+                      footer: 'dari ${fields.length} lapangan'),
+                  loading: () => _buildStatCard(
+                      label: 'Lapangan Aktif',
+                      value: '...',
+                      footer: 'Memuat data...'),
+                  error: (error, stack) => _buildStatCard(
+                      label: 'Lapangan Aktif',
+                      value: '-',
+                      footer: 'Gagal memuat'),
+                ),
           ),
           const SizedBox(width: 12),
           Expanded(
-              child: _buildStatCard(
-                  label: 'Rating Rata-rata',
-                  value: '4.8',
-                  hasStar: true,
-                  footer: '(67 ulasan)')),
+            child: _buildStatCard(
+              label: 'Rating Rata-rata',
+              value: '4.8', // Masih dummy karena belum ada review service
+              hasStar: true,
+              footer: '(67 ulasan)',
+            ),
+          ),
         ]),
       ),
     ]);
@@ -219,15 +240,15 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isPressed
-                    ? _primaryGreen.withOpacity(0.3)
+                    ? _primaryGreen.withValues(alpha: 0.3)
                     : Colors.grey[100]!,
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
                     color: isPressed
-                        ? _primaryGreen.withOpacity(0.18)
-                        : Colors.black.withOpacity(0.02),
+                        ? _primaryGreen.withValues(alpha: 0.18)
+                        : Colors.black.withValues(alpha: 0.02),
                     blurRadius: isPressed ? 18 : 10,
                     spreadRadius: isPressed ? 2 : 0,
                     offset: const Offset(0, 4))
@@ -279,69 +300,112 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
   }
 
   Widget _buildWaitingListHeader() {
+    final waitingBookings = ref.watch(mitraWaitingBookingsProvider(_uid));
+
     return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
       Row(children: [
         const Text('Pesanan Menunggu',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
         const SizedBox(width: 8),
-        Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-                color: const Color(0xFFFEE8E7),
-                borderRadius: BorderRadius.circular(12)),
-            child: const Text('2',
-                style: TextStyle(
-                    color: Color(0xFFE04443),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold))),
+        if (waitingBookings.isNotEmpty)
+          Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                  color: const Color(0xFFFEE8E7),
+                  borderRadius: BorderRadius.circular(12)),
+              child: Text('${waitingBookings.length}',
+                  style: const TextStyle(
+                      color: Color(0xFFE04443),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold))),
       ]),
-      Row(children: [
-        Text('Lihat Semua',
-            style: TextStyle(
-                color: _primaryGreen,
-                fontWeight: FontWeight.bold,
-                fontSize: 14)),
-        Icon(Icons.arrow_forward, color: _primaryGreen, size: 16),
-      ]),
+      GestureDetector(
+        onTap: () {
+          // Navigasi ke tab pesanan atau filter menunggu
+        },
+        child: Row(children: [
+          Text('Lihat Semua',
+              style: TextStyle(
+                  color: _primaryGreen,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14)),
+          Icon(Icons.arrow_forward, color: _primaryGreen, size: 16),
+        ]),
+      ),
     ]);
   }
 
   Widget _buildWaitingOrderCard() {
+    final waitingBookings = ref.watch(mitraWaitingBookingsProvider(_uid));
+
+    if (waitingBookings.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.grey[400], size: 48),
+            const SizedBox(height: 16),
+            Text(
+              'Tidak ada pesanan menunggu',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Tampilkan pesanan paling baru yang menunggu
+    final booking = waitingBookings.first;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          // Border dibuat sangat transparan agar tidak kaku
-          border: Border.all(color: Colors.black.withOpacity(0.02)),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
           boxShadow: [
             BoxShadow(
-                color: Colors.black
-                    .withOpacity(0.06), // Shadow lebih lembut dan menyebar
+                color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 24,
                 spreadRadius: 0,
-                offset: const Offset(0, 8)) // Jatuh bayangannya ke bawah
+                offset: const Offset(0, 8))
           ]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const CircleAvatar(
-              radius: 24,
-              backgroundImage:
-                  NetworkImage('https://i.pravatar.cc/150?img=11')),
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: _primaryGreen.withValues(alpha: 0.1),
+            child: Text(
+              booking.userName[0].toUpperCase(),
+              style: TextStyle(
+                  color: _primaryGreen,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18),
+            ),
+          ),
           const SizedBox(width: 12),
           Expanded(
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                const Text('Budi Santoso',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                Text(booking.userName,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w900, fontSize: 16)),
                 const SizedBox(height: 2),
                 Row(children: [
-                  const Icon(Icons.phone_outlined,
+                  const Icon(Icons.confirmation_number_outlined,
                       size: 14, color: Colors.grey),
                   const SizedBox(width: 4),
-                  Text('0812-3456-7890',
+                  Text(booking.bookingId,
                       style: TextStyle(color: Colors.grey[600], fontSize: 13))
                 ]),
               ])),
@@ -350,8 +414,8 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
               decoration: BoxDecoration(
                   color: const Color(0xFFEEF2FF),
                   borderRadius: BorderRadius.circular(12)),
-              child: const Text('5 menit lalu',
-                  style: TextStyle(
+              child: Text(_getTimeAgo(booking.createdAt),
+                  style: const TextStyle(
                       color: Color(0xFF6366F1),
                       fontSize: 11,
                       fontWeight: FontWeight.bold))),
@@ -367,19 +431,21 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                 Icon(Icons.location_on_outlined,
                     size: 16, color: _primaryGreen),
                 const SizedBox(width: 8),
-                const Text('Futsal A',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const Text('  â€¢  ', style: TextStyle(color: Colors.grey)),
-                const Text('Sabtu, 30 Mar',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500))
+                Text(booking.fieldName,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14)),
+                const Text('  •  ', style: TextStyle(color: Colors.grey)),
+                Text(DateFormat('EEE, d MMM', 'id').format(booking.tanggal),
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w500))
               ]),
               const SizedBox(height: 8),
               Row(children: [
                 Icon(Icons.access_time, size: 16, color: _primaryGreen),
                 const SizedBox(width: 8),
-                const Text('19:00â€“20:00',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500))
+                Text(booking.timeSlots.join(', '),
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w500))
               ]),
             ])),
         const SizedBox(height: 16),
@@ -388,62 +454,141 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
             Text('Total Pembayaran',
                 style: TextStyle(color: Colors.grey[600], fontSize: 12)),
             const SizedBox(height: 2),
-            const Text('Rp 125.000',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-            Text('Transfer BCA',
+            Text(_currencyFormat.format(booking.totalBayar),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+            Text(booking.metodePembayaran,
                 style: TextStyle(color: Colors.grey[500], fontSize: 11)),
           ]),
-          Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                  color: _bgLightGreen, borderRadius: BorderRadius.circular(8)),
-              child: Row(children: [
-                Icon(Icons.list_alt, size: 16, color: _primaryGreen),
-                const SizedBox(width: 4),
-                Text('Lihat Bukti',
-                    style: TextStyle(
-                        color: _primaryGreen,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12)),
-              ])),
+          if (booking.buktiTransferUrl != null)
+            GestureDetector(
+              onTap: () {
+                // Show bukti transfer dialog or full screen
+              },
+              child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                      color: _bgLightGreen,
+                      borderRadius: BorderRadius.circular(8)),
+                  child: Row(children: [
+                    Icon(Icons.list_alt, size: 16, color: _primaryGreen),
+                    const SizedBox(width: 4),
+                    Text('Lihat Bukti',
+                        style: TextStyle(
+                            color: _primaryGreen,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12)),
+                  ])),
+            ),
         ]),
         const SizedBox(height: 20),
-        Row(children: [
-          Expanded(
-              child: GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                      height: 50,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                          color: _bgLightRed,
-                          borderRadius: BorderRadius.circular(12)),
-                      child: Text('Tolak',
-                          style: TextStyle(
-                              color: _textRed,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 16))))),
-          const SizedBox(width: 12),
-          Expanded(
-              child: GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                      height: 50,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                          color: _primaryGreen,
-                          borderRadius: BorderRadius.circular(12)),
-                      child: const Text('Konfirmasi',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 16))))),
-        ]),
+        _buildActionButtons(booking.id),
       ]),
     );
   }
 
+  Widget _buildActionButtons(String bookingId) {
+    final isMutating =
+        ref.watch(MitraBookingActionsProvider).contains(bookingId);
+
+    return Row(children: [
+      Expanded(
+        child: ElevatedButton(
+          onPressed: isMutating ? null : () => _handleReject(bookingId),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _bgLightRed,
+            foregroundColor: _textRed,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            minimumSize: const Size(double.infinity, 50),
+          ),
+          child: const Text('Tolak',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+        ),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: ElevatedButton(
+          onPressed: isMutating ? null : () => _handleConfirm(bookingId),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _primaryGreen,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            minimumSize: const Size(double.infinity, 50),
+          ),
+          child: isMutating
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text('Konfirmasi',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+        ),
+      ),
+    ]);
+  }
+
+  Future<void> _handleConfirm(String id) async {
+    try {
+      await ref.read(MitraBookingActionsProvider.notifier).confirmBooking(id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pesanan berhasil dikonfirmasi')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal konfirmasi: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleReject(String id) async {
+    // Tampilkan dialog alasan penolakan jika perlu
+    try {
+      await ref.read(MitraBookingActionsProvider.notifier).rejectBooking(id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pesanan berhasil ditolak')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menolak: $e')),
+        );
+      }
+    }
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    final diff = DateTime.now().difference(dateTime);
+    if (diff.inMinutes < 60) return '${diff.inMinutes} menit lalu';
+    if (diff.inHours < 24) return '${diff.inHours} jam lalu';
+    return '${diff.inDays} hari lalu';
+  }
+
   Widget _buildRevenueSummarySection() {
+    final weeklyData = ref.watch(mitraRevenueWeeklyProvider(_uid));
+
+    // Calculate total 7 days revenue
+    int totalWeekly = 0;
+    for (var data in weeklyData) {
+      totalWeekly += data['revenue'] as int;
+    }
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('Ringkasan Pendapatan',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
@@ -461,7 +606,10 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                   fontSize: 14,
                   fontWeight: FontWeight.w500)),
           const SizedBox(height: 4),
-          Text('Rp 3.2 Juta',
+          Text(
+              totalWeekly >= 1000000
+                  ? 'Rp ${(totalWeekly / 1000000).toStringAsFixed(1)} Juta'
+                  : _currencyFormat.format(totalWeekly),
               style: TextStyle(
                   color: _primaryGreen,
                   fontSize: 24,
@@ -470,15 +618,24 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
           Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _buildMiniBar('Sen', 0.4),
-                _buildMiniBar('Sel', 0.6),
-                _buildMiniBar('Rab', 0.3),
-                _buildMiniBar('Kam', 0.8),
-                _buildMiniBar('Jum', 0.5),
-                _buildMiniBar('Sab', 0.7),
-                _buildMiniBar('Min', 0.9, isToday: true),
-              ]),
+              children: weeklyData.isEmpty
+                  ? List.generate(7, (index) => _buildMiniBar('-', 0.1))
+                  : weeklyData.map((data) {
+                      double maxRevenue = 0;
+                      for (var d in weeklyData) {
+                        if (d['revenue'] > maxRevenue)
+                          maxRevenue = d['revenue'].toDouble();
+                      }
+                      double factor =
+                          maxRevenue > 0 ? (data['revenue'] / maxRevenue) : 0.1;
+                      if (factor < 0.1) factor = 0.1;
+
+                      return _buildMiniBar(
+                        data['day'],
+                        factor,
+                        isToday: data['isToday'],
+                      );
+                    }).toList()),
         ]),
       ),
     ]);

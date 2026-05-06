@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'mitra_home_page.dart';
 import 'manage_fields_page.dart';
 import 'mitra_profile_page.dart';
+import 'mitra_booking_list_page.dart';
 
 class MitraMainPage extends StatefulWidget {
   const MitraMainPage({super.key});
@@ -17,7 +18,7 @@ class _MitraMainPageState extends State<MitraMainPage> {
   final List<Widget> _pages = [
     const MitraHomePage(key: ValueKey('home')),
     const ManageFieldsPage(key: ValueKey('fields')),
-    const Center(key: ValueKey('orders'), child: Text('Halaman Orders (Belum Ada)')),
+    const MitraBookingListPage(key: ValueKey('orders')),
     const MitraProfilePage(key: ValueKey('profile')),
   ];
 
