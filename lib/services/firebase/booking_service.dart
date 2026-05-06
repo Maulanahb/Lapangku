@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
@@ -239,6 +239,11 @@ class BookingService {
       'statusTimeline': timeline,
       'updatedAt': Timestamp.fromDate(now),
     });
+  }
+
+  /// Delete booking (Hard delete)
+  Future<void> deleteBooking(String bookingId) async {
+    await _db.collection('bookings').doc(bookingId).delete();
   }
 
   /// Konfirmasi pembayaran QRIS (tanpa bukti transfer)

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
@@ -16,6 +16,95 @@ class _State extends ConsumerState<CustomerOrdersPage> {
   String _filter = 'Semua';
   final List<String> _filters = ['Semua', 'Menunggu Bayar', 'Aktif', 'Menunggu', 'Selesai', 'Dibatalkan'];
 
+  bool _isSelectionMode = false;
+  final Set<String> _selectedIds = {};
+
+  void _toggleSelectionMode() {
+    setState(() {
+      _isSelectionMode = !_isSelectionMode;
+      if (!_isSelectionMode) {
+        _selectedIds.clear();
+      }
+    });
+  }
+
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _selectAll(List<BookingModel> bookings) {
+    setState(() {
+      if (_selectedIds.length == bookings.length) {
+        _selectedIds.clear();
+      } else {
+        _selectedIds.addAll(bookings.map((b) => b.id));
+      }
+    });
+  }
+
+  Future<void> _deleteSelected(String userId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Pesanan?'),
+        content: Text('Apakah Anda yakin ingin menghapus ${_selectedIds.length} pesanan dari riwayat?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final service = ref.read(bookingServiceProvider);
+    
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator(color: Color(0xFF1B6B3A))),
+      );
+    }
+
+    try {
+      final futures = _selectedIds.map((id) => service.deleteBooking(id));
+      await Future.wait(futures);
+      
+      ref.invalidate(userBookingsProvider(userId));
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_selectedIds.length} pesanan berhasil dihapus'),
+            backgroundColor: const Color(0xFF1B6B3A),
+          ),
+        );
+        setState(() {
+          _isSelectionMode = false;
+          _selectedIds.clear();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menghapus: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(authStateProvider);
@@ -31,8 +120,23 @@ class _State extends ConsumerState<CustomerOrdersPage> {
         backgroundColor: const Color(0xFF1B6B3A),
         centerTitle: true,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          if (user != null)
+            bookingsAsync.maybeWhen(
+              data: (bookings) {
+                if (bookings.isEmpty) return const SizedBox.shrink();
+                return TextButton(
+                  onPressed: _toggleSelectionMode,
+                  child: Text(
+                    _isSelectionMode ? 'Batal' : 'Pilih',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                );
+              },
+              orElse: () => const SizedBox.shrink(),
+            ),
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () => ref.invalidate(userBookingsProvider(user.uid)),
@@ -108,14 +212,53 @@ class _State extends ConsumerState<CustomerOrdersPage> {
 
     if (filtered.isEmpty) return _buildEmpty();
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: filtered.length,
-      itemBuilder: (_, i) => _BookingCard(
-        booking: filtered[i],
-        onCancel: () => _cancelBooking(filtered[i].id, userId),
-        onRefresh: () => ref.invalidate(userBookingsProvider(userId)),
-      ),
+    return Column(
+      children: [
+        if (_isSelectionMode)
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: _selectedIds.length == filtered.length && filtered.isNotEmpty,
+                  onChanged: (_) => _selectAll(filtered),
+                  activeColor: const Color(0xFF1B6B3A),
+                ),
+                const Text('Pilih Semua', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                if (_selectedIds.isNotEmpty)
+                  ElevatedButton.icon(
+                    onPressed: () => _deleteSelected(userId),
+                    icon: const Icon(Icons.delete, size: 18),
+                    label: Text('Hapus (${_selectedIds.length})'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: filtered.length,
+            itemBuilder: (_, i) {
+              final booking = filtered[i];
+              return _BookingCard(
+                booking: booking,
+                onCancel: () => _cancelBooking(booking.id, userId),
+                onRefresh: () => ref.invalidate(userBookingsProvider(userId)),
+                isSelectionMode: _isSelectionMode,
+                isSelected: _selectedIds.contains(booking.id),
+                onSelect: () => _toggleSelection(booking.id),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -174,8 +317,18 @@ class _BookingCard extends StatelessWidget {
   final BookingModel booking;
   final VoidCallback onCancel;
   final VoidCallback onRefresh;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final VoidCallback? onSelect;
 
-  const _BookingCard({required this.booking, required this.onCancel, required this.onRefresh});
+  const _BookingCard({
+    required this.booking, 
+    required this.onCancel, 
+    required this.onRefresh,
+    this.isSelectionMode = false,
+    this.isSelected = false,
+    this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -185,13 +338,18 @@ class _BookingCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, '/booking-detail', arguments: booking.id);
+        if (isSelectionMode) {
+          onSelect?.call();
+        } else {
+          Navigator.pushNamed(context, '/booking-detail', arguments: booking.id);
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isSelected ? const Color(0xFFE8F5EC) : Colors.white,
           borderRadius: BorderRadius.circular(16),
+          border: isSelected ? Border.all(color: const Color(0xFF1B6B3A), width: 2) : null,
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
         ),
         child: Column(
@@ -203,8 +361,25 @@ class _BookingCard extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('#${booking.bookingId}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF718096), fontWeight: FontWeight.w500)),
+                  Row(
+                    children: [
+                      if (isSelectionMode)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Checkbox(
+                              value: isSelected,
+                              onChanged: (_) => onSelect?.call(),
+                              activeColor: const Color(0xFF1B6B3A),
+                            ),
+                          ),
+                        ),
+                      Text('#${booking.bookingId}',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF718096), fontWeight: FontWeight.w500)),
+                    ],
+                  ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
