@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
@@ -131,7 +131,20 @@ class MitraService {
   }
 
   Future<void> toggleFieldStatus(String fieldId, bool isActive) async {
-    await _db.collection('fields').doc(fieldId).update({'isActive': isActive});
+    // Coba cek di koleksi 'fields' dulu
+    final fieldDoc = await _db.collection('fields').doc(fieldId).get();
+    if (fieldDoc.exists) {
+      await _db.collection('fields').doc(fieldId).update({'isActive': isActive});
+    } else {
+      // Jika tidak ada, kemungkinan ini adalah data dari koleksi 'mitra' (registrasi awal)
+      final mitraDoc = await _db.collection('mitra').doc(fieldId).get();
+      if (mitraDoc.exists) {
+        await _db
+            .collection('mitra')
+            .doc(fieldId)
+            .update({'isActive': isActive});
+      }
+    }
   }
 
   Future<List<String>> _uploadFieldPhotos(

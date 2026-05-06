@@ -574,6 +574,31 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         otpLength: 6,
       );
 
+      EmailOTP.setTemplate(
+        template: '''
+          <div style="background-color: #f6f9fc; padding: 40px 20px; font-family: 'Helvetica Neue', Arial, sans-serif;">
+            <div style="max-width: 450px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+              <div style="background-color: #1B6B3A; padding: 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px;">LAPANGKU</h1>
+              </div>
+              <div style="padding: 40px 35px;">
+                <h2 style="color: #1B6B3A; margin: 0 0 15px; font-size: 20px; font-weight: 700;">LapangKu Mitra</h2>
+                <p style="color: #4a5568; line-height: 1.6; margin: 0 0 25px; font-size: 16px;">Halo,</p>
+                <p style="color: #4a5568; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">Berikut adalah kode verifikasi Anda untuk masuk ke aplikasi:</p>
+                
+                <div style="background-color: #f7fafc; border: 1px dashed #cbd5e0; border-radius: 12px; padding: 25px; text-align: center; margin-bottom: 30px;">
+                  <span style="font-size: 36px; font-weight: 900; letter-spacing: 10px; color: #1B6B3A;">{{otp}}</span>
+                </div>
+                
+                <p style="margin-top: 20px; color: #718096; font-size: 12px; line-height: 1.5;">Jangan bagikan kode ini kepada siapapun demi keamanan akun Anda.</p>
+                <hr style="border: 0; border-top: 1px solid #edf2f7; margin: 25px 0;">
+                <p style="font-size: 11px; color: #a0aec0; text-align: center;">© 2026 LapangKu Team</p>
+              </div>
+            </div>
+          </div>
+        ''',
+      );
+
       final success = await EmailOTP.sendOTP(email: contact);
       if (success) {
         if (!mounted) return;

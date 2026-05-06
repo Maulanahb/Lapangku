@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MitraFieldModel {
   final String id;
@@ -80,18 +80,20 @@ class MitraFieldModel {
     return MitraFieldModel(
       id: id,
       MitraId: map['MitraId'] ?? map['uid'] ?? '',
-      namaLapangan: map['namaLapangan'] ?? map['businessName'] ?? map['namaBisnis'] ?? map['name'] ?? '',
+      namaLapangan: map['namaLapangan'] ??
+          map['businessName'] ??
+          map['namaBisnis'] ??
+          map['name'] ??
+          '',
       jenisLapangan: map['jenisLapangan'] ?? 'Futsal',
       hargaPerJam: (map['hargaPerJam'] ?? map['pricePerHour'] ?? 0) as int,
       deskripsi: map['deskripsi'] ?? '',
       alamat: map['alamat'] ?? map['location'] ?? '',
-      photoUrls: map['photoUrls'] != null
-          ? List<String>.from(map['photoUrls'])
-          : [],
-      fasilitas: map['fasilitas'] != null
-          ? List<String>.from(map['fasilitas'])
-          : [],
-      isActive: map['isActive'] ?? map['statusVerifikasi'] == 'aktif' ? true : (map['isActive'] ?? true),
+      photoUrls:
+          map['photoUrls'] != null ? List<String>.from(map['photoUrls']) : [],
+      fasilitas:
+          map['fasilitas'] != null ? List<String>.from(map['fasilitas']) : [],
+      isActive: map['isActive'] ?? true,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
     );
   }
