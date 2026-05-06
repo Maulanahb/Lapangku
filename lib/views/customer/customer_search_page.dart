@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/models/field/field_model.dart';
@@ -302,6 +302,10 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
       loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF1B6B3A))),
       error: (e, _) => Center(child: Text('Terjadi kesalahan:\n$e')),
       data: (fields) {
+        if (_searchQuery.isEmpty && _selectedCategory == 'Semua' && _sortBy == 'Terdekat') {
+          return _buildInitialState();
+        }
+
         final filtered = fields.where((f) {
           final matchQuery = _searchQuery.isEmpty || 
               f.nama.toLowerCase().contains(_searchQuery.toLowerCase().trim()) ||
@@ -350,6 +354,30 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildInitialState() {
+    return Container(
+      color: Colors.white,
+      width: double.infinity,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_rounded, size: 80, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          const Text(
+            'Temukan Lapangan',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Ketik nama atau lokasi lapangan\nuntuk mulai mencari.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Color(0xFF718096), fontSize: 14),
+          ),
+        ],
+      ),
     );
   }
 
@@ -473,11 +501,20 @@ class _HorizontalFieldCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
-                          field.nama,
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (field.namaVenue.isNotEmpty) ...[
+                              Text(field.namaVenue.toUpperCase(), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFF718096), letterSpacing: 0.5)),
+                              const SizedBox(height: 2),
+                            ],
+                            Text(
+                              field.nama,
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ),
                       Container(

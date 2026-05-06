@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/mitra/mitra_controller.dart';
@@ -50,6 +50,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
   }
 
   Future<void> addField({
+    required String namaVenue,
     required String namaLapangan,
     required String jenisLapangan,
     required int hargaPerJam,
@@ -63,6 +64,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
       final field = MitraFieldModel(
         id: '',
         MitraId: _uid,
+        namaVenue: namaVenue,
         namaLapangan: namaLapangan,
         jenisLapangan: jenisLapangan,
         hargaPerJam: hargaPerJam,
@@ -79,6 +81,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
 
   Future<void> editField(
     String fieldId, {
+    required String namaVenue,
     required String namaLapangan,
     required int hargaPerJam,
     String deskripsi = '',
@@ -90,6 +93,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
       final currentFields = state.fields.value ?? [];
       final existingField = currentFields.firstWhere((f) => f.id == fieldId);
       final updatedField = existingField.copyWith(
+        namaVenue: namaVenue,
         namaLapangan: namaLapangan,
         hargaPerJam: hargaPerJam,
         deskripsi: deskripsi,

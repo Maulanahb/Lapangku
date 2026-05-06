@@ -5,6 +5,7 @@ import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/views/customer/payment_upload_page.dart';
+import 'package:lapangku/services/firebase/review_service.dart';
 
 class CustomerOrdersPage extends ConsumerStatefulWidget {
   const CustomerOrdersPage({super.key});
@@ -313,7 +314,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
 }
 
 // â”€â”€ BOOKING CARD â”€â”€
-class _BookingCard extends StatelessWidget {
+class _BookingCard extends ConsumerWidget {
   final BookingModel booking;
   final VoidCallback onCancel;
   final VoidCallback onRefresh;
@@ -331,7 +332,7 @@ class _BookingCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final statusInfo = _getStatusInfo(booking.status);
     final dateStr = DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
     final timeStr = booking.timeSlots.isNotEmpty ? booking.timeSlots.first : '-';
@@ -417,7 +418,7 @@ class _BookingCard extends StatelessWidget {
                       Row(children: [
                         const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF718096)),
                         const SizedBox(width: 4),
-                        Expanded(child: Text('$dateStr Â· $timeStr', style: const TextStyle(fontSize: 12, color: Color(0xFF718096)))),
+                        Expanded(child: Text('$dateStr • $timeStr', style: const TextStyle(fontSize: 12, color: Color(0xFF718096)))),
                       ]),
                     ]),
                   ),
@@ -440,7 +441,7 @@ class _BookingCard extends StatelessWidget {
                   ]),
                   const Spacer(),
                   // Action buttons based on status
-                  ..._buildActions(context, booking.status),
+                  ..._buildActions(context, ref, booking.status),
                 ],
               ),
             ),
@@ -450,7 +451,7 @@ class _BookingCard extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildActions(BuildContext context, String status) {
+  List<Widget> _buildActions(BuildContext context, WidgetRef ref, String status) {
     switch (status.toLowerCase()) {
       case 'menunggu_bayar':
         return [
@@ -472,14 +473,118 @@ class _BookingCard extends StatelessWidget {
           }),
         ];
       case 'selesai':
+        if (booking.isReviewed) {
+          return [
+            _actionBtn(Icons.star, 'Sudah Diulas', Colors.grey, () {}),
+          ];
+        }
         return [
           _actionBtn(Icons.star_outline, 'Beri Ulasan', Colors.amber.shade700, () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur ulasan segera hadir!'), backgroundColor: Color(0xFF1B6B3A)));
+            _showReviewDialog(context, ref);
           }),
         ];
       default:
         return [];
     }
+  }
+
+  void _showReviewDialog(BuildContext context, WidgetRef ref) {
+    int rating = 5;
+    final commentController = TextEditingController();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Beri Ulasan', style: TextStyle(fontWeight: FontWeight.bold)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Bagaimana pengalaman Anda di ${booking.fieldName}?', style: const TextStyle(fontSize: 13, color: Color(0xFF718096))),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    return IconButton(
+                      icon: Icon(
+                        index < rating ? Icons.star_rounded : Icons.star_border_rounded,
+                        color: Colors.amber,
+                        size: 32,
+                      ),
+                      onPressed: () {
+                        setState(() => rating = index + 1);
+                      },
+                    );
+                  }),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: commentController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Tuliskan ulasan Anda (opsional)...',
+                    hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+                child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: isSubmitting
+                    ? null
+                    : () async {
+                        setState(() => isSubmitting = true);
+                        try {
+                          final service = ref.read(reviewServiceProvider);
+                          await service.submitReview(
+                            bookingId: booking.id,
+                            fieldId: booking.fieldId,
+                            userId: booking.userId,
+                            userName: booking.userName,
+                            rating: rating,
+                            comment: commentController.text.trim(),
+                          );
+                          if (ctx.mounted) {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Terima kasih atas ulasan Anda!'), backgroundColor: Color(0xFF1B6B3A)),
+                            );
+                            onRefresh();
+                          }
+                        } catch (e) {
+                          if (ctx.mounted) {
+                            setState(() => isSubmitting = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Gagal: $e'), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1B6B3A),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: isSubmitting
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Kirim', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Widget _actionBtn(IconData icon, String label, Color color, VoidCallback onTap) {

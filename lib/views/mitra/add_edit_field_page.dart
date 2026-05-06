@@ -23,6 +23,7 @@ class _AddEditFieldPageState extends ConsumerState<AddEditFieldPage> {
   bool _isSubmitting = false;
 
   // Controllers & State
+  final _venueController = TextEditingController();
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   final _priceController = TextEditingController();
@@ -50,6 +51,7 @@ class _AddEditFieldPageState extends ConsumerState<AddEditFieldPage> {
     super.initState();
     if (widget.field != null) {
       final f = widget.field!;
+      _venueController.text = f.namaVenue;
       _nameController.text = f.namaLapangan;
       _addressController.text = f.alamat;
       _priceController.text = f.hargaPerJam.toString();
@@ -62,6 +64,7 @@ class _AddEditFieldPageState extends ConsumerState<AddEditFieldPage> {
 
   @override
   void dispose() {
+    _venueController.dispose();
     _nameController.dispose();
     _addressController.dispose();
     _priceController.dispose();
@@ -86,6 +89,8 @@ class _AddEditFieldPageState extends ConsumerState<AddEditFieldPage> {
 
   void _nextStep() {
     if (_currentStep == 1) {
+      if (_venueController.text.isEmpty)
+        return SnackbarHelper.showError(context, 'Nama Venue/Tempat wajib diisi');
       if (_nameController.text.isEmpty)
         return SnackbarHelper.showError(context, 'Nama lapangan wajib diisi');
       if (_addressController.text.isEmpty)
@@ -119,6 +124,7 @@ class _AddEditFieldPageState extends ConsumerState<AddEditFieldPage> {
       if (widget.field == null) {
         // Tambah Baru
         await notifier.addField(
+          namaVenue: _venueController.text,
           namaLapangan: _nameController.text,
           jenisLapangan: _selectedSport,
           hargaPerJam: int.parse(_priceController.text),
@@ -292,6 +298,9 @@ class _AddEditFieldPageState extends ConsumerState<AddEditFieldPage> {
         const SizedBox(height: 32),
         _buildSectionHeader('Informasi Dasar', null),
         const SizedBox(height: 16),
+        _buildLabel('Nama Tempat / Venue'),
+        _buildTextField(_venueController, 'Contoh: SM Futsal'),
+        const SizedBox(height: 20),
         _buildLabel('Nama Lapangan'),
         _buildTextField(_nameController, 'Masukkan nama lapangan...'),
         const SizedBox(height: 20),

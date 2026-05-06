@@ -111,7 +111,7 @@ class BookingService {
       id: docRef.id,
       bookingId: _generateBookingId(),
       fieldId: field.id,
-      fieldName: field.nama,
+      fieldName: field.namaVenue.isNotEmpty ? '${field.namaVenue} - ${field.nama}' : field.nama,
       fieldAddress: field.alamat,
       fieldCategory: field.kategori,
       fieldImageUrl: field.fotoUtama,

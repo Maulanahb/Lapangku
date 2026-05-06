@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class MitraFieldModel {
   final String id;
   final String MitraId;
+  final String namaVenue;
   final String namaLapangan;
   final String jenisLapangan; // futsal, badminton, basket, tenis, voli
   final int hargaPerJam;
@@ -16,6 +17,7 @@ class MitraFieldModel {
   const MitraFieldModel({
     required this.id,
     required this.MitraId,
+    this.namaVenue = '',
     required this.namaLapangan,
     required this.jenisLapangan,
     required this.hargaPerJam,
@@ -34,6 +36,7 @@ class MitraFieldModel {
   MitraFieldModel copyWith({
     String? id,
     String? MitraId,
+    String? namaVenue,
     String? namaLapangan,
     String? jenisLapangan,
     int? hargaPerJam,
@@ -47,6 +50,7 @@ class MitraFieldModel {
     return MitraFieldModel(
       id: id ?? this.id,
       MitraId: MitraId ?? this.MitraId,
+      namaVenue: namaVenue ?? this.namaVenue,
       namaLapangan: namaLapangan ?? this.namaLapangan,
       jenisLapangan: jenisLapangan ?? this.jenisLapangan,
       hargaPerJam: hargaPerJam ?? this.hargaPerJam,
@@ -62,7 +66,8 @@ class MitraFieldModel {
   Map<String, dynamic> toMap() {
     return {
       'MitraId': MitraId,
-      'namaLapangan': namaLapangan,
+      'nama_venue': namaVenue,
+      'nama_lapangan': namaLapangan,
       'jenisLapangan': jenisLapangan,
       'hargaPerJam': hargaPerJam,
       'deskripsi': deskripsi,
@@ -80,7 +85,8 @@ class MitraFieldModel {
     return MitraFieldModel(
       id: id,
       MitraId: map['MitraId'] ?? map['uid'] ?? '',
-      namaLapangan: map['namaLapangan'] ??
+      namaVenue: map['nama_venue'] ?? map['namaVenue'] ?? '',
+      namaLapangan: map['nama_lapangan'] ?? map['namaLapangan'] ??
           map['businessName'] ??
           map['namaBisnis'] ??
           map['name'] ??

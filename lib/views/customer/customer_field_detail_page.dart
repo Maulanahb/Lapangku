@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/models/field/field_model.dart';
@@ -91,6 +91,18 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
             begin: Alignment.topCenter, end: Alignment.bottomCenter,
             colors: [Colors.black38, Colors.transparent, Colors.black26],
           ))),
+          Positioned(
+            bottom: -1,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 24,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+            ),
+          ),
         ]),
       ),
     );
@@ -140,15 +152,12 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
 
   
   Widget _body() {
-    return Transform.translate(
-      offset: const Offset(0, -28),
-      child: Container(
-        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _headerInfo(), _tabBarW(), _tabContent(), _scheduler(),
-          const SizedBox(height: 110),
-        ]),
-      ),
+    return Container(
+      color: Colors.white,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _headerInfo(), _tabBarW(), _tabContent(), _scheduler(),
+        const SizedBox(height: 110),
+      ]),
     );
   }
 
@@ -156,7 +165,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   Widget _headerInfo() {
     final f = widget.field;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -164,6 +173,10 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
           child: Text(f.kategori.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
         ),
         const SizedBox(height: 12),
+        if (f.namaVenue.isNotEmpty) ...[
+          Text(f.namaVenue.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF718096), letterSpacing: 1.0)),
+          const SizedBox(height: 4),
+        ],
         Text(f.nama, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2D3748))),
         const SizedBox(height: 12),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -184,7 +197,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
             child: const Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.circle, size: 8, color: Color(0xFF1B6B3A)),
               SizedBox(width: 4),
-              Text('Buka Â· 06:00-22:00', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
+              Text('Buka • 06:00-22:00', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
             ]),
           ),
         ]),
@@ -239,12 +252,28 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     ]),
   ]));
 
+  IconData _getFacilityIcon(String facility) {
+    final f = facility.toLowerCase();
+    if (f.contains('parkir')) return Icons.local_parking;
+    if (f.contains('toilet') || f.contains('kamar mandi') || f.contains('wc')) return Icons.wc;
+    if (f.contains('mushola') || f.contains('masjid') || f.contains('sholat')) return Icons.mosque;
+    if (f.contains('kantin') || f.contains('makan') || f.contains('cafe') || f.contains('minum')) return Icons.restaurant;
+    if (f.contains('wifi') || f.contains('internet')) return Icons.wifi;
+    if (f.contains('loker') || f.contains('locker')) return Icons.door_sliding;
+    if (f.contains('ruang ganti') || f.contains('ganti')) return Icons.checkroom;
+    if (f.contains('tribun') || f.contains('penonton') || f.contains('kursi')) return Icons.stadium;
+    if (f.contains('ac') || f.contains('pendingin')) return Icons.ac_unit;
+    if (f.contains('bola') || f.contains('sewa bola')) return Icons.sports_soccer;
+    if (f.contains('p3k') || f.contains('medis') || f.contains('kesehatan')) return Icons.medical_services;
+    return Icons.check_circle_outline;
+  }
+
   Widget _fasilitasTab() {
     final fas = widget.field.fasilitas.isNotEmpty ? widget.field.fasilitas : ['Parkir Luas', 'Toilet Bersih', 'Mushola', 'Kantin'];
     return Padding(padding: const EdgeInsets.all(20), child: Wrap(spacing: 12, runSpacing: 12, children: fas.map((f) =>
       Container(width: (MediaQuery.of(context).size.width - 52) / 2, padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(color: const Color(0xFFF0FDF4), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFBBF7D0))),
-        child: Row(children: [const Icon(Icons.check_circle_outline, color: Color(0xFF1B6B3A), size: 20), const SizedBox(width: 10),
+        child: Row(children: [Icon(_getFacilityIcon(f), color: const Color(0xFF1B6B3A), size: 20), const SizedBox(width: 10),
           Expanded(child: Text(f, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)))]),
       )).toList()));
   }
@@ -378,7 +407,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -4))]),
       child: Row(children: [
         Expanded(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(hasSel ? '${_dates[_selectedDateIndex]['full']} Â· ${_selectedTimeIndices.length} sesi' : 'Pilih jadwal terlebih dahulu',
+          Text(hasSel ? '${_dates[_selectedDateIndex]['full']} • ${_selectedTimeIndices.length} sesi' : 'Pilih jadwal terlebih dahulu',
               style: const TextStyle(fontSize: 11, color: Color(0xFF718096))),
           const SizedBox(height: 2),
           Text(hasSel ? _fmt(_totalHarga) : 'Rp -', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),

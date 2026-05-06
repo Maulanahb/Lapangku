@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
@@ -76,7 +76,7 @@ class MitraProfilePage extends ConsumerWidget {
                       icon: Icons.account_balance_outlined,
                       title: 'Rekening Payout',
                       subtitle: profileState.bankName.isNotEmpty
-                          ? '${profileState.bankName} Â· ${profileState.bankAccount}'
+                          ? '${profileState.bankName} • ${profileState.bankAccount}'
                           : 'Belum diatur',
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MitraPayoutPage())),
                     ),

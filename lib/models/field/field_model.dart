@@ -1,8 +1,9 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FieldModel {
   final String id;
   final String idLapangan;
+  final String namaVenue;
   final String nama;
   final String kategori;
   final int hargaPerJam;
@@ -22,6 +23,7 @@ class FieldModel {
   const FieldModel({
     required this.id,
     this.idLapangan = '',
+    this.namaVenue = '',
     required this.nama,
     required this.kategori,
     required this.hargaPerJam,
@@ -55,6 +57,7 @@ class FieldModel {
     return FieldModel(
       id: doc.id,
       idLapangan: data['id_lapangan'] ?? '',
+      namaVenue: data['nama_venue'] ?? data['namaVenue'] ?? '',
       nama: data['nama_lapangan'] ?? '',
       kategori: data['kategori_lapangan'] ?? '',
       hargaPerJam: (data['harga_sewa_jam'] ?? 0).toInt(),
@@ -77,6 +80,7 @@ class FieldModel {
   Map<String, dynamic> toFirestore() {
     return {
       'id_lapangan': idLapangan,
+      'nama_venue': namaVenue,
       'nama_lapangan': nama,
       'kategori_lapangan': kategori,
       'harga_sewa_jam': hargaPerJam,

@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -16,6 +16,7 @@ class MitraFieldFormSheet extends ConsumerStatefulWidget {
 }
 
 class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
+  late TextEditingController _venueController;
   late TextEditingController _nameController;
   late TextEditingController _priceController;
   late TextEditingController _descController;
@@ -34,6 +35,7 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
   void initState() {
     super.initState();
     final f = widget.field;
+    _venueController = TextEditingController(text: f?.namaVenue ?? '');
     _nameController = TextEditingController(text: f?.namaLapangan ?? '');
     _priceController = TextEditingController(text: f?.hargaPerJam.toString() ?? '');
     _descController = TextEditingController(text: f?.deskripsi ?? '');
@@ -49,6 +51,7 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
 
   @override
   void dispose() {
+    _venueController.dispose();
     _nameController.dispose();
     _priceController.dispose();
     _descController.dispose();
@@ -87,6 +90,7 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
       if (widget.field != null) {
         // Edit
         final updatedField = widget.field!.copyWith(
+          namaVenue: _venueController.text.trim(),
           namaLapangan: name,
           jenisLapangan: _selectedJenis,
           hargaPerJam: price,
@@ -97,6 +101,7 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
         
         await ref.read(mitraFieldProvider.notifier).editField(
           updatedField.id,
+          namaVenue: _venueController.text.trim(),
           namaLapangan: name,
           hargaPerJam: price,
           deskripsi: desc,
@@ -107,6 +112,7 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
       } else {
         // Add
         await ref.read(mitraFieldProvider.notifier).addField(
+          namaVenue: _venueController.text.trim(),
           namaLapangan: name,
           jenisLapangan: _selectedJenis,
           hargaPerJam: price,
@@ -156,6 +162,11 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _venueController,
+                    decoration: _inputDecor('Nama Tempat / Venue (opsional)', Icons.business),
+                  ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _nameController,

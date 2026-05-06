@@ -456,6 +456,17 @@ class _FavoriteFieldCard extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 6),
+                      if (field.namaVenue.isNotEmpty) ...[
+                        Text(
+                          field.namaVenue.toUpperCase(),
+                          style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF718096),
+                              letterSpacing: 0.5),
+                        ),
+                        const SizedBox(height: 2),
+                      ],
                       Text(
                         field.nama,
                         style: const TextStyle(

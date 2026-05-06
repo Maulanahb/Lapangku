@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BookingModel {
   final String id;
@@ -23,6 +23,7 @@ class BookingModel {
   final DateTime batasWaktuBayar;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isReviewed;
 
   const BookingModel({
     required this.id,
@@ -47,6 +48,7 @@ class BookingModel {
     required this.batasWaktuBayar,
     required this.createdAt,
     required this.updatedAt,
+    this.isReviewed = false,
   });
 
   factory BookingModel.fromFirestore(DocumentSnapshot doc) {
@@ -88,6 +90,7 @@ class BookingModel {
       batasWaktuBayar: (data['batasWaktuBayar'] as Timestamp?)?.toDate() ?? DateTime.now().add(const Duration(hours: 4)),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isReviewed: data['isReviewed'] ?? false,
     );
   }
 
@@ -114,6 +117,7 @@ class BookingModel {
       'batasWaktuBayar': Timestamp.fromDate(batasWaktuBayar),
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'isReviewed': isReviewed,
     };
   }
 }
