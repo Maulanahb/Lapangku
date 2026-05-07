@@ -11,6 +11,9 @@ class MitraFieldModel {
   final String alamat;
   final List<String> photoUrls;
   final List<String> fasilitas;
+  final int? hargaWeekend;
+  final String jamBuka;
+  final String jamTutup;
   final bool isActive;
   final DateTime? createdAt;
 
@@ -25,6 +28,9 @@ class MitraFieldModel {
     this.alamat = '',
     this.photoUrls = const [],
     this.fasilitas = const [],
+    this.hargaWeekend,
+    this.jamBuka = '08:00',
+    this.jamTutup = '22:00',
     this.isActive = true,
     this.createdAt,
   });
@@ -44,6 +50,9 @@ class MitraFieldModel {
     String? alamat,
     List<String>? photoUrls,
     List<String>? fasilitas,
+    int? hargaWeekend,
+    String? jamBuka,
+    String? jamTutup,
     bool? isActive,
     DateTime? createdAt,
   }) {
@@ -58,6 +67,9 @@ class MitraFieldModel {
       alamat: alamat ?? this.alamat,
       photoUrls: photoUrls ?? this.photoUrls,
       fasilitas: fasilitas ?? this.fasilitas,
+      hargaWeekend: hargaWeekend ?? this.hargaWeekend,
+      jamBuka: jamBuka ?? this.jamBuka,
+      jamTutup: jamTutup ?? this.jamTutup,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -74,6 +86,9 @@ class MitraFieldModel {
       'alamat': alamat,
       'photoUrls': photoUrls,
       'fasilitas': fasilitas,
+      'hargaWeekend': hargaWeekend,
+      'jamBuka': jamBuka,
+      'jamTutup': jamTutup,
       'isActive': isActive,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
@@ -95,10 +110,16 @@ class MitraFieldModel {
       hargaPerJam: (map['hargaPerJam'] ?? map['pricePerHour'] ?? 0) as int,
       deskripsi: map['deskripsi'] ?? '',
       alamat: map['alamat'] ?? map['location'] ?? '',
-      photoUrls:
-          map['photoUrls'] != null ? List<String>.from(map['photoUrls']) : [],
-      fasilitas:
-          map['fasilitas'] != null ? List<String>.from(map['fasilitas']) : [],
+      photoUrls: (map['photoUrls'] as List?)?.map((e) => e.toString()).toList() ??
+          (map['photos'] as List?)?.map((e) => e.toString()).toList() ??
+          (map['images'] as List?)?.map((e) => e.toString()).toList() ??
+          [],
+      fasilitas: (map['fasilitas'] as List?)?.map((e) => e.toString()).toList() ??
+          (map['facilities'] as List?)?.map((e) => e.toString()).toList() ??
+          [],
+      hargaWeekend: map['hargaWeekend'] as int?,
+      jamBuka: map['jamBuka'] ?? '08:00',
+      jamTutup: map['jamTutup'] ?? '22:00',
       isActive: map['isActive'] ?? true,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
     );

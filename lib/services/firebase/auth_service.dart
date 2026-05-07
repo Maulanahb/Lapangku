@@ -106,11 +106,24 @@ class AuthService {
 
   Future<void> logout() async {
     try {
+      print('DEBUG AUTH: Melakukan logout...');
       await GoogleSignIn().signOut();
     } catch (e) {
-      // Ignore error if not signed in with google
+      // Ignore
     }
+    
+    // Bersihkan sesi Auth
     await _auth.signOut();
+    
+    try {
+      // SANGAT PENTING: Bersihkan cache Firestore agar tidak bentrok saat login akun lain
+      await _db.terminate();
+      await _db.clearPersistence();
+    } catch (e) {
+      print('DEBUG AUTH: Gagal clear persistence: $e');
+    }
+    
+    print('DEBUG AUTH: Logout berhasil.');
   }
 
   Future<void> sendPasswordReset(String email) async {
@@ -191,32 +204,27 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> getUserData(String uid) async {
-    // Coba ambil dari server dulu, jika timeout fallback ke cache
     try {
+      print('DEBUG AUTH: Mengambil data user $uid dari server...');
+      // Paksa ambil dari server agar tidak nyangkut di cache lama
       final doc = await _db.collection('users').doc(uid).get(
-        const GetOptions(source: Source.serverAndCache),
+        const GetOptions(source: Source.server),
       ).timeout(
-        const Duration(seconds: 20),
-        onTimeout: () => throw Exception('Waktu koneksi habis (Timeout). Cek internet kamu.'),
+        const Duration(seconds: 15),
       );
       
       if (!doc.exists || doc.data() == null) {
-        throw Exception('Data pengguna tidak ditemukan di database.');
+        throw Exception('Data pengguna tidak ditemukan.');
       }
       return doc.data()!;
     } catch (e) {
-      // Jika gagal dari server, coba dari cache lokal
-      if (e.toString().contains('Timeout') || e.toString().contains('koneksi')) {
-        try {
-          final cachedDoc = await _db.collection('users').doc(uid).get(
-            const GetOptions(source: Source.cache),
-          );
-          if (cachedDoc.exists && cachedDoc.data() != null) {
-            return cachedDoc.data()!;
-          }
-        } catch (_) {
-          // Cache juga kosong, lempar error asli
-        }
+      print('DEBUG AUTH: Gagal ambil dari server, mencoba cache... ($e)');
+      // Fallback ke cache jika server gagal/timeout
+      final cachedDoc = await _db.collection('users').doc(uid).get(
+        const GetOptions(source: Source.cache),
+      );
+      if (cachedDoc.exists && cachedDoc.data() != null) {
+        return cachedDoc.data()!;
       }
       rethrow;
     }

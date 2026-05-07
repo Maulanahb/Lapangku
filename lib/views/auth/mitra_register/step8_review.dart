@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'dart:io';
 
 class Step8Review extends StatelessWidget {
+  final String ownerName;
   final String businessName;
   final String email;
   final String contact;
@@ -16,6 +17,7 @@ class Step8Review extends StatelessWidget {
 
   const Step8Review({
     super.key,
+    required this.ownerName,
     required this.businessName,
     required this.email,
     required this.contact,
@@ -79,7 +81,10 @@ class Step8Review extends StatelessWidget {
                 content: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(businessName,
+                    Text('Pemilik: $ownerName',
+                        style: const TextStyle(
+                            fontSize: 14, color: Color(0xFF4A5568))),
+                    Text('Bisnis: $businessName',
                         style: const TextStyle(
                             fontSize: 14, color: Color(0xFF4A5568))),
                     Text(email,

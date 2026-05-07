@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
-import 'package:lapangku/views/mitra/add_edit_field_page.dart';
+import 'package:lapangku/views/mitra/add_field_page.dart';
+import 'package:lapangku/views/mitra/edit_field_page.dart';
 import 'package:intl/intl.dart';
 
 class ManageFieldsPage extends ConsumerStatefulWidget {
@@ -102,7 +103,7 @@ class _ManageFieldsPageState extends ConsumerState<ManageFieldsPage> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AddEditFieldPage()),
+                MaterialPageRoute(builder: (context) => const AddFieldPage()),
               );
             },
             child: Container(
@@ -297,7 +298,15 @@ class _ManageFieldsPageState extends ConsumerState<ManageFieldsPage> {
                   child: Row(children: [
                     Expanded(
                         child: OutlinedButton.icon(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      EditFieldPage(field: field),
+                                ),
+                              );
+                            },
                             icon: const Icon(Icons.edit_outlined, size: 18),
                             label: const Text('Edit'),
                             style: OutlinedButton.styleFrom(

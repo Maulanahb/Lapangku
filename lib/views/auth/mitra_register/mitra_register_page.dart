@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
+import 'package:lapangku/services/firebase/mitra_service.dart';
 import 'package:email_otp/email_otp.dart';
 
 // Import Langkah-langkah
@@ -39,6 +40,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
   // Controllers
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _ownerNameController = TextEditingController();
   final _businessNameController = TextEditingController();
   final _phoneController = TextEditingController();
 
@@ -130,6 +132,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
     }
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _ownerNameController.dispose();
     _businessNameController.dispose();
     _phoneController.dispose();
     _fieldNameController.dispose();
@@ -261,11 +264,14 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
       }
     } else if (_currentStep == 4) {
       // Validate Field Info step
-      if (_businessNameController.text.trim().isEmpty) {
+      if (_ownerNameController.text.trim().isEmpty) {
         return SnackbarHelper.showError(context, 'Nama pemilik wajib diisi');
       }
       if (_phoneController.text.trim().isEmpty) {
         return SnackbarHelper.showError(context, 'Nomor WhatsApp wajib diisi');
+      }
+      if (_businessNameController.text.trim().isEmpty) {
+        return SnackbarHelper.showError(context, 'Nama bisnis wajib diisi');
       }
       if (_fieldNameController.text.trim().isEmpty) {
         return SnackbarHelper.showError(context, 'Nama lapangan wajib diisi');
@@ -388,20 +394,54 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
   Future<void> _submitRegistration() async {
     setState(() => _isSubmitting = true);
     try {
-      final credential =
+      // 1. Create User in Firebase Auth
+      final UserCredential credential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      final uid = credential.user!.uid;
 
+      final String newMitraId = credential.user!.uid;
+      final mitraService = MitraService();
+
+      // 2. Upload photos in parallel
+      final List<Future> uploadTasks = [];
+
+      Future<List<String>> fieldPhotosTask = Future.value([]);
+      if (_fieldPhotos.isNotEmpty) {
+        fieldPhotosTask =
+            mitraService.uploadFieldPhotos(newMitraId, _fieldPhotos);
+        uploadTasks.add(fieldPhotosTask);
+      }
+
+      Future<String?> ktpTask = Future.value(null);
+      if (_ktpPhoto != null) {
+        ktpTask = mitraService.uploadDocument(newMitraId, 'ktp', _ktpPhoto!);
+        uploadTasks.add(ktpTask);
+      }
+
+      Future<String?> selfieTask = Future.value(null);
+      if (_selfiePhoto != null) {
+        selfieTask =
+            mitraService.uploadDocument(newMitraId, 'selfie', _selfiePhoto!);
+        uploadTasks.add(selfieTask);
+      }
+
+      await Future.wait(uploadTasks);
+
+      final fieldPhotoUrls = await fieldPhotosTask;
+      final ktpUrl = await ktpTask;
+      final selfieUrl = await selfieTask;
+
+      // 3. Save Data to Firestore
       final db = FirestoreService.instance;
 
       await Future.wait([
-        db.collection('mitra').doc(uid).set({
-          'uid': uid,
+        // Save to 'mitra' collection
+        db.collection('mitra').doc(newMitraId).set({
+          'uid': newMitraId,
           'email': _emailController.text.trim(),
-          'ownerName': _businessNameController.text.trim(),
+          'ownerName': _ownerNameController.text.trim(),
           'businessName': _businessNameController.text.trim(),
           'namaBisnis': _businessNameController.text.trim(),
           'mitraName': _businessNameController.text.trim(),
@@ -410,18 +450,25 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
           'isVerified': false,
           'statusVerifikasi': 'menunggu',
           'createdAt': FieldValue.serverTimestamp(),
+          'nama_lapangan': _fieldNameController.text.trim(),
           'namaLapangan': _fieldNameController.text.trim(),
           'deskripsi': _fieldDescriptionController.text.trim(),
           'alamat': _addressController.text.trim(),
           'hargaPerJam': int.tryParse(_priceController.text) ?? 0,
           'sport': _selectedSport,
+          'jenisLapangan': _selectedSport,
           'facilities': _selectedFacilities,
+          'fasilitas': _selectedFacilities,
           'jamOperasional':
               '${_openingTime.format(context)} - ${_closingTime.format(context)}',
           'hariOperasional': _selectedDays,
+          'photoUrls': fieldPhotoUrls,
+          'ktpUrl': ktpUrl,
+          'selfieUrl': selfieUrl,
         }),
-        db.collection('users').doc(uid).set({
-          'uid': uid,
+        // Save to 'users' collection
+        db.collection('users').doc(newMitraId).set({
+          'uid': newMitraId,
           'email': _emailController.text.trim(),
           'nama': _businessNameController.text.trim(),
           'phone': _phoneController.text.trim(),
@@ -568,7 +615,8 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
         );
       case 4:
         return Step4FieldInfo(
-          ownerNameController: _businessNameController,
+          ownerNameController: _ownerNameController,
+          businessNameController: _businessNameController,
           whatsappController: _phoneController,
           nameController: _fieldNameController,
           descriptionController: _fieldDescriptionController,
@@ -634,6 +682,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
         );
       case 8:
         return Step8Review(
+          ownerName: _ownerNameController.text.trim(),
           businessName: _businessNameController.text.trim(),
           email: _emailController.text.trim(),
           contact: _phoneController.text.trim(),
