@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/admin/admin_controller.dart';
 
@@ -71,29 +71,17 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
           Row(
             children: [
               ElevatedButton.icon(
-                onPressed: () => _showUserForm(null),
-                icon: const Icon(Icons.add_rounded, size: 20),
-                label: const Text('User Baru'),
+                onPressed: () => ref.read(allUsersProvider.notifier).load(),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Refresh', style: TextStyle(fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  backgroundColor: Colors.grey.shade100,
+                  foregroundColor: _primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  elevation: 8,
-                  shadowColor: _primary.withOpacity(0.4),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.refresh_rounded, color: _primary),
-                  onPressed: () => ref.read(allUsersProvider.notifier).load(),
+                  elevation: 0,
                 ),
               ),
             ],
@@ -130,7 +118,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: ['semua', 'customer', 'Mitra', 'admin'].map((role) {
+              children: ['semua', 'customer', 'mitra', 'admin'].map((role) {
                 final selected = _filterRole == role;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -332,6 +320,33 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                         ),
                       ),
                     ],
+                    if (user['isActive'] == false) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.block_flipped, size: 10, color: Colors.red),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'NONAKTIF',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
@@ -354,6 +369,15 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
               _actionBtn(Icons.edit_note_rounded, Colors.blue, 'Edit', () {
                 _showUserForm(user);
               }),
+              const SizedBox(width: 8),
+              _actionBtn(
+                (user['isActive'] ?? true) ? Icons.block_flipped : Icons.check_circle_outline,
+                (user['isActive'] ?? true) ? Colors.orange : Colors.green,
+                (user['isActive'] ?? true) ? 'Nonaktifkan' : 'Aktifkan',
+                () {
+                  _toggleActiveUser(uid, name, user['isActive'] ?? true);
+                },
+              ),
               const SizedBox(width: 8),
               _actionBtn(Icons.delete_sweep_rounded, Colors.redAccent, 'Hapus', () {
                 _deleteUser(uid, name);
@@ -467,127 +491,134 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
     }
   }
 
-  void _showUserForm(Map<String, dynamic>? user) {
-    final isEdit = user != null;
-    final nameController = TextEditingController(text: user?['nama'] ?? user?['name'] ?? '');
-    final emailController = TextEditingController(text: user?['email'] ?? '');
-    final phoneController = TextEditingController(text: user?['phone'] ?? '');
-    String selectedRole = user?['role'] ?? 'customer';
-
-    showModalBottomSheet(
+  Future<void> _toggleActiveUser(String uid, String name, bool currentActive) async {
+    final action = currentActive ? 'menonaktifkan' : 'mengaktifkan';
+    final confirm = await showDialog<bool>(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('${currentActive ? 'Nonaktifkan' : 'Aktifkan'} Pengguna'),
+        content: Text('Yakin ingin $action pengguna "$name"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: currentActive ? Colors.orange : Colors.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text(currentActive ? 'Nonaktifkan' : 'Aktifkan'),
+          ),
+        ],
       ),
+    );
+
+    if (confirm == true && mounted) {
+      await ref.read(allUsersProvider.notifier).updateUser(uid, {'isActive': !currentActive});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Pengguna berhasil ${currentActive ? 'dinonaktifkan' : 'diaktifkan'}'),
+            backgroundColor: _primary,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showUserForm(Map<String, dynamic> user) {
+    final nameController = TextEditingController(text: user['nama'] ?? user['name'] ?? '');
+    final emailController = TextEditingController(text: user['email'] ?? '');
+    final phoneController = TextEditingController(text: user['phone'] ?? '');
+    final isAdmin = (user['role'] ?? '').toString().toLowerCase() == 'admin';
+
+    showDialog(
+      context: context,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateModal) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 24,
-                right: 24,
-                top: 24,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isEdit ? 'Edit Pengguna' : 'Tambah Pengguna',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A2E),
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: StatefulBuilder(
+            builder: (context, setStateModal) {
+              return Container(
+                width: 400,
+                padding: const EdgeInsets.all(24),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Edit Pengguna',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A1A2E),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildTextField('Nama', nameController, Icons.person_outline),
-                    const SizedBox(height: 16),
-                    _buildTextField('Email', emailController, Icons.email_outlined),
-                    const SizedBox(height: 16),
-                    _buildTextField('Nomor Telepon', phoneController, Icons.phone_outlined),
-                    const SizedBox(height: 16),
-                    const Text('Role', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Color(0xFF4A5568))),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(12),
-                        color: const Color(0xFFF8FAFC),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedRole,
-                          isExpanded: true,
-                          items: ['customer', 'Mitra', 'admin'].map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(_roleLabel(value)),
-                            );
-                          }).toList(),
-                          onChanged: (newValue) {
-                            setStateModal(() {
-                              if (newValue != null) selectedRole = newValue;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          if (nameController.text.isEmpty || emailController.text.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Nama dan Email harus diisi')),
-                            );
-                            return;
-                          }
-                          
-                          final data = {
-                            'nama': nameController.text.trim(),
-                            'email': emailController.text.trim(),
-                            'phone': phoneController.text.trim(),
-                            'role': selectedRole,
-                          };
+                      const SizedBox(height: 20),
+                      _buildTextField('Nama', nameController, Icons.person_outline),
+                      const SizedBox(height: 16),
+                      _buildTextField('Email', emailController, Icons.email_outlined),
+                      if (!isAdmin) ...[
+                        const SizedBox(height: 16),
+                        _buildTextField('Nomor Telepon', phoneController, Icons.phone_outlined),
+                      ],
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            if (nameController.text.isEmpty || emailController.text.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Nama dan Email harus diisi')),
+                              );
+                              return;
+                            }
+                            
+                            final data = {
+                              'nama': nameController.text.trim(),
+                              'email': emailController.text.trim(),
+                              if (!isAdmin) 'phone': phoneController.text.trim(),
+                            };
 
-                          Navigator.pop(context);
+                            Navigator.pop(context);
 
-                          if (isEdit) {
                             await ref.read(allUsersProvider.notifier).updateUser(user['uid'], data);
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Pengguna berhasil diperbarui'), backgroundColor: _primary),
                               );
                             }
-                          } else {
-                            await ref.read(allUsersProvider.notifier).addUser(data);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Pengguna berhasil ditambahkan'), backgroundColor: _primary),
-                              );
-                            }
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _primary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Simpan Perubahan', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
-                        child: Text(isEdit ? 'Simpan Perubahan' : 'Tambah Pengguna', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
