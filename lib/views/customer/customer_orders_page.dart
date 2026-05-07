@@ -6,6 +6,12 @@ import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/views/customer/payment_upload_page.dart';
 import 'package:lapangku/services/firebase/review_service.dart';
+import 'package:lapangku/shared/constants/app_colors.dart';
+import 'package:lapangku/shared/models/booking_status.dart';
+import 'package:lapangku/shared/utils/currency_formatter.dart';
+import 'package:lapangku/shared/widgets/confirmation_dialog.dart';
+import 'package:lapangku/shared/widgets/empty_state_widget.dart';
+import 'package:lapangku/shared/widgets/loading_overlay.dart';
 
 class CustomerOrdersPage extends ConsumerStatefulWidget {
   const CustomerOrdersPage({super.key});
@@ -15,7 +21,14 @@ class CustomerOrdersPage extends ConsumerStatefulWidget {
 
 class _State extends ConsumerState<CustomerOrdersPage> {
   String _filter = 'Semua';
-  final List<String> _filters = ['Semua', 'Menunggu Bayar', 'Aktif', 'Menunggu', 'Selesai', 'Dibatalkan'];
+  final List<String> _filters = [
+    'Semua',
+    'Menunggu Bayar',
+    'Aktif',
+    'Menunggu',
+    'Selesai',
+    'Dibatalkan'
+  ];
 
   bool _isSelectionMode = false;
   final Set<String> _selectedIds = {};
@@ -23,9 +36,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
   void _toggleSelectionMode() {
     setState(() {
       _isSelectionMode = !_isSelectionMode;
-      if (!_isSelectionMode) {
-        _selectedIds.clear();
-      }
+      if (!_isSelectionMode) _selectedIds.clear();
     });
   }
 
@@ -50,45 +61,32 @@ class _State extends ConsumerState<CustomerOrdersPage> {
   }
 
   Future<void> _deleteSelected(String userId) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await ConfirmationDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Hapus Pesanan?'),
-        content: Text('Apakah Anda yakin ingin menghapus ${_selectedIds.length} pesanan dari riwayat?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+      title: 'Hapus Pesanan?',
+      message:
+          'Apakah Anda yakin ingin menghapus ${_selectedIds.length} pesanan dari riwayat?',
+      confirmText: 'Hapus',
+      isDestructive: true,
     );
-
-    if (confirm != true) return;
+    if (!confirm) return;
 
     final service = ref.read(bookingServiceProvider);
-    
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator(color: Color(0xFF1B6B3A))),
-      );
-    }
+
+    if (mounted) LoadingOverlay.show(context);
 
     try {
       final futures = _selectedIds.map((id) => service.deleteBooking(id));
       await Future.wait(futures);
-      
+
       ref.invalidate(userBookingsProvider(userId));
-      
+
       if (mounted) {
-        Navigator.pop(context); // Close loading
+        LoadingOverlay.dismiss(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${_selectedIds.length} pesanan berhasil dihapus'),
-            backgroundColor: const Color(0xFF1B6B3A),
+            backgroundColor: AppColors.primary,
           ),
         );
         setState(() {
@@ -98,9 +96,11 @@ class _State extends ConsumerState<CustomerOrdersPage> {
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // Close loading
+        LoadingOverlay.dismiss(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menghapus: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Gagal menghapus: $e'),
+              backgroundColor: AppColors.error),
         );
       }
     }
@@ -115,29 +115,31 @@ class _State extends ConsumerState<CustomerOrdersPage> {
     final bookingsAsync = ref.watch(userBookingsProvider(user.uid));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
+      backgroundColor: AppColors.backgroundPage,
       appBar: AppBar(
-        title: const Text('Pesanan Saya', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: const Color(0xFF1B6B3A),
+        title: const Text('Pesanan Saya',
+            style:
+                TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: AppColors.primary,
         centerTitle: true,
         elevation: 0,
         automaticallyImplyLeading: true,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          if (user != null)
-            bookingsAsync.maybeWhen(
-              data: (bookings) {
-                if (bookings.isEmpty) return const SizedBox.shrink();
-                return TextButton(
-                  onPressed: _toggleSelectionMode,
-                  child: Text(
-                    _isSelectionMode ? 'Batal' : 'Pilih',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                );
-              },
-              orElse: () => const SizedBox.shrink(),
-            ),
+          bookingsAsync.maybeWhen(
+            data: (bookings) {
+              if (bookings.isEmpty) return const SizedBox.shrink();
+              return TextButton(
+                onPressed: _toggleSelectionMode,
+                child: Text(
+                  _isSelectionMode ? 'Batal' : 'Pilih',
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              );
+            },
+            orElse: () => const SizedBox.shrink(),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () => ref.invalidate(userBookingsProvider(user.uid)),
@@ -149,8 +151,12 @@ class _State extends ConsumerState<CustomerOrdersPage> {
           _buildFilterChips(),
           Expanded(
             child: bookingsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF1B6B3A))),
-              error: (e, _) => Center(child: Text('Gagal memuat pesanan:\n$e', textAlign: TextAlign.center)),
+              loading: () => const Center(
+                  child:
+                      CircularProgressIndicator(color: AppColors.primary)),
+              error: (e, _) => Center(
+                  child: Text('Gagal memuat pesanan:\n$e',
+                      textAlign: TextAlign.center)),
               data: (bookings) => _buildBookingList(bookings, user.uid),
             ),
           ),
@@ -160,9 +166,14 @@ class _State extends ConsumerState<CustomerOrdersPage> {
   }
 
   Widget _loginPrompt() => const Scaffold(
-    backgroundColor: Color(0xFFF4F6F9),
-    body: Center(child: Text('Silakan login untuk melihat pesanan', style: TextStyle(color: Color(0xFF718096)))),
-  );
+        backgroundColor: AppColors.backgroundPage,
+        body: Center(
+          child: Text(
+            'Silakan login untuk melihat pesanan',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+      );
 
   Widget _buildFilterChips() {
     return Container(
@@ -180,16 +191,25 @@ class _State extends ConsumerState<CustomerOrdersPage> {
             child: GestureDetector(
               onTap: () => setState(() => _filter = f),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: sel ? const Color(0xFF1B6B3A) : Colors.white,
+                  color: sel ? AppColors.primary : Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: sel ? const Color(0xFF1B6B3A) : Colors.grey.shade300),
+                  border: Border.all(
+                      color: sel
+                          ? AppColors.primary
+                          : Colors.grey.shade300),
                 ),
-                child: Text(f, style: TextStyle(
-                  fontSize: 12, fontWeight: sel ? FontWeight.bold : FontWeight.w500,
-                  color: sel ? Colors.white : const Color(0xFF718096),
-                )),
+                child: Text(
+                  f,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight:
+                        sel ? FontWeight.bold : FontWeight.w500,
+                    color: sel ? Colors.white : AppColors.textSecondary,
+                  ),
+                ),
               ),
             ),
           );
@@ -199,34 +219,46 @@ class _State extends ConsumerState<CustomerOrdersPage> {
   }
 
   Widget _buildBookingList(List<BookingModel> bookings, String userId) {
-    // Filter berdasarkan status
     final filtered = _filter == 'Semua'
         ? bookings
         : bookings.where((b) {
             final status = b.status.toLowerCase();
             final filterKey = _filter.toLowerCase();
             if (filterKey == 'menunggu bayar') return status == 'menunggu_bayar';
-            if (filterKey == 'aktif') return status == 'dikonfirmasi' || status == 'aktif';
-            if (filterKey == 'menunggu') return status == 'menunggu_konfirmasi';
+            if (filterKey == 'aktif')
+              return status == 'dikonfirmasi' || status == 'aktif';
+            if (filterKey == 'menunggu')
+              return status == 'menunggu_konfirmasi';
             return status == filterKey;
           }).toList();
 
-    if (filtered.isEmpty) return _buildEmpty();
+    if (filtered.isEmpty) {
+      return EmptyStateWidget(
+        icon: Icons.receipt_long_outlined,
+        title: 'Belum ada pesanan',
+        subtitle: _filter == 'Semua'
+            ? 'Pesanan Anda akan muncul di sini'
+            : 'Tidak ada pesanan dengan status "$_filter"',
+      );
+    }
 
     return Column(
       children: [
         if (_isSelectionMode)
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
                 Checkbox(
-                  value: _selectedIds.length == filtered.length && filtered.isNotEmpty,
+                  value: _selectedIds.length == filtered.length &&
+                      filtered.isNotEmpty,
                   onChanged: (_) => _selectAll(filtered),
-                  activeColor: const Color(0xFF1B6B3A),
+                  activeColor: AppColors.primary,
                 ),
-                const Text('Pilih Semua', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('Pilih Semua',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 const Spacer(),
                 if (_selectedIds.isNotEmpty)
                   ElevatedButton.icon(
@@ -234,7 +266,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
                     icon: const Icon(Icons.delete, size: 18),
                     label: Text('Hapus (${_selectedIds.length})'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
+                      backgroundColor: AppColors.error,
                       foregroundColor: Colors.white,
                       elevation: 0,
                     ),
@@ -251,7 +283,8 @@ class _State extends ConsumerState<CustomerOrdersPage> {
               return _BookingCard(
                 booking: booking,
                 onCancel: () => _cancelBooking(booking.id, userId),
-                onRefresh: () => ref.invalidate(userBookingsProvider(userId)),
+                onRefresh: () =>
+                    ref.invalidate(userBookingsProvider(userId)),
                 isSelectionMode: _isSelectionMode,
                 isSelected: _selectedIds.contains(booking.id),
                 onSelect: () => _toggleSelection(booking.id),
@@ -263,37 +296,15 @@ class _State extends ConsumerState<CustomerOrdersPage> {
     );
   }
 
-  Widget _buildEmpty() {
-    return Center(
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey.shade300),
-        const SizedBox(height: 16),
-        const Text('Belum ada pesanan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3748))),
-        const SizedBox(height: 8),
-        Text(
-          _filter == 'Semua' ? 'Pesanan Anda akan muncul di sini' : 'Tidak ada pesanan dengan status "$_filter"',
-          style: const TextStyle(color: Color(0xFF718096)),
-        ),
-      ]),
-    );
-  }
-
   Future<void> _cancelBooking(String bookingId, String userId) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await ConfirmationDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Batalkan Pesanan?'),
-        content: const Text('Apakah Anda yakin ingin membatalkan pesanan ini?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Tidak')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Ya, Batalkan', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+      title: 'Batalkan Pesanan?',
+      message: 'Apakah Anda yakin ingin membatalkan pesanan ini?',
+      confirmText: 'Ya, Batalkan',
+      isDestructive: true,
     );
-    if (confirm != true) return;
+    if (!confirm) return;
 
     try {
       final service = ref.read(bookingServiceProvider);
@@ -302,18 +313,20 @@ class _State extends ConsumerState<CustomerOrdersPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Pesanan berhasil dibatalkan'),
-          backgroundColor: Color(0xFF1B6B3A),
+          backgroundColor: AppColors.primary,
         ));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Gagal: $e'),
+            backgroundColor: AppColors.error));
       }
     }
   }
 }
 
-// â”€â”€ BOOKING CARD â”€â”€
+// ── BOOKING CARD ──────────────────────────────────────────────────────────────
 class _BookingCard extends ConsumerWidget {
   final BookingModel booking;
   final VoidCallback onCancel;
@@ -323,8 +336,8 @@ class _BookingCard extends ConsumerWidget {
   final VoidCallback? onSelect;
 
   const _BookingCard({
-    required this.booking, 
-    required this.onCancel, 
+    required this.booking,
+    required this.onCancel,
     required this.onRefresh,
     this.isSelectionMode = false,
     this.isSelected = false,
@@ -333,30 +346,41 @@ class _BookingCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statusInfo = _getStatusInfo(booking.status);
-    final dateStr = DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
-    final timeStr = booking.timeSlots.isNotEmpty ? booking.timeSlots.first : '-';
+    // Gunakan BookingStatus untuk semua mapping status → UI
+    final status = BookingStatusParsing.fromString(booking.status);
+    final dateStr =
+        DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
+    final timeStr =
+        booking.timeSlots.isNotEmpty ? booking.timeSlots.first : '-';
 
     return GestureDetector(
       onTap: () {
         if (isSelectionMode) {
           onSelect?.call();
         } else {
-          Navigator.pushNamed(context, '/booking-detail', arguments: booking.id);
+          Navigator.pushNamed(context, '/booking-detail',
+              arguments: booking.id);
         }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFE8F5EC) : Colors.white,
+          color: isSelected ? AppColors.primaryLight : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: isSelected ? Border.all(color: const Color(0xFF1B6B3A), width: 2) : null,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
+          border: isSelected
+              ? Border.all(color: AppColors.primary, width: 2)
+              : null,
+          boxShadow: [
+            BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 12,
+                offset: const Offset(0, 4))
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: ID + Status
+            // Header: ID + Status Badge
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
               child: Row(
@@ -373,22 +397,32 @@ class _BookingCard extends ConsumerWidget {
                             child: Checkbox(
                               value: isSelected,
                               onChanged: (_) => onSelect?.call(),
-                              activeColor: const Color(0xFF1B6B3A),
+                              activeColor: AppColors.primary,
                             ),
                           ),
                         ),
                       Text('#${booking.bookingId}',
-                          style: const TextStyle(fontSize: 11, color: Color(0xFF718096), fontWeight: FontWeight.w500)),
+                          style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500)),
                     ],
                   ),
+                  // Badge — pakai status.backgroundColor & status.badgeLabel
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: statusInfo['bgColor'] as Color,
+                      color: status.backgroundColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(statusInfo['label'] as String,
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusInfo['textColor'] as Color)),
+                    child: Text(
+                      status.badgeLabel,
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: status.color),
+                    ),
                   ),
                 ],
               ),
@@ -400,27 +434,48 @@ class _BookingCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 64, height: 64,
+                    width: 64,
+                    height: 64,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5EC), 
+                      color: AppColors.primaryLight,
                       borderRadius: BorderRadius.circular(12),
                       image: booking.fieldImageUrl.isNotEmpty
-                          ? DecorationImage(image: NetworkImage(booking.fieldImageUrl), fit: BoxFit.cover)
+                          ? DecorationImage(
+                              image: NetworkImage(booking.fieldImageUrl),
+                              fit: BoxFit.cover)
                           : null,
                     ),
-                    child: booking.fieldImageUrl.isEmpty ? const Center(child: Icon(Icons.sports_soccer, size: 28, color: Color(0xFF1B6B3A))) : null,
+                    child: booking.fieldImageUrl.isEmpty
+                        ? const Center(
+                            child: Icon(Icons.sports_soccer,
+                                size: 28, color: AppColors.primary))
+                        : null,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(booking.fieldName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 4),
-                      Row(children: [
-                        const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF718096)),
-                        const SizedBox(width: 4),
-                        Expanded(child: Text('$dateStr • $timeStr', style: const TextStyle(fontSize: 12, color: Color(0xFF718096)))),
-                      ]),
-                    ]),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(booking.fieldName,
+                              style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textDark),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                          const SizedBox(height: 4),
+                          Row(children: [
+                            const Icon(Icons.calendar_today_outlined,
+                                size: 12,
+                                color: AppColors.textSecondary),
+                            const SizedBox(width: 4),
+                            Expanded(
+                                child: Text('$dateStr • $timeStr',
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary))),
+                          ]),
+                        ]),
                   ),
                 ],
               ),
@@ -429,19 +484,30 @@ class _BookingCard extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.grey.shade100)),
+                border:
+                    Border(top: BorderSide(color: Colors.grey.shade100)),
               ),
               child: Row(
                 children: [
-                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('TOTAL BAYAR', style: TextStyle(fontSize: 9, color: Color(0xFF718096), letterSpacing: 0.5)),
-                    const SizedBox(height: 2),
-                    Text(NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(booking.totalBayar),
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
-                  ]),
+                  Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('TOTAL BAYAR',
+                            style: TextStyle(
+                                fontSize: 9,
+                                color: AppColors.textSecondary,
+                                letterSpacing: 0.5)),
+                        const SizedBox(height: 2),
+                        Text(
+                          CurrencyFormatter.format(booking.totalBayar),
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary),
+                        ),
+                      ]),
                   const Spacer(),
-                  // Action buttons based on status
-                  ..._buildActions(context, ref, booking.status),
+                  ..._buildActions(context, ref, status),
                 ],
               ),
             ),
@@ -451,37 +517,46 @@ class _BookingCard extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildActions(BuildContext context, WidgetRef ref, String status) {
-    switch (status.toLowerCase()) {
-      case 'menunggu_bayar':
+  /// Action buttons berdasarkan BookingStatus — tidak ada switch-case hardcode
+  List<Widget> _buildActions(
+      BuildContext context, WidgetRef ref, BookingStatus status) {
+    switch (status) {
+      case BookingStatus.menungguBayar:
         return [
-          _actionBtn(Icons.payment, 'Bayar', const Color(0xFFD97706), () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => PaymentUploadPage(booking: booking)));
+          _actionBtn(Icons.payment, 'Bayar', AppColors.statusPending, () {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => PaymentUploadPage(booking: booking)));
           }),
           const SizedBox(width: 8),
           _actionBtn(Icons.close, 'Batal', Colors.red.shade400, onCancel),
         ];
-      case 'menunggu_konfirmasi':
+      case BookingStatus.menungguKonfirmasi:
         return [
-          _actionBtn(Icons.close, 'Batalkan', Colors.red.shade400, onCancel),
+          _actionBtn(
+              Icons.close, 'Batalkan', Colors.red.shade400, onCancel),
         ];
-      case 'dikonfirmasi':
-      case 'aktif':
+      case BookingStatus.dikonfirmasi:
+      case BookingStatus.aktif:
         return [
-          _actionBtn(Icons.confirmation_num_outlined, 'Lihat Tiket', const Color(0xFF1B6B3A), () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur tiket segera hadir!'), backgroundColor: Color(0xFF1B6B3A)));
+          _actionBtn(Icons.confirmation_num_outlined, 'Lihat Tiket',
+              AppColors.primary, () {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('Fitur tiket segera hadir!'),
+                backgroundColor: AppColors.primary));
           }),
         ];
-      case 'selesai':
+      case BookingStatus.selesai:
         if (booking.isReviewed) {
           return [
             _actionBtn(Icons.star, 'Sudah Diulas', Colors.grey, () {}),
           ];
         }
         return [
-          _actionBtn(Icons.star_outline, 'Beri Ulasan', Colors.amber.shade700, () {
-            _showReviewDialog(context, ref);
-          }),
+          _actionBtn(
+              Icons.star_outline, 'Beri Ulasan', Colors.amber.shade700,
+              () => _showReviewDialog(context, ref)),
         ];
       default:
         return [];
@@ -498,21 +573,29 @@ class _BookingCard extends ConsumerWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text('Beri Ulasan', style: TextStyle(fontWeight: FontWeight.bold)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16)),
+            title: const Text('Beri Ulasan',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Bagaimana pengalaman Anda di ${booking.fieldName}?', style: const TextStyle(fontSize: 13, color: Color(0xFF718096))),
+                Text(
+                  'Bagaimana pengalaman Anda di ${booking.fieldName}?',
+                  style: const TextStyle(
+                      fontSize: 13, color: AppColors.textSecondary),
+                ),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (index) {
                     return IconButton(
                       icon: Icon(
-                        index < rating ? Icons.star_rounded : Icons.star_border_rounded,
-                        color: Colors.amber,
+                        index < rating
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded,
+                        color: AppColors.star,
                         size: 32,
                       ),
                       onPressed: () {
@@ -527,10 +610,12 @@ class _BookingCard extends ConsumerWidget {
                   maxLines: 3,
                   decoration: InputDecoration(
                     hintText: 'Tuliskan ulasan Anda (opsional)...',
-                    hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
+                    hintStyle:
+                        const TextStyle(fontSize: 13, color: Colors.grey),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                      borderSide:
+                          BorderSide(color: Colors.grey.shade300),
                     ),
                   ),
                 ),
@@ -539,7 +624,8 @@ class _BookingCard extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
-                child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+                child: const Text('Batal',
+                    style: TextStyle(color: Colors.grey)),
               ),
               ElevatedButton(
                 onPressed: isSubmitting
@@ -559,7 +645,10 @@ class _BookingCard extends ConsumerWidget {
                           if (ctx.mounted) {
                             Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Terima kasih atas ulasan Anda!'), backgroundColor: Color(0xFF1B6B3A)),
+                              const SnackBar(
+                                  content: Text(
+                                      'Terima kasih atas ulasan Anda!'),
+                                  backgroundColor: AppColors.primary),
                             );
                             onRefresh();
                           }
@@ -567,18 +656,26 @@ class _BookingCard extends ConsumerWidget {
                           if (ctx.mounted) {
                             setState(() => isSubmitting = false);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Gagal: $e'), backgroundColor: Colors.red),
+                              SnackBar(
+                                  content: Text('Gagal: $e'),
+                                  backgroundColor: AppColors.error),
                             );
                           }
                         }
                       },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B6B3A),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 child: isSubmitting
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Kirim', style: TextStyle(color: Colors.white)),
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2))
+                    : const Text('Kirim',
+                        style: TextStyle(color: Colors.white)),
               ),
             ],
           );
@@ -587,7 +684,8 @@ class _BookingCard extends ConsumerWidget {
     );
   }
 
-  Widget _actionBtn(IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _actionBtn(
+      IconData icon, String label, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -599,27 +697,13 @@ class _BookingCard extends ConsumerWidget {
         child: Row(children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: color)),
         ]),
       ),
     );
-  }
-
-  Map<String, dynamic> _getStatusInfo(String status) {
-    switch (status.toLowerCase()) {
-      case 'menunggu_bayar':
-        return {'label': 'MENUNGGU PEMBAYARAN', 'bgColor': const Color(0xFFFEF3C7), 'textColor': Colors.orange.shade800};
-      case 'menunggu_konfirmasi':
-        return {'label': 'MENUNGGU KONFIRMASI', 'bgColor': const Color(0xFFEBF8FF), 'textColor': const Color(0xFF2B6CB0)};
-      case 'dikonfirmasi':
-      case 'aktif':
-        return {'label': 'AKTIF', 'bgColor': const Color(0xFFD1FAE5), 'textColor': const Color(0xFF1B6B3A)};
-      case 'selesai':
-        return {'label': 'SELESAI', 'bgColor': const Color(0xFFE0E7FF), 'textColor': Colors.indigo};
-      case 'dibatalkan':
-        return {'label': 'DIBATALKAN', 'bgColor': const Color(0xFFFEE2E2), 'textColor': Colors.red.shade700};
-      default:
-        return {'label': status.toUpperCase(), 'bgColor': Colors.grey.shade100, 'textColor': Colors.grey};
-    }
   }
 }

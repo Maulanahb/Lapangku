@@ -9,6 +9,7 @@ import 'package:lapangku/models/mitra/mitra_revenue_model.dart';
 import 'package:lapangku/models/mitra/mitra_review_model.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/services/cloudinary_service.dart';
+import 'package:lapangku/shared/constants/app_constants.dart';
 
 class MitraService {
   final FirebaseFirestore _db = FirestoreService.instance;
@@ -296,9 +297,9 @@ class MitraService {
 
     List<BookingModel> allBookings = [];
 
-    for (int i = 0; i < fieldIds.length; i += 30) {
+    for (int i = 0; i < fieldIds.length; i += AppConstants.firestoreWhereInLimit) {
       final chunk = fieldIds.sublist(
-          i, i + 30 > fieldIds.length ? fieldIds.length : i + 30);
+          i, i + AppConstants.firestoreWhereInLimit > fieldIds.length ? fieldIds.length : i + AppConstants.firestoreWhereInLimit);
       final snap = await _db
           .collection('bookings')
           .where('fieldId', whereIn: chunk)

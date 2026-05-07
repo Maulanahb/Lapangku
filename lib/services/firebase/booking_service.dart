@@ -5,6 +5,7 @@ import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/models/auth/user_model.dart';
+import 'package:lapangku/shared/constants/app_constants.dart';
 
 class BookingService {
   final FirebaseFirestore _db = FirestoreService.instance;
@@ -128,7 +129,7 @@ class BookingService {
       statusTimeline: [
         {'status': 'menunggu_bayar', 'waktu': Timestamp.fromDate(now)}
       ],
-      batasWaktuBayar: now.add(const Duration(hours: 4)),
+      batasWaktuBayar: now.add(const Duration(hours: AppConstants.paymentDeadlineHours)),
       createdAt: now,
       updatedAt: now,
     );
@@ -281,7 +282,7 @@ class BookingService {
       return Stream.value([]);
     }
     // Firestore whereIn maksimal 30 item
-    final ids = fieldIds.take(30).toList();
+    final ids = fieldIds.take(AppConstants.firestoreWhereInLimit).toList();
     Query query = _db
         .collection('bookings')
         .where('fieldId', whereIn: ids);

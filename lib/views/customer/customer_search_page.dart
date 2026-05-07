@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/controllers/field/field_controller.dart';
+// REFAKTOR: import shared constants & formatter
+import 'package:lapangku/shared/constants/app_colors.dart';
+import 'package:lapangku/shared/utils/currency_formatter.dart';
 
 class CustomerSearchPage extends ConsumerStatefulWidget {
   const CustomerSearchPage({super.key});
@@ -58,7 +60,8 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                       return ChoiceChip(
                         label: Text(sort),
                         selected: isSelected,
-                        selectedColor: const Color(0xFF1B6B3A),
+                        // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+                        selectedColor: AppColors.primary,
                         labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
                         onSelected: (val) {
                           setModalState(() => _sortBy = sort);
@@ -78,7 +81,8 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                       return ChoiceChip(
                         label: Text(cat),
                         selected: isSelected,
-                        selectedColor: const Color(0xFF1B6B3A),
+                        // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+                        selectedColor: AppColors.primary,
                         labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
                         onSelected: (val) {
                           setModalState(() => _selectedCategory = cat);
@@ -93,7 +97,8 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                     height: 50,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1B6B3A),
+                        // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+                        backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () => Navigator.pop(context),
@@ -114,7 +119,8 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
     final fieldsAsync = ref.watch(fieldsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
+      // REFAKTOR: sebelumnya Color(0xFFF4F6F9)
+      backgroundColor: AppColors.backgroundPage,
       body: SafeArea(
         child: Column(
           children: [
@@ -136,15 +142,17 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
       padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
       child: Row(
         children: [
+          // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF1B6B3A)),
+            icon: const Icon(Icons.arrow_back, color: AppColors.primary),
             onPressed: () => Navigator.pop(context),
           ),
           Expanded(
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F6F9),
+                // REFAKTOR: sebelumnya Color(0xFFF4F6F9)
+                color: AppColors.backgroundPage,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: TextField(
@@ -156,10 +164,11 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                 },
                 decoration: InputDecoration(
                   hintText: 'Cari Lapangan...',
-                  prefixIcon: const Icon(Icons.search, color: Color(0xFF718096), size: 20),
+                  // REFAKTOR: sebelumnya Color(0xFF718096)
+                  prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.close, color: Color(0xFF718096), size: 18),
+                          icon: const Icon(Icons.close, color: AppColors.textSecondary, size: 18),
                           onPressed: () {
                             _searchController.clear();
                             setState(() {
@@ -171,7 +180,8 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 ),
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2D3748)),
+                // REFAKTOR: sebelumnya Color(0xFF2D3748)
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
               ),
             ),
           ),
@@ -181,7 +191,8 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                const Icon(Icons.tune, color: Color(0xFF1B6B3A)),
+                // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+                const Icon(Icons.tune, color: AppColors.primary),
                 if (_selectedCategory != 'Semua' || _sortBy != 'Terdekat')
                   Positioned(
                     top: 0,
@@ -233,14 +244,15 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1B6B3A) : Colors.white,
+          // REFAKTOR: sebelumnya Color(0xFF1B6B3A) dan Color(0xFF718096)
+          color: isSelected ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isSelected ? const Color(0xFF1B6B3A) : Colors.grey.shade300),
+          border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF718096),
+            color: isSelected ? Colors.white : AppColors.textSecondary,
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
           ),
@@ -255,9 +267,10 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
+          // REFAKTOR: sebelumnya Color(0xFF2D3748)
           const Text(
             'Urutkan:',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textDark),
           ),
           const SizedBox(width: 12),
           _buildSortChip('Terdekat'),
@@ -281,14 +294,15 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1B6B3A) : Colors.white,
+          // REFAKTOR: sebelumnya Color(0xFF1B6B3A) dan Color(0xFF718096)
+          color: isSelected ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isSelected ? const Color(0xFF1B6B3A) : Colors.grey.shade300),
+          border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF718096),
+            color: isSelected ? Colors.white : AppColors.textSecondary,
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
           ),
@@ -299,7 +313,8 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
 
   Widget _buildResults(AsyncValue<List<FieldModel>> fieldsAsync) {
     return fieldsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF1B6B3A))),
+      // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       error: (e, _) => Center(child: Text('Terjadi kesalahan:\n$e')),
       data: (fields) {
         if (_searchQuery.isEmpty && _selectedCategory == 'Semua' && _sortBy == 'Terdekat') {
@@ -307,11 +322,11 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
         }
 
         final filtered = fields.where((f) {
-          final matchQuery = _searchQuery.isEmpty || 
+          final matchQuery = _searchQuery.isEmpty ||
               f.nama.toLowerCase().contains(_searchQuery.toLowerCase().trim()) ||
               f.alamat.toLowerCase().contains(_searchQuery.toLowerCase().trim());
-              
-          final matchCategory = _selectedCategory == 'Semua' || 
+
+          final matchCategory = _selectedCategory == 'Semua' ||
               f.kategori.toLowerCase() == _selectedCategory.toLowerCase();
 
           return matchQuery && matchCategory;
@@ -338,7 +353,8 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
                   '${filtered.length} lapangan ditemukan',
-                  style: const TextStyle(color: Color(0xFF1B6B3A), fontWeight: FontWeight.bold, fontSize: 13),
+                  // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+                  style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ),
               Expanded(
@@ -366,15 +382,17 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
         children: [
           Icon(Icons.search_rounded, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
+          // REFAKTOR: sebelumnya Color(0xFF2D3748)
           const Text(
             'Temukan Lapangan',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
           ),
           const SizedBox(height: 8),
+          // REFAKTOR: sebelumnya Color(0xFF718096)
           const Text(
             'Ketik nama atau lokasi lapangan\nuntuk mulai mencari.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF718096), fontSize: 14),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
         ],
       ),
@@ -392,32 +410,36 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
             width: 100,
             height: 100,
             decoration: const BoxDecoration(
-              color: Color(0xFFF4F6F9),
+              // REFAKTOR: sebelumnya Color(0xFFF4F6F9)
+              color: AppColors.backgroundPage,
               shape: BoxShape.circle,
             ),
             child: const Center(
               child: Stack(
                 children: [
-                  Icon(Icons.search, size: 50, color: Color(0xFF718096)),
+                  // REFAKTOR: sebelumnya Color(0xFF718096)
+                  Icon(Icons.search, size: 50, color: AppColors.textSecondary),
                   Positioned(
                     bottom: 4,
                     right: 4,
-                    child: Icon(Icons.close, size: 20, color: Color(0xFF718096)),
+                    child: Icon(Icons.close, size: 20, color: AppColors.textSecondary),
                   ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 24),
+          // REFAKTOR: sebelumnya Color(0xFF2D3748)
           const Text(
             'Lapangan tidak ditemukan',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
           ),
           const SizedBox(height: 8),
+          // REFAKTOR: sebelumnya Color(0xFF718096)
           const Text(
             'Coba ubah filter atau gunakan kata kunci\nlain untuk hasil yang lebih luas.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF718096), fontSize: 14),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
           const SizedBox(height: 24),
           SizedBox(
@@ -433,10 +455,11 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                 });
               },
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFF1B6B3A), width: 1.5),
+                // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+                side: const BorderSide(color: AppColors.primary, width: 1.5),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              child: const Text('Reset Filter', style: TextStyle(color: Color(0xFF1B6B3A), fontWeight: FontWeight.bold)),
+              child: const Text('Reset Filter', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -449,10 +472,6 @@ class _HorizontalFieldCard extends StatelessWidget {
   final FieldModel field;
 
   const _HorizontalFieldCard({required this.field});
-
-  String _formatHarga(int harga) {
-    return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(harga);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -505,12 +524,14 @@ class _HorizontalFieldCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (field.namaVenue.isNotEmpty) ...[
-                              Text(field.namaVenue.toUpperCase(), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFF718096), letterSpacing: 0.5)),
+                              // REFAKTOR: sebelumnya Color(0xFF718096)
+                              Text(field.namaVenue.toUpperCase(), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 0.5)),
                               const SizedBox(height: 2),
                             ],
                             Text(
                               field.nama,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
+                              // REFAKTOR: sebelumnya Color(0xFF2D3748)
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textDark),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -520,12 +541,13 @@ class _HorizontalFieldCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE8F5EC),
+                          // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
+                          color: AppColors.primaryLight,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           field.kategori.toUpperCase(),
-                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A)),
+                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary),
                         ),
                       ),
                     ],
@@ -533,12 +555,13 @@ class _HorizontalFieldCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF718096)),
+                      // REFAKTOR: sebelumnya Color(0xFF718096)
+                      const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textSecondary),
                       const SizedBox(width: 2),
                       Expanded(
                         child: Text(
-                          '${field.alamat.split(',').first} â€¢ 1.2 km', // Mock distance
-                          style: const TextStyle(fontSize: 11, color: Color(0xFF718096)),
+                          '${field.alamat.split(',').first} • 1.2 km',
+                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -552,16 +575,19 @@ class _HorizontalFieldCard extends StatelessWidget {
                       const SizedBox(width: 2),
                       Text(
                         field.ratingAvg.toStringAsFixed(1),
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
+                        // REFAKTOR: sebelumnya Color(0xFF2D3748)
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textDark),
                       ),
                       Text(
                         ' (${field.totalUlasan} ulasan)',
-                        style: const TextStyle(fontSize: 10, color: Color(0xFF718096)),
+                        // REFAKTOR: sebelumnya Color(0xFF718096)
+                        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text('TERSEDIA', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A), letterSpacing: 0.5)),
+                  // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+                  const Text('TERSEDIA', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary, letterSpacing: 0.5)),
                   const SizedBox(height: 2),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -570,29 +596,32 @@ class _HorizontalFieldCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            _formatHarga(field.hargaPerJam),
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF1B6B3A)),
+                            // REFAKTOR: sebelumnya _formatHarga() local method
+                            CurrencyFormatter.format(field.hargaPerJam),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.primary),
                           ),
+                          // REFAKTOR: sebelumnya Color(0xFF718096)
                           const Text(
                             '/jam',
-                            style: TextStyle(fontSize: 10, color: Color(0xFF718096), fontWeight: FontWeight.w500),
+                            style: TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFF1B6B3A), width: 1.2),
+                          // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+                          border: Border.all(color: AppColors.primary, width: 1.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Row(
                           children: [
                             Text(
                               'Pesan',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A)),
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
                             ),
                             SizedBox(width: 4),
-                            Icon(Icons.arrow_forward, size: 14, color: Color(0xFF1B6B3A)),
+                            Icon(Icons.arrow_forward, size: 14, color: AppColors.primary),
                           ],
                         ),
                       ),
@@ -611,9 +640,10 @@ class _HorizontalFieldCard extends StatelessWidget {
     return Container(
       width: 100,
       height: 100,
-      color: const Color(0xFFE8F5EC),
+      // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
+      color: AppColors.primaryLight,
       child: const Center(
-        child: Icon(Icons.sports_soccer, size: 30, color: Color(0xFF1B6B3A)),
+        child: Icon(Icons.sports_soccer, size: 30, color: AppColors.primary),
       ),
     );
   }

@@ -1,7 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/admin/admin_controller.dart';
 import 'package:lapangku/models/admin/booking_model.dart';
+import 'package:lapangku/shared/constants/app_colors.dart';
+import 'package:lapangku/shared/utils/currency_formatter.dart';
+import 'package:lapangku/shared/models/booking_status.dart';
+import 'package:lapangku/shared/widgets/empty_state_widget.dart';
 import 'package:intl/intl.dart';
 
 class AdminBookingsPage extends ConsumerStatefulWidget {
@@ -12,7 +16,6 @@ class AdminBookingsPage extends ConsumerStatefulWidget {
 }
 
 class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
-  static const _primary = Color(0xFF1B6B3A);
   String _searchQuery = '';
   String _filterStatus = 'semua';
 
@@ -26,14 +29,14 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
         _buildSearchFilter(),
         Expanded(
           child: Container(
-            color: const Color(0xFFF5F6FA),
+            color: AppColors.backgroundInput,
             child: RefreshIndicator(
-              color: _primary,
+              color: AppColors.primary,
               onRefresh: () async =>
                   ref.read(bookingsProvider.notifier).load(),
               child: bookingsAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator(color: _primary)),
+                loading: () => const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary)),
                 error: (e, _) => Center(child: Text('Error: $e')),
                 data: (bookings) => _buildList(bookings),
               ),
@@ -59,14 +62,17 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF1A1A2E),
+                  color: AppColors.textHeading,
                   letterSpacing: -0.5,
                 ),
               ),
               SizedBox(height: 4),
               Text(
                 'Pantau seluruh transaksi dan status booking.',
-                style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -76,7 +82,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              icon: const Icon(Icons.refresh_rounded, color: _primary),
+              icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
               onPressed: () => ref.read(bookingsProvider.notifier).load(),
             ),
           ),
@@ -95,11 +101,11 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
             onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
             decoration: InputDecoration(
               hintText: 'Cari pesanan...',
-              hintStyle: const TextStyle(color: Color(0xFFADB5BD), fontSize: 13),
+              hintStyle: const TextStyle(color: AppColors.hint, fontSize: 13),
               prefixIcon:
-                  const Icon(Icons.search, color: Color(0xFFADB5BD), size: 20),
+                  const Icon(Icons.search, color: AppColors.hint, size: 20),
               filled: true,
-              fillColor: const Color(0xFFF0F2F5),
+              fillColor: AppColors.backgroundInput,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               border: OutlineInputBorder(
@@ -123,7 +129,9 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 7),
                       decoration: BoxDecoration(
-                        color: selected ? _primary : const Color(0xFFF0F2F5),
+                        color: selected
+                            ? AppColors.primary
+                            : AppColors.backgroundInput,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -131,7 +139,9 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: selected ? Colors.white : const Color(0xFF718096),
+                          color: selected
+                              ? Colors.white
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -155,18 +165,10 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
     }).toList();
 
     if (filtered.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.receipt_long, size: 64, color: Colors.grey[300]),
-            const SizedBox(height: 12),
-            Text(
-              'Tidak ada pesanan ditemukan',
-              style: TextStyle(color: Colors.grey[500]),
-            ),
-          ],
-        ),
+      return const EmptyStateWidget(
+        icon: Icons.receipt_long,
+        title: 'Tidak ada pesanan ditemukan',
+        iconSize: 64,
       );
     }
 
@@ -179,8 +181,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
   }
 
   Widget _buildBookingCard(BookingModel booking) {
-    final statusColor = _statusColor(booking.status);
-    final statusLabel = _statusLabel(booking.status);
+    final status = BookingStatusParsing.fromString(booking.status);
     final initials = booking.namaPenyewa.trim().isNotEmpty
         ? booking.namaPenyewa
             .trim()
@@ -198,7 +199,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.shadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -214,11 +215,11 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
             children: [
               CircleAvatar(
                 radius: 22,
-                backgroundColor: _primary.withOpacity(0.12),
+                backgroundColor: AppColors.primary.withOpacity(0.12),
                 child: Text(
                   initials,
                   style: const TextStyle(
-                    color: _primary,
+                    color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
@@ -234,28 +235,29 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                       style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
-                          color: Color(0xFF1A1A2E)),
+                          color: AppColors.textHeading),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       booking.namaLapangan,
                       style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF718096)),
+                          fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
               ),
+              // Status badge — pakai BookingStatus.color & .chipLabel
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.12),
+                  color: status.color.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  statusLabel,
+                  status.chipLabel,
                   style: TextStyle(
-                    color: statusColor,
+                    color: status.color,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
@@ -279,7 +281,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
               ),
               Expanded(
                 child: _detailItem(Icons.payments_outlined, 'Total',
-                    'Rp ${_formatHarga(booking.totalHarga)}'),
+                    CurrencyFormatter.format(booking.totalHarga)),
               ),
             ],
           ),
@@ -294,13 +296,13 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 12, color: const Color(0xFF718096)),
+            Icon(icon, size: 12, color: AppColors.textSecondary),
             const SizedBox(width: 4),
             Text(
               label,
               style: const TextStyle(
                   fontSize: 11,
-                  color: Color(0xFF718096),
+                  color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500),
             ),
           ],
@@ -311,58 +313,15 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
           style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF2D3748)),
+              color: AppColors.textDark),
         ),
       ],
     );
   }
 
+  /// Label untuk chip filter — gunakan BookingStatus jika bukan 'semua'
   String _chipLabel(String s) {
-    switch (s) {
-      case 'semua':
-        return 'Semua';
-      case 'menunggu':
-        return 'Menunggu';
-      case 'dikonfirmasi':
-        return 'Dikonfirmasi';
-      case 'selesai':
-        return 'Selesai';
-      case 'dibatalkan':
-        return 'Dibatalkan';
-      default:
-        return s;
-    }
-  }
-
-  Color _statusColor(String s) {
-    switch (s) {
-      case 'selesai':
-        return Colors.green;
-      case 'dikonfirmasi':
-        return const Color(0xFF2196F3);
-      case 'dibatalkan':
-        return Colors.red;
-      default:
-        return const Color(0xFFFFB74D);
-    }
-  }
-
-  String _statusLabel(String s) {
-    switch (s) {
-      case 'selesai':
-        return 'Selesai';
-      case 'dikonfirmasi':
-        return 'Dikonfirmasi';
-      case 'dibatalkan':
-        return 'Dibatalkan';
-      default:
-        return 'Menunggu';
-    }
-  }
-
-  String _formatHarga(int h) {
-    if (h >= 1000000) return '${(h / 1000000).toStringAsFixed(1)}jt';
-    if (h >= 1000) return '${(h / 1000).toStringAsFixed(0)}rb';
-    return h.toString();
+    if (s == 'semua') return 'Semua';
+    return BookingStatusParsing.fromString(s).chipLabel;
   }
 }

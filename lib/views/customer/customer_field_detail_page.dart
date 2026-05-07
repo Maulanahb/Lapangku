@@ -5,6 +5,9 @@ import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/favorite/favorite_controller.dart';
+// REFAKTOR: import shared constants & formatter
+import 'package:lapangku/shared/constants/app_colors.dart';
+import 'package:lapangku/shared/utils/currency_formatter.dart';
 
 class CustomerFieldDetailPage extends ConsumerStatefulWidget {
   final FieldModel field;
@@ -55,7 +58,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
 
   DateTime get _selectedDate => DateTime.parse(_dates[_selectedDateIndex]['iso']!);
   String get _providerKey => '${widget.field.id}|${_dates[_selectedDateIndex]['iso']}';
-  String _fmt(int h) => NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(h);
+  // REFAKTOR: sebelumnya String _fmt(int h) => NumberFormat.currency(...).format(h);
   int get _totalHarga => widget.field.hargaPerJam * _selectedTimeIndices.length;
 
   @override
@@ -70,12 +73,12 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     );
   }
 
-  // â”€â”€ HERO â”€â”€
+  // ── HERO ──
   Widget _heroAppBar() {
     final imgs = widget.field.fotoGaleri;
     return SliverAppBar(
       expandedHeight: 280, pinned: true,
-      backgroundColor: const Color(0xFF1B6B3A),
+      backgroundColor: AppColors.primary, // REFAKTOR: sebelumnya hardcode Color(0xFF1B6B3A)
       leading: _cBtn(Icons.arrow_back, () => Navigator.pop(context)),
       actions: [
         _cBtn(Icons.share_outlined, () {}),
@@ -92,9 +95,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
             colors: [Colors.black38, Colors.transparent, Colors.black26],
           ))),
           Positioned(
-            bottom: -1,
-            left: 0,
-            right: 0,
+            bottom: -1, left: 0, right: 0,
             child: Container(
               height: 24,
               decoration: const BoxDecoration(
@@ -148,9 +149,10 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     child: CircleAvatar(backgroundColor: Colors.white, radius: 18,
       child: IconButton(icon: Icon(icon, color: ic, size: 18), onPressed: onTap, padding: EdgeInsets.zero)),
   );
-  Widget _ph() => Container(color: const Color(0xFFE8F5EC), child: const Center(child: Icon(Icons.sports_soccer, size: 60, color: Color(0xFF1B6B3A))));
 
-  
+  // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
+  Widget _ph() => Container(color: AppColors.primaryLight, child: const Center(child: Icon(Icons.sports_soccer, size: 60, color: AppColors.primary)));
+
   Widget _body() {
     return Container(
       color: Colors.white,
@@ -161,7 +163,6 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     );
   }
 
-  
   Widget _headerInfo() {
     final f = widget.field;
     return Padding(
@@ -169,35 +170,39 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          decoration: BoxDecoration(color: const Color(0xFFD1FAE5), borderRadius: BorderRadius.circular(16)),
-          child: Text(f.kategori.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
+          // REFAKTOR: sebelumnya Color(0xFFD1FAE5) dan Color(0xFF1B6B3A)
+          decoration: BoxDecoration(color: AppColors.statusSuccessBg, borderRadius: BorderRadius.circular(16)),
+          child: Text(f.kategori.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary)),
         ),
         const SizedBox(height: 12),
         if (f.namaVenue.isNotEmpty) ...[
-          Text(f.namaVenue.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF718096), letterSpacing: 1.0)),
+          // REFAKTOR: sebelumnya Color(0xFF718096)
+          Text(f.namaVenue.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 1.0)),
           const SizedBox(height: 4),
         ],
-        Text(f.nama, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2D3748))),
+        // REFAKTOR: sebelumnya Color(0xFF2D3748)
+        Text(f.nama, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
         const SizedBox(height: 12),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF718096)),
+          const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary),
           const SizedBox(width: 4),
-          Expanded(child: Text(f.alamat, style: const TextStyle(fontSize: 13, color: Color(0xFF718096)))),
+          Expanded(child: Text(f.alamat, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary))),
         ]),
         const SizedBox(height: 12),
         Row(children: [
           const Icon(Icons.star_rounded, size: 18, color: Colors.amber),
           const SizedBox(width: 4),
           Text(f.ratingAvg.toStringAsFixed(1), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-          Text(' (${f.totalUlasan} ulasan)', style: const TextStyle(fontSize: 12, color: Color(0xFF718096))),
+          Text(' (${f.totalUlasan} ulasan)', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(color: const Color(0xFFE8F5EC), borderRadius: BorderRadius.circular(12)),
+            // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
+            decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(12)),
             child: const Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.circle, size: 8, color: Color(0xFF1B6B3A)),
+              Icon(Icons.circle, size: 8, color: AppColors.primary),
               SizedBox(width: 4),
-              Text('Buka • 06:00-22:00', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
+              Text('Buka • 06:00-22:00', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
             ]),
           ),
         ]),
@@ -206,11 +211,12 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     );
   }
 
-  // â”€â”€ TABS â”€â”€
+  // ── TABS ──
   Widget _tabBarW() => TabBar(
     controller: _tabController, onTap: (_) => setState(() {}),
-    labelColor: const Color(0xFF1B6B3A), unselectedLabelColor: const Color(0xFF718096),
-    indicatorColor: const Color(0xFF1B6B3A), indicatorWeight: 2.5,
+    // REFAKTOR: sebelumnya hardcode Color(0xFF1B6B3A) dan Color(0xFF718096)
+    labelColor: AppColors.primary, unselectedLabelColor: AppColors.textSecondary,
+    indicatorColor: AppColors.primary, indicatorWeight: 2.5,
     labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
     tabs: const [Tab(text: 'Info'), Tab(text: 'Fasilitas'), Tab(text: 'Ulasan'), Tab(text: 'Lokasi')],
   );
@@ -228,26 +234,29 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     final desc = widget.field.deskripsi.isNotEmpty ? widget.field.deskripsi
         : '${widget.field.nama} menggunakan rumput sintetis standar internasional yang empuk dan tidak licin. Dilengkapi dengan tribun penonton yang nyaman dan pencahayaan LED.';
     return Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // REFAKTOR: sebelumnya Color(0xFF4A5568)
       Text(_showFullDesc ? desc : (desc.length > 120 ? '${desc.substring(0, 120)}...' : desc),
-          style: const TextStyle(fontSize: 14, color: Color(0xFF4A5568), height: 1.6)),
+          style: const TextStyle(fontSize: 14, color: AppColors.textBody, height: 1.6)),
       if (desc.length > 120) GestureDetector(
         onTap: () => setState(() => _showFullDesc = !_showFullDesc),
         child: Padding(padding: const EdgeInsets.only(top: 6),
           child: Text(_showFullDesc ? 'Sembunyikan' : 'Lihat selengkapnya',
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A)))),
+              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary))),
       ),
       const SizedBox(height: 16),
-      _iRow(Icons.attach_money, 'Harga Sewa', '${_fmt(widget.field.hargaPerJam)} / jam'),
+      // REFAKTOR: sebelumnya _fmt() — sekarang pakai CurrencyFormatter
+      _iRow(Icons.attach_money, 'Harga Sewa', '${CurrencyFormatter.format(widget.field.hargaPerJam)} / jam'),
       _iRow(Icons.access_time_rounded, 'Jam Operasional', '06:00 - 22:00 WIB'),
     ]));
   }
 
   Widget _iRow(IconData ic, String l, String v) => Padding(padding: const EdgeInsets.only(bottom: 12), child: Row(children: [
-    Container(width: 36, height: 36, decoration: BoxDecoration(color: const Color(0xFFF0FDF4), borderRadius: BorderRadius.circular(10)),
-      child: Icon(ic, size: 18, color: const Color(0xFF1B6B3A))),
+    // REFAKTOR: sebelumnya Color(0xFFF0FDF4) dan Color(0xFF1B6B3A)
+    Container(width: 36, height: 36, decoration: BoxDecoration(color: AppColors.backgroundChipGreen, borderRadius: BorderRadius.circular(10)),
+      child: Icon(ic, size: 18, color: AppColors.primary)),
     const SizedBox(width: 12),
     Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(l, style: const TextStyle(fontSize: 11, color: Color(0xFF718096))),
+      Text(l, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
       Text(v, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
     ]),
   ]));
@@ -272,8 +281,9 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     final fas = widget.field.fasilitas.isNotEmpty ? widget.field.fasilitas : ['Parkir Luas', 'Toilet Bersih', 'Mushola', 'Kantin'];
     return Padding(padding: const EdgeInsets.all(20), child: Wrap(spacing: 12, runSpacing: 12, children: fas.map((f) =>
       Container(width: (MediaQuery.of(context).size.width - 52) / 2, padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: const Color(0xFFF0FDF4), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFBBF7D0))),
-        child: Row(children: [Icon(_getFacilityIcon(f), color: const Color(0xFF1B6B3A), size: 20), const SizedBox(width: 10),
+        // REFAKTOR: sebelumnya Color(0xFFF0FDF4) dan Color(0xFFBBF7D0) dan Color(0xFF1B6B3A)
+        decoration: BoxDecoration(color: AppColors.backgroundChipGreen, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.primaryBorder)),
+        child: Row(children: [Icon(_getFacilityIcon(f), color: AppColors.primary, size: 20), const SizedBox(width: 10),
           Expanded(child: Text(f, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)))]),
       )).toList()));
   }
@@ -281,12 +291,13 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   Widget _ulasanTab() {
     final f = widget.field;
     return Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: const Color(0xFFF0FDF4), borderRadius: BorderRadius.circular(16)),
+      // REFAKTOR: sebelumnya Color(0xFFF0FDF4) dan Color(0xFF1B6B3A)
+      Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: AppColors.backgroundChipGreen, borderRadius: BorderRadius.circular(16)),
         child: Row(children: [
           Column(children: [
-            Text(f.ratingAvg.toStringAsFixed(1), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
+            Text(f.ratingAvg.toStringAsFixed(1), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: AppColors.primary)),
             Row(children: List.generate(5, (i) => Icon(i < f.ratingAvg.round() ? Icons.star_rounded : Icons.star_border_rounded, color: Colors.amber, size: 16))),
-            Text('${f.totalUlasan} ulasan', style: const TextStyle(fontSize: 11, color: Color(0xFF718096))),
+            Text('${f.totalUlasan} ulasan', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
           ]),
           const SizedBox(width: 24),
           Expanded(child: Column(children: [_rb('5', 0.65), _rb('4', 0.2), _rb('3', 0.1), _rb('2', 0.03), _rb('1', 0.02)])),
@@ -298,30 +309,38 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   }
 
   Widget _rb(String s, double p) => Padding(padding: const EdgeInsets.only(bottom: 4), child: Row(children: [
-    Text(s, style: const TextStyle(fontSize: 11, color: Color(0xFF718096))), const SizedBox(width: 8),
+    // REFAKTOR: sebelumnya Color(0xFF718096)
+    Text(s, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)), const SizedBox(width: 8),
     Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: p, backgroundColor: Colors.grey.shade200, color: Colors.amber, minHeight: 6)))]));
 
   Widget _rc(String n, int s, String t, String time) => Container(margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(14)),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [CircleAvatar(radius: 14, backgroundColor: const Color(0xFF1B6B3A), child: Text(n[0], style: const TextStyle(color: Colors.white, fontSize: 12))),
+      Row(children: [
+        // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+        CircleAvatar(radius: 14, backgroundColor: AppColors.primary, child: Text(n[0], style: const TextStyle(color: Colors.white, fontSize: 12))),
         const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(n, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          Row(children: [...List.generate(s, (_) => const Icon(Icons.star_rounded, size: 12, color: Colors.amber)), const SizedBox(width: 6), Text(time, style: const TextStyle(fontSize: 10, color: Color(0xFF718096)))])]))]
-      ),
+          Row(children: [...List.generate(s, (_) => const Icon(Icons.star_rounded, size: 12, color: Colors.amber)), const SizedBox(width: 6),
+            // REFAKTOR: sebelumnya Color(0xFF718096)
+            Text(time, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary))])]))]),
       const SizedBox(height: 8),
-      Text(t, style: const TextStyle(fontSize: 13, color: Color(0xFF4A5568))),
+      // REFAKTOR: sebelumnya Color(0xFF4A5568)
+      Text(t, style: const TextStyle(fontSize: 13, color: AppColors.textBody)),
     ]));
 
   Widget _lokasiTab() => Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Container(height: 160, decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: const Color(0xFFE2E8F0)),
-      child: const Center(child: Icon(Icons.map_outlined, size: 48, color: Color(0xFF718096)))),
+    // REFAKTOR: sebelumnya Color(0xFFE2E8F0) dan Color(0xFF718096)
+    Container(height: 160, decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: AppColors.borderLight),
+      child: const Center(child: Icon(Icons.map_outlined, size: 48, color: AppColors.textSecondary))),
     const SizedBox(height: 12),
-    Row(children: [const Icon(Icons.location_on, size: 18, color: Color(0xFF1B6B3A)), const SizedBox(width: 8),
-      Expanded(child: Text(widget.field.alamat, style: const TextStyle(fontSize: 13, color: Color(0xFF4A5568))))]),
+    Row(children: [
+      // REFAKTOR: sebelumnya Color(0xFF1B6B3A) dan Color(0xFF4A5568)
+      const Icon(Icons.location_on, size: 18, color: AppColors.primary), const SizedBox(width: 8),
+      Expanded(child: Text(widget.field.alamat, style: const TextStyle(fontSize: 13, color: AppColors.textBody)))]),
   ]));
 
-  // â”€â”€ SCHEDULER (REAL-TIME) â”€â”€
+  // ── SCHEDULER (REAL-TIME) ──
   Widget _scheduler() {
     final bookedAsync = ref.watch(bookedSlotsProvider(_providerKey));
 
@@ -329,7 +348,8 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const SizedBox(height: 8), const Divider(), const SizedBox(height: 12),
-        const Text('PILIH JADWAL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2D3748), letterSpacing: 0.5)),
+        // REFAKTOR: sebelumnya Color(0xFF2D3748)
+        const Text('PILIH JADWAL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textDark, letterSpacing: 0.5)),
         const SizedBox(height: 16),
         // Date Picker
         SizedBox(height: 72, child: ListView.builder(
@@ -341,24 +361,27 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
               child: AnimatedContainer(duration: const Duration(milliseconds: 200),
                 width: 56, margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
-                  color: sel ? const Color(0xFF1B6B3A) : Colors.white,
+                  // REFAKTOR: sebelumnya hardcode Color(0xFF1B6B3A)
+                  color: sel ? AppColors.primary : Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: sel ? const Color(0xFF1B6B3A) : Colors.grey.shade300),
-                  boxShadow: sel ? [BoxShadow(color: const Color(0xFF1B6B3A).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : null,
+                  border: Border.all(color: sel ? AppColors.primary : Colors.grey.shade300),
+                  boxShadow: sel ? [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : null,
                 ),
                 child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Text(_dates[i]['day']!, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: sel ? Colors.white70 : const Color(0xFF718096))),
+                  // REFAKTOR: sebelumnya Color(0xFF718096) dan Color(0xFF2D3748)
+                  Text(_dates[i]['day']!, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: sel ? Colors.white70 : AppColors.textSecondary)),
                   const SizedBox(height: 4),
-                  Text(_dates[i]['date']!, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: sel ? Colors.white : const Color(0xFF2D3748))),
+                  Text(_dates[i]['date']!, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: sel ? Colors.white : AppColors.textDark)),
                 ]),
               ),
             );
           },
         )),
         const SizedBox(height: 20),
-        // Time Slots â€” real-time dari Firestore
+        // Time Slots – real-time dari Firestore
         bookedAsync.when(
-          loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: Color(0xFF1B6B3A)))),
+          // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+          loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary))),
           error: (e, _) => Padding(padding: const EdgeInsets.all(16), child: Text('Gagal memuat jadwal: $e', style: const TextStyle(color: Colors.red))),
           data: (bookedSlots) {
             return Wrap(spacing: 10, runSpacing: 10,
@@ -370,11 +393,14 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
                 Color bg, border, txt;
                 String sub = '';
                 if (isBooked) {
-                  bg = const Color(0xFFF4F6F9); border = Colors.grey.shade200; txt = Colors.grey.shade400; sub = 'TERPESAN';
+                  // REFAKTOR: sebelumnya Color(0xFFF4F6F9)
+                  bg = AppColors.backgroundPage; border = Colors.grey.shade200; txt = Colors.grey.shade400; sub = 'TERPESAN';
                 } else if (isSel) {
-                  bg = const Color(0xFF1B6B3A); border = const Color(0xFF1B6B3A); txt = Colors.white; sub = 'TERPILIH';
+                  // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+                  bg = AppColors.primary; border = AppColors.primary; txt = Colors.white; sub = 'TERPILIH';
                 } else {
-                  bg = Colors.white; border = const Color(0xFF1B6B3A); txt = const Color(0xFF1B6B3A);
+                  // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+                  bg = Colors.white; border = AppColors.primary; txt = AppColors.primary;
                 }
 
                 return GestureDetector(
@@ -399,7 +425,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     );
   }
 
-  // â”€â”€ BOTTOM BAR â”€â”€
+  // ── BOTTOM BAR ──
   Widget _bottomBar() {
     final hasSel = _selectedTimeIndices.isNotEmpty;
     return Container(
@@ -407,16 +433,19 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -4))]),
       child: Row(children: [
         Expanded(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // REFAKTOR: sebelumnya Color(0xFF718096)
           Text(hasSel ? '${_dates[_selectedDateIndex]['full']} • ${_selectedTimeIndices.length} sesi' : 'Pilih jadwal terlebih dahulu',
-              style: const TextStyle(fontSize: 11, color: Color(0xFF718096))),
+              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
           const SizedBox(height: 2),
-          Text(hasSel ? _fmt(_totalHarga) : 'Rp -', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
+          // REFAKTOR: sebelumnya _fmt(_totalHarga) dan Color(0xFF1B6B3A)
+          Text(hasSel ? CurrencyFormatter.format(_totalHarga) : 'Rp -', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
         ])),
         const SizedBox(width: 16),
         ElevatedButton(
           onPressed: hasSel && !_isBooking ? () => _handleBooking() : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1B6B3A), disabledBackgroundColor: Colors.grey.shade300,
+            // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+            backgroundColor: AppColors.primary, disabledBackgroundColor: Colors.grey.shade300,
             foregroundColor: Colors.white, elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -436,8 +465,6 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       return;
     }
 
-    final selectedSlots = _selectedTimeIndices.map((i) => _allSlots[i]).toList();
-    // Sort slots based on original index to maintain order
     final sortedSlots = _selectedTimeIndices.toList()..sort();
     final orderedSlots = sortedSlots.map((i) => _allSlots[i]).toList();
 
