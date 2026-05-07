@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,6 +19,9 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  String? _emailError;
+  String? _passwordError;
+  String? _loginError;
 
   @override
   void initState() {
@@ -45,8 +48,30 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
   }
 
   Future<void> _login() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showSnackbar('Email dan password wajib diisi', isError: true);
+    setState(() {
+      _emailError = null;
+      _passwordError = null;
+      _loginError = null;
+    });
+
+    if (_emailController.text.isEmpty && _passwordController.text.isEmpty) {
+      setState(() {
+        _emailError = 'Email tidak boleh kosong';
+        _passwordError = 'Password tidak boleh kosong';
+        _loginError = 'Email dan password tidak boleh kosong';
+      });
+      return;
+    }
+    if (_emailController.text.isEmpty) {
+      setState(() {
+        _emailError = 'Email tidak boleh kosong';
+      });
+      return;
+    }
+    if (_passwordController.text.isEmpty) {
+      setState(() {
+        _passwordError = 'Password tidak boleh kosong';
+      });
       return;
     }
 
@@ -60,7 +85,11 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
     final authState = ref.read(authProvider);
 
     if (authState.errorMessage != null) {
-      _showSnackbar(authState.errorMessage!, isError: true);
+      setState(() {
+        _emailError = '';
+        _passwordError = '';
+        _loginError = 'Email atau password yang kamu masukkan salah';
+      });
       return;
     }
 
@@ -79,7 +108,9 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
 
         Navigator.pushReplacementNamed(context, '/admin-home');
       } else {
-        _showSnackbar('Akun ini bukan admin!', isError: true);
+        setState(() {
+          _loginError = 'Akun ini bukan admin!';
+        });
         await ref.read(authProvider.notifier).logout();
       }
     }
@@ -176,16 +207,17 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   style: const TextStyle(fontSize: 14),
+                  onChanged: (_) => setState(() { _emailError = null; _loginError = null; }),
                   decoration: InputDecoration(
-                    hintText: 'admin@lapangku.com',
+                    hintText: 'Masukkan email',
                     hintStyle: const TextStyle(color: Color(0xFFADB5BD)),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.mail_outline_rounded,
-                      color: Color(0xFF718096),
+                      color: _emailError != null ? Colors.red : const Color(0xFF718096),
                       size: 20,
                     ),
                     filled: true,
-                    fillColor: _fieldBg,
+                    fillColor: _emailError != null ? Colors.red.withOpacity(0.05) : _fieldBg,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 16,
@@ -194,15 +226,34 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: _emailError != null
+                          ? const BorderSide(color: Colors.red, width: 1.5)
+                          : BorderSide.none,
+                    ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: _primary,
+                      borderSide: BorderSide(
+                        color: _emailError != null ? Colors.red : _primary,
                         width: 1.5,
                       ),
                     ),
                   ),
                 ),
+                if (_emailError != null && _emailError!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.error_outline, size: 13, color: Colors.red),
+                      const SizedBox(width: 4),
+                      Text(
+                        _emailError!,
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 20),
 
                 // â”€â”€â”€ Password Field â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -219,12 +270,13 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   style: const TextStyle(fontSize: 14),
+                  onChanged: (_) => setState(() { _passwordError = null; _loginError = null; }),
                   decoration: InputDecoration(
-                    hintText: 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢',
+                    hintText: 'Masukkan password',
                     hintStyle: const TextStyle(color: Color(0xFFADB5BD)),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.lock_outline_rounded,
-                      color: Color(0xFF718096),
+                      color: _passwordError != null ? Colors.red : const Color(0xFF718096),
                       size: 20,
                     ),
                     suffixIcon: IconButton(
@@ -239,7 +291,7 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
                     filled: true,
-                    fillColor: _fieldBg,
+                    fillColor: _passwordError != null ? Colors.red.withOpacity(0.05) : _fieldBg,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 16,
@@ -248,15 +300,34 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: _passwordError != null
+                          ? const BorderSide(color: Colors.red, width: 1.5)
+                          : BorderSide.none,
+                    ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: _primary,
+                      borderSide: BorderSide(
+                        color: _passwordError != null ? Colors.red : _primary,
                         width: 1.5,
                       ),
                     ),
                   ),
                 ),
+                if (_passwordError != null && _passwordError!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.error_outline, size: 13, color: Colors.red),
+                      const SizedBox(width: 4),
+                      Text(
+                        _passwordError!,
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 16),
 
                 // â”€â”€â”€ Remember Me & Lupa Password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
