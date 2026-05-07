@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/mitra/mitra_profile_model.dart';
@@ -131,8 +131,16 @@ class MitraProfileNotifier
   }
 }
 
+// Provider yang reaktif terhadap perubahan auth state
+// Ini memastikan profil di-reset saat user ganti akun (logout/login)
+final _profileAuthUidProvider = StreamProvider<String?>((ref) {
+  return FirebaseAuth.instance.authStateChanges().map((user) => user?.uid);
+});
+
 final mitraProfileProvider = StateNotifierProvider<MitraProfileNotifier,
     AsyncValue<MitraProfileModel>>((ref) {
   final service = ref.watch(mitraServiceProvider);
+  // Watch UID — saat UID berubah (ganti akun), provider ini otomatis di-recreate
+  ref.watch(_profileAuthUidProvider);
   return MitraProfileNotifier(service);
 });

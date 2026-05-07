@@ -1,6 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class Step4FieldInfo extends StatelessWidget {
+  final TextEditingController businessNameController;
   final TextEditingController nameController;
   final TextEditingController ownerNameController;
   final TextEditingController whatsappController;
@@ -23,6 +24,7 @@ class Step4FieldInfo extends StatelessWidget {
 
   const Step4FieldInfo({
     super.key,
+    required this.businessNameController,
     required this.nameController,
     required this.ownerNameController,
     required this.whatsappController,
@@ -93,11 +95,19 @@ class Step4FieldInfo extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
+              // Nama Bisnis
+              _buildLabel('Nama Bisnis / Venue'),
+              _buildModernTextField(
+                controller: businessNameController,
+                hint: 'Contoh: Arena Sport Center',
+              ),
+              const SizedBox(height: 24),
+
               // Nama Lapangan
               _buildLabel('Nama Lapangan'),
               _buildModernTextField(
                 controller: nameController,
-                hint: 'Contoh: Arena Futsal Juara',
+                hint: 'Contoh: Lapangan A (Sintetis)',
               ),
               const SizedBox(height: 24),
 

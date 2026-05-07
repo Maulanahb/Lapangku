@@ -8,6 +8,7 @@ import 'package:lapangku/models/mitra/mitra_schedule_model.dart';
 import 'package:lapangku/models/mitra/mitra_revenue_model.dart';
 import 'package:lapangku/models/mitra/mitra_review_model.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
+import 'package:lapangku/services/cloudinary_service.dart';
 
 class MitraService {
   final FirebaseFirestore _db = FirestoreService.instance;
@@ -37,6 +38,26 @@ class MitraService {
         .set(profile.toMap(), SetOptions(merge: true));
   }
 
+  Future<List<String>> uploadFieldPhotos(
+    String fieldId,
+    List<File> photos, {
+    String suffix = '',
+  }) async {
+    return await CloudinaryService.uploadMultipleImages(photos);
+  }
+
+  Future<String> uploadLogo(String uid, File imageFile) async {
+    if (!await imageFile.exists()) throw Exception('File logo tidak ditemukan');
+    final url = await CloudinaryService.uploadImage(imageFile);
+    return url!;
+  }
+
+  Future<String> uploadDocument(String uid, String docType, File file) async {
+    if (!await file.exists()) throw Exception('File dokumen tidak ditemukan');
+    final url = await CloudinaryService.uploadImage(file);
+    return url!;
+  }
+
   Future<void> updateNotificationSettings(
     String uid, {
     required bool orderNotif,
@@ -48,42 +69,48 @@ class MitraService {
     });
   }
 
-  Future<String> uploadLogo(String uid, File imageFile) async {
-    final ref = _storage.ref().child('mitra_logos/$uid.jpg');
-    final task = await ref.putFile(imageFile);
-    return await task.ref.getDownloadURL();
-  }
-
-  Future<String> uploadDocument(String uid, String docType, File file) async {
-    final ext = file.path.split('.').last;
-    final ref = _storage.ref().child(
-        'mitra_documents/$uid/${docType}_${DateTime.now().millisecondsSinceEpoch}.$ext');
-    final task = await ref.putFile(file);
-    return await task.ref.getDownloadURL();
-  }
-
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ————————————————————————————————————————————————————————————————————————————————
   // FIELDS
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ————————————————————————————————————————————————————————————————————————————————
 
   Future<List<MitraFieldModel>> getMitraFields(String MitraId) async {
-    // Pertama cari di koleksi 'fields'
-    final snap = await _db
-        .collection('fields')
-        .where('MitraId', isEqualTo: MitraId)
-        .get();
+    final List<MitraFieldModel> allFields = [];
+    print('=========================================');
+    print('🔎 LOAD DATA UNTUK UID: $MitraId');
 
-    if (snap.docs.isEmpty) {
-      // Jika kosong, cek apakah data ada di koleksi 'mitra' (data dari pendaftaran awal)
+    try {
+      // 1. Koleksi 'fields'
+      final snap = await _db
+          .collection('fields')
+          .where('MitraId', isEqualTo: MitraId)
+          .get(const GetOptions(source: Source.server));
+
+      print('📂 Koleksi "fields": Ditemukan ${snap.docs.length} dokumen');
+      
+      for (var doc in snap.docs) {
+        final data = doc.data();
+        final model = MitraFieldModel.fromMap(data, doc.id);
+        allFields.add(model);
+        print('   ✅ [FIELDS] Lapangan: ${model.namaLapangan} | ID Doc: ${doc.id} | MitraId di DB: ${data['MitraId']}');
+      }
+
+      // 2. Koleksi 'mitra'
       final mitraDoc = await _db.collection('mitra').doc(MitraId).get();
       if (mitraDoc.exists) {
-        return [MitraFieldModel.fromMap(mitraDoc.data()!, mitraDoc.id)];
+        final data = mitraDoc.data()!;
+        if (data.containsKey('nama_lapangan') || data.containsKey('namaLapangan') || data.containsKey('businessName')) {
+          final model = MitraFieldModel.fromMap(data, mitraDoc.id);
+          allFields.add(model);
+          print('   🏠 [MITRA]  Lapangan: ${model.namaLapangan} | ID Doc: ${mitraDoc.id}');
+        }
       }
+    } catch (e) {
+      print('⚠️ ERROR LOAD: $e');
     }
 
-    return snap.docs
-        .map((d) => MitraFieldModel.fromMap(d.data(), d.id))
-        .toList();
+    print('📊 HASIL AKHIR: ${allFields.length} Lapangan');
+    print('=========================================');
+    return allFields;
   }
 
   Stream<List<MitraFieldModel>> streamMitraFields(String MitraId) {
@@ -101,12 +128,26 @@ class MitraService {
     List<File>? photoFiles,
   }) async {
     final docRef = _db.collection('fields').doc();
-    final List<String> photoUrls = await _uploadFieldPhotos(
-      docRef.id,
-      photoFiles ?? [],
-    );
-    final data = field.copyWith(id: docRef.id, photoUrls: photoUrls).toMap();
-    await docRef.set(data);
+    final initialData = field.copyWith(id: docRef.id, photoUrls: []).toMap();
+    await docRef.set(initialData);
+
+    if (photoFiles != null && photoFiles.isNotEmpty) {
+      try {
+        print('UPLOADING ${photoFiles.length} PHOTOS for new field...');
+        final List<String> photoUrls = await uploadFieldPhotos(
+          docRef.id,
+          photoFiles,
+        );
+        print('UPLOAD SUCCESS. URLs: $photoUrls');
+
+        await docRef.update({'photoUrls': photoUrls});
+        print('FIRESTORE UPDATE SUCCESS');
+        return docRef.id;
+      } catch (e) {
+        print('UPLOAD/UPDATE ERROR: $e');
+        return docRef.id;
+      }
+    }
     return docRef.id;
   }
 
@@ -114,16 +155,48 @@ class MitraService {
     MitraFieldModel field, {
     List<File>? newPhotoFiles,
   }) async {
+    print('=========================================');
+    print('AKSI: UPDATE LAPANGAN ${field.namaLapangan}');
+    print('ID: ${field.id}');
+    print('FOTO BARU: ${newPhotoFiles?.length ?? 0}');
+    print('=========================================');
+
     List<String> photoUrls = List.from(field.photoUrls);
+
     if (newPhotoFiles != null && newPhotoFiles.isNotEmpty) {
-      final uploaded = await _uploadFieldPhotos(field.id, newPhotoFiles,
+      print('Uploading ${newPhotoFiles.length} new photos...');
+      final uploaded = await uploadFieldPhotos(field.id, newPhotoFiles,
           suffix: 'new_${DateTime.now().millisecondsSinceEpoch}');
       photoUrls.addAll(uploaded);
+      print('Total photos after upload: ${photoUrls.length}');
     }
-    await _db
-        .collection('fields')
-        .doc(field.id)
-        .update(field.copyWith(photoUrls: photoUrls).toMap());
+
+    final data = field.copyWith(photoUrls: photoUrls).toMap();
+    // Tambahkan fallback key agar konsisten dengan pendaftaran
+    data['photoUrls'] = photoUrls;
+    data['photos'] = photoUrls;
+
+    print('FINAL DATA TO SAVE: $data');
+
+    final fieldRef = _db.collection('fields').doc(field.id);
+    final fieldDoc = await fieldRef.get();
+
+    if (fieldDoc.exists) {
+      print('Updating in "fields" collection...');
+      await fieldRef.update(data);
+    } else {
+      final mitraRef = _db.collection('mitra').doc(field.id);
+      final mitraDoc = await mitraRef.get();
+      if (mitraDoc.exists) {
+        print('Updating in "mitra" collection...');
+        await mitraRef.update(data);
+      } else {
+        print(
+            'Document not found in either collection. Creating new in "fields"...');
+        await fieldRef.set(data);
+      }
+    }
+    print('UPDATE COMPLETED SUCCESSFULLY');
   }
 
   Future<void> deleteField(String fieldId) async {
@@ -131,12 +204,13 @@ class MitraService {
   }
 
   Future<void> toggleFieldStatus(String fieldId, bool isActive) async {
-    // Coba cek di koleksi 'fields' dulu
     final fieldDoc = await _db.collection('fields').doc(fieldId).get();
     if (fieldDoc.exists) {
-      await _db.collection('fields').doc(fieldId).update({'isActive': isActive});
+      await _db
+          .collection('fields')
+          .doc(fieldId)
+          .update({'isActive': isActive});
     } else {
-      // Jika tidak ada, kemungkinan ini adalah data dari koleksi 'mitra' (registrasi awal)
       final mitraDoc = await _db.collection('mitra').doc(fieldId).get();
       if (mitraDoc.exists) {
         await _db
@@ -147,24 +221,9 @@ class MitraService {
     }
   }
 
-  Future<List<String>> _uploadFieldPhotos(
-    String fieldId,
-    List<File> photos, {
-    String suffix = '',
-  }) async {
-    final urls = <String>[];
-    for (int i = 0; i < photos.length; i++) {
-      final name = suffix.isEmpty ? '${fieldId}_$i' : '${fieldId}_${suffix}_$i';
-      final ref = _storage.ref().child('field_photos/$name.jpg');
-      final task = await ref.putFile(photos[i]);
-      urls.add(await task.ref.getDownloadURL());
-    }
-    return urls;
-  }
-
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ————————————————————————————————————————————————————————————————————————————————
   // SCHEDULES
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ————————————————————————————————————————————————————————————————————————————————
 
   Future<List<MitraScheduleModel>> getSchedule(String fieldId) async {
     final snap = await _db
@@ -183,7 +242,6 @@ class MitraService {
       String fieldId, List<MitraScheduleModel> schedules) async {
     final batch = _db.batch();
 
-    // Hapus jadwal lama
     final existing = await _db
         .collection('schedules')
         .where('fieldId', isEqualTo: fieldId)
@@ -192,7 +250,6 @@ class MitraService {
       batch.delete(doc.reference);
     }
 
-    // Tulis jadwal baru
     for (final s in schedules) {
       final ref = _db.collection('schedules').doc();
       batch.set(ref, s.copyWith(id: ref.id, fieldId: fieldId).toMap());
@@ -223,9 +280,9 @@ class MitraService {
         .toList();
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // REVENUE & REVIEWS (Refactored from Repositories)
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ————————————————————————————————————————————————————————————————————————————————
+  // REVENUE & REVIEWS
+  // ————————————————————————————————————————————————————————————————————————————————
 
   Future<MitraRevenueModel> getRevenue(
       String MitraId, DateTime startDate, DateTime endDate) async {

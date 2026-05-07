@@ -12,7 +12,8 @@ class MitraFieldFormSheet extends ConsumerStatefulWidget {
   const MitraFieldFormSheet({super.key, this.field});
 
   @override
-  ConsumerState<MitraFieldFormSheet> createState() => _MitraFieldFormSheetState();
+  ConsumerState<MitraFieldFormSheet> createState() =>
+      _MitraFieldFormSheetState();
 }
 
 class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
@@ -21,11 +22,23 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
   late TextEditingController _priceController;
   late TextEditingController _descController;
   String _selectedJenis = 'Futsal';
-  final List<String> _jenisOptions = ['Futsal', 'Mini Soccer', 'Badminton', 'Basket'];
-  
+  final List<String> _jenisOptions = [
+    'Futsal',
+    'Mini Soccer',
+    'Badminton',
+    'Basket'
+  ];
+
   List<String> _selectedFasilitas = [];
-  final List<String> _fasilitasOptions = ['Parkir', 'Toilet', 'Kantin', 'Mushola', 'Wifi', 'Ruang Ganti'];
-  
+  final List<String> _fasilitasOptions = [
+    'Parkir',
+    'Toilet',
+    'Kantin',
+    'Mushola',
+    'Wifi',
+    'Ruang Ganti'
+  ];
+
   final List<File> _newPhotos = [];
   List<String> _existingPhotoUrls = [];
   bool _isSaving = false;
@@ -37,9 +50,10 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
     final f = widget.field;
     _venueController = TextEditingController(text: f?.namaVenue ?? '');
     _nameController = TextEditingController(text: f?.namaLapangan ?? '');
-    _priceController = TextEditingController(text: f?.hargaPerJam.toString() ?? '');
+    _priceController =
+        TextEditingController(text: f?.hargaPerJam.toString() ?? '');
     _descController = TextEditingController(text: f?.deskripsi ?? '');
-    
+
     if (f != null) {
       if (_jenisOptions.contains(f.jenisLapangan)) {
         _selectedJenis = f.jenisLapangan;
@@ -76,7 +90,8 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
   }
 
   Future<void> _submit() async {
-    if (_nameController.text.trim().isEmpty || _priceController.text.trim().isEmpty) {
+    if (_nameController.text.trim().isEmpty ||
+        _priceController.text.trim().isEmpty) {
       SnackbarHelper.showError(context, 'Nama dan Harga wajib diisi');
       return;
     }
@@ -98,29 +113,31 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
           fasilitas: _selectedFasilitas,
           photoUrls: _existingPhotoUrls, // Keep remaining
         );
-        
+
         await ref.read(mitraFieldProvider.notifier).editField(
-          updatedField.id,
-          namaVenue: _venueController.text.trim(),
-          namaLapangan: name,
-          hargaPerJam: price,
-          deskripsi: desc,
-          fasilitas: _selectedFasilitas,
-          newPhotoFiles: _newPhotos,
-        );
+              updatedField.id,
+              namaVenue: _venueController.text.trim(),
+              namaLapangan: name,
+              jenisLapangan: _selectedJenis,
+              hargaPerJam: price,
+              deskripsi: desc,
+              fasilitas: _selectedFasilitas,
+              newPhotoFiles: _newPhotos,
+            );
         if (mounted) SnackbarHelper.showSuccess(context, 'Lapangan diperbarui');
       } else {
         // Add
         await ref.read(mitraFieldProvider.notifier).addField(
-          namaVenue: _venueController.text.trim(),
-          namaLapangan: name,
-          jenisLapangan: _selectedJenis,
-          hargaPerJam: price,
-          deskripsi: desc,
-          fasilitas: _selectedFasilitas,
-          photoFiles: _newPhotos,
-        );
-        if (mounted) SnackbarHelper.showSuccess(context, 'Lapangan ditambahkan');
+              namaVenue: _venueController.text.trim(),
+              namaLapangan: name,
+              jenisLapangan: _selectedJenis,
+              hargaPerJam: price,
+              deskripsi: desc,
+              fasilitas: _selectedFasilitas,
+              photoFiles: _newPhotos,
+            );
+        if (mounted)
+          SnackbarHelper.showSuccess(context, 'Lapangan ditambahkan');
       }
 
       if (mounted) Navigator.pop(context);
@@ -137,7 +154,9 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
-        left: 20, right: 20, top: 20,
+        left: 20,
+        right: 20,
+        top: 20,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -148,7 +167,10 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
             children: [
               Text(
                 isEdit ? 'Edit Lapangan' : 'Tambah Lapangan',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A)),
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1B6B3A)),
               ),
               IconButton(
                 icon: const Icon(Icons.close),
@@ -165,7 +187,8 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: _venueController,
-                    decoration: _inputDecor('Nama Tempat / Venue (opsional)', Icons.business),
+                    decoration: _inputDecor(
+                        'Nama Tempat / Venue (opsional)', Icons.business),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -175,25 +198,31 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _selectedJenis,
-                    decoration: _inputDecor('Jenis Lapangan', Icons.sports_soccer),
-                    items: _jenisOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    decoration:
+                        _inputDecor('Jenis Lapangan', Icons.sports_soccer),
+                    items: _jenisOptions
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
                     onChanged: (v) => setState(() => _selectedJenis = v!),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _priceController,
                     keyboardType: TextInputType.number,
-                    decoration: _inputDecor('Harga per Jam (Rp)', Icons.attach_money),
+                    decoration:
+                        _inputDecor('Harga per Jam (Rp)', Icons.attach_money),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _descController,
                     maxLines: 3,
-                    decoration: _inputDecor('Deskripsi Lapangan', Icons.description).copyWith(alignLabelWithHint: true),
+                    decoration:
+                        _inputDecor('Deskripsi Lapangan', Icons.description)
+                            .copyWith(alignLabelWithHint: true),
                   ),
                   const SizedBox(height: 20),
-                  
-                  const Text('Fasilitas Lapangan', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('Fasilitas Lapangan',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -205,7 +234,10 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
                         selected: isSelected,
                         selectedColor: const Color(0xFFD1FAE5),
                         checkmarkColor: const Color(0xFF1B6B3A),
-                        labelStyle: TextStyle(color: isSelected ? const Color(0xFF1B6B3A) : Colors.black87),
+                        labelStyle: TextStyle(
+                            color: isSelected
+                                ? const Color(0xFF1B6B3A)
+                                : Colors.black87),
                         onSelected: (bool selected) {
                           setState(() {
                             if (selected) {
@@ -219,11 +251,11 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
                     }).toList(),
                   ),
                   const SizedBox(height: 20),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Foto Lapangan', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text('Foto Lapangan',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
                       TextButton.icon(
                         onPressed: _pickImages,
                         icon: const Icon(Icons.add_a_photo, size: 16),
@@ -235,12 +267,16 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+                      decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12)),
                       child: const Column(
                         children: [
-                          Icon(Icons.photo_library_outlined, size: 40, color: Colors.grey),
+                          Icon(Icons.photo_library_outlined,
+                              size: 40, color: Colors.grey),
                           SizedBox(height: 8),
-                          Text('Belum ada foto', style: TextStyle(color: Colors.grey)),
+                          Text('Belum ada foto',
+                              style: TextStyle(color: Colors.grey)),
                         ],
                       ),
                     )
@@ -251,17 +287,24 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
                         scrollDirection: Axis.horizontal,
                         children: [
                           // Existing
-                          ..._existingPhotoUrls.asMap().entries.map((entry) => _buildPhotoItem(
-                            isNetwork: true,
-                            url: entry.value,
-                            onRemove: () => _removeExistingPhoto(entry.key),
-                          )),
+                          ..._existingPhotoUrls
+                              .asMap()
+                              .entries
+                              .map((entry) => _buildPhotoItem(
+                                    isNetwork: true,
+                                    url: entry.value,
+                                    onRemove: () =>
+                                        _removeExistingPhoto(entry.key),
+                                  )),
                           // New
-                          ..._newPhotos.asMap().entries.map((entry) => _buildPhotoItem(
-                            isNetwork: false,
-                            file: entry.value,
-                            onRemove: () => _removeNewPhoto(entry.key),
-                          )),
+                          ..._newPhotos
+                              .asMap()
+                              .entries
+                              .map((entry) => _buildPhotoItem(
+                                    isNetwork: false,
+                                    file: entry.value,
+                                    onRemove: () => _removeNewPhoto(entry.key),
+                                  )),
                         ],
                       ),
                     ),
@@ -276,12 +319,19 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1B6B3A),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: _isSaving ? null : _submit,
-              child: _isSaving 
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : Text(isEdit ? 'Simpan Perubahan' : 'Tambahkan Lapangan', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: _isSaving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2))
+                  : Text(isEdit ? 'Simpan Perubahan' : 'Tambahkan Lapangan',
+                      style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ),
           const SizedBox(height: 20),
@@ -295,19 +345,27 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
       labelText: label,
       prefixIcon: Icon(icon, color: Colors.grey),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1B6B3A))),
+      focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF1B6B3A))),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     );
   }
 
-  Widget _buildPhotoItem({required bool isNetwork, String? url, File? file, required VoidCallback onRemove}) {
+  Widget _buildPhotoItem(
+      {required bool isNetwork,
+      String? url,
+      File? file,
+      required VoidCallback onRemove}) {
     return Container(
       margin: const EdgeInsets.only(right: 8),
       width: 100,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         image: DecorationImage(
-          image: isNetwork ? NetworkImage(url!) as ImageProvider : FileImage(file!),
+          image: isNetwork
+              ? NetworkImage(url!) as ImageProvider
+              : FileImage(file!),
           fit: BoxFit.cover,
         ),
       ),
@@ -318,7 +376,8 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
           child: Container(
             margin: const EdgeInsets.all(4),
             padding: const EdgeInsets.all(2),
-            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+            decoration:
+                const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
             child: const Icon(Icons.close, size: 14, color: Colors.white),
           ),
         ),

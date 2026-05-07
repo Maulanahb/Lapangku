@@ -54,6 +54,9 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     required String namaLapangan,
     required String jenisLapangan,
     required int hargaPerJam,
+    int? hargaWeekend,
+    String jamBuka = '08:00',
+    String jamTutup = '22:00',
     String deskripsi = '',
     String alamat = '',
     List<String> fasilitas = const [],
@@ -68,6 +71,9 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
         namaLapangan: namaLapangan,
         jenisLapangan: jenisLapangan,
         hargaPerJam: hargaPerJam,
+        hargaWeekend: hargaWeekend,
+        jamBuka: jamBuka,
+        jamTutup: jamTutup,
         deskripsi: deskripsi,
         alamat: alamat,
         fasilitas: fasilitas,
@@ -83,9 +89,15 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     String fieldId, {
     required String namaVenue,
     required String namaLapangan,
+    required String jenisLapangan,
     required int hargaPerJam,
+    int? hargaWeekend,
+    String jamBuka = '08:00',
+    String jamTutup = '22:00',
     String deskripsi = '',
+    String alamat = '',
     List<String> fasilitas = const [],
+    List<String> photoUrls = const [],
     List<File>? newPhotoFiles,
   }) async {
     state = state.copyWith(isMutating: true);
@@ -95,9 +107,15 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
       final updatedField = existingField.copyWith(
         namaVenue: namaVenue,
         namaLapangan: namaLapangan,
+        jenisLapangan: jenisLapangan,
         hargaPerJam: hargaPerJam,
+        hargaWeekend: hargaWeekend,
+        jamBuka: jamBuka,
+        jamTutup: jamTutup,
         deskripsi: deskripsi,
+        alamat: alamat,
         fasilitas: fasilitas,
+        photoUrls: photoUrls,
       );
       await _service.updateField(updatedField, newPhotoFiles: newPhotoFiles);
       await loadFields();
@@ -134,13 +152,22 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
   }
 }
 
+// Provider yang reaktif terhadap perubahan auth state
+// Ini memastikan data di-reset saat user ganti akun (logout/login)
+final _authUidProvider = StreamProvider<String?>((ref) {
+  return FirebaseAuth.instance.authStateChanges().map((user) => user?.uid);
+});
+
 final mitraFieldProvider =
     StateNotifierProvider<MitraFieldNotifier, MitraFieldState>((ref) {
   final service = ref.watch(mitraServiceProvider);
+  // Watch UID — saat UID berubah (ganti akun), provider ini otomatis di-recreate
+  ref.watch(_authUidProvider);
   return MitraFieldNotifier(service);
 });
 
 // Convenience getter
-final MitraFieldListProvider = Provider<AsyncValue<List<MitraFieldModel>>>((ref) {
+final MitraFieldListProvider =
+    Provider<AsyncValue<List<MitraFieldModel>>>((ref) {
   return ref.watch(mitraFieldProvider).fields;
 });
