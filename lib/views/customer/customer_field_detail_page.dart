@@ -6,8 +6,8 @@ import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/favorite/favorite_controller.dart';
 // REFAKTOR: import shared constants & formatter
-import 'package:lapangku/shared/constants/app_colors.dart';
-import 'package:lapangku/shared/utils/currency_formatter.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
+import 'package:lapangku/standards/utils/currency_formatter.dart';
 
 class CustomerFieldDetailPage extends ConsumerStatefulWidget {
   final FieldModel field;

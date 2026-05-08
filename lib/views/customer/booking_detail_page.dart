@@ -4,10 +4,10 @@ import 'package:intl/intl.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/views/customer/payment_upload_page.dart';
-import 'package:lapangku/shared/constants/app_colors.dart';
-import 'package:lapangku/shared/models/booking_status.dart';
-import 'package:lapangku/shared/utils/currency_formatter.dart';
-import 'package:lapangku/shared/widgets/confirmation_dialog.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
+import 'package:lapangku/standards/models/booking_status.dart';
+import 'package:lapangku/standards/utils/currency_formatter.dart';
+import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 
 class BookingDetailPage extends ConsumerWidget {
   final String bookingId;

@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/controllers/field/field_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
-import 'package:lapangku/shared/constants/app_colors.dart';
-import 'package:lapangku/shared/utils/currency_formatter.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
+import 'package:lapangku/standards/utils/currency_formatter.dart';
 
 class CustomerHomePage extends ConsumerStatefulWidget {
   const CustomerHomePage({super.key});

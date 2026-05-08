@@ -4,9 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
-import 'package:lapangku/shared/constants/app_colors.dart';
-import 'package:lapangku/shared/constants/app_constants.dart';
-import 'package:lapangku/shared/utils/currency_formatter.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
+import 'package:lapangku/standards/constants/app_constants.dart';
+import 'package:lapangku/standards/utils/currency_formatter.dart';
 
 class BookingConfirmationPage extends ConsumerStatefulWidget {
   final FieldModel field;

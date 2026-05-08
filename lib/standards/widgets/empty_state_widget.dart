@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lapangku/shared/constants/app_colors.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
 
 /// Widget empty state reusable — menggantikan semua pola
 /// Column(Icon + Text + Text) yang tersebar di seluruh halaman.

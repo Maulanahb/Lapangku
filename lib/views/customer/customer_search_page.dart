@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/controllers/field/field_controller.dart';
 // REFAKTOR: import shared constants & formatter
-import 'package:lapangku/shared/constants/app_colors.dart';
-import 'package:lapangku/shared/utils/currency_formatter.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
+import 'package:lapangku/standards/utils/currency_formatter.dart';
 
 class CustomerSearchPage extends ConsumerStatefulWidget {
   const CustomerSearchPage({super.key});

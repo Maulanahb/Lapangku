@@ -6,11 +6,11 @@ import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/services/firebase/favorite_service.dart';
 // REFAKTOR: import shared components
-import 'package:lapangku/shared/constants/app_colors.dart';
-import 'package:lapangku/shared/utils/currency_formatter.dart';
-import 'package:lapangku/shared/widgets/confirmation_dialog.dart';
-import 'package:lapangku/shared/widgets/empty_state_widget.dart';
-import 'package:lapangku/shared/widgets/loading_overlay.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
+import 'package:lapangku/standards/utils/currency_formatter.dart';
+import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
+import 'package:lapangku/standards/widgets/empty_state_widget.dart';
+import 'package:lapangku/standards/widgets/loading_overlay.dart';
 
 class FavoritesPage extends ConsumerStatefulWidget {
   const FavoritesPage({super.key});

@@ -9,7 +9,7 @@ import 'package:lapangku/models/mitra/mitra_revenue_model.dart';
 import 'package:lapangku/models/mitra/mitra_review_model.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/services/cloudinary_service.dart';
-import 'package:lapangku/shared/constants/app_constants.dart';
+import 'package:lapangku/standards/constants/app_constants.dart';
 
 class MitraService {
   final FirebaseFirestore _db = FirestoreService.instance;

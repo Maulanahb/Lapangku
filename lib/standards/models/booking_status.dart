@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lapangku/shared/constants/app_colors.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
 
 // ─── Enum ─────────────────────────────────────────────────────────────────────
 /// Status booking Lapangku — satu-satunya definisi yang ada di seluruh project.

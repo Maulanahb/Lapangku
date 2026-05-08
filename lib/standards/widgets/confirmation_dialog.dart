@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lapangku/shared/constants/app_colors.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
 
 /// Dialog konfirmasi reusable — menggantikan semua showDialog(AlertDialog)
 /// yang ditulis ulang di berbagai halaman.
