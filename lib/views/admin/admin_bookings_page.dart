@@ -118,7 +118,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: ['semua', 'menunggu', 'dikonfirmasi', 'selesai', 'dibatalkan']
+              children: ['semua', 'menunggu_konfirmasi', 'dikonfirmasi', 'selesai', 'dibatalkan']
                   .map((status) {
                 final selected = _filterStatus == status;
                 return Padding(
