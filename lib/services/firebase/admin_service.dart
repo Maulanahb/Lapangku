@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/admin/admin_field_model.dart';
@@ -32,7 +32,7 @@ class AdminService {
       0,
       (total, doc) {
         final data = doc.data() as Map<String, dynamic>;
-        return total + ((data['totalHarga'] ?? 0) as int);
+        return total + ((data['totalBayar'] ?? data['totalHarga'] ?? 0) as int);
       },
     );
 
@@ -88,14 +88,29 @@ class AdminService {
         .get();
     return snap.docs.map((d) {
       final data = d.data();
+      
+      String jamMulai = data['jamMulai'] ?? '';
+      String jamSelesai = data['jamSelesai'] ?? '';
+      
+      if (data['timeSlots'] != null && (data['timeSlots'] as List).isNotEmpty) {
+        final slots = List<String>.from(data['timeSlots']);
+        try {
+          jamMulai = slots.first.split(' - ').first.trim();
+          jamSelesai = slots.last.split(' - ').last.trim();
+        } catch (e) {
+          jamMulai = slots.first;
+          jamSelesai = slots.last;
+        }
+      }
+
       return BookingModel(
         bookingId: d.id,
-        namaLapangan: data['namaLapangan'] ?? '',
-        namaPenyewa: data['namaPenyewa'] ?? '',
+        namaLapangan: data['fieldName'] ?? data['namaLapangan'] ?? '',
+        namaPenyewa: data['userName'] ?? data['namaPenyewa'] ?? '',
         tanggal: (data['tanggal'] as Timestamp).toDate(),
-        jamMulai: data['jamMulai'] ?? '',
-        jamSelesai: data['jamSelesai'] ?? '',
-        totalHarga: (data['totalHarga'] ?? 0) as int,
+        jamMulai: jamMulai,
+        jamSelesai: jamSelesai,
+        totalHarga: (data['totalBayar'] ?? data['totalHarga'] ?? 0) as int,
         status: data['status'] ?? 'menunggu',
       );
     }).toList();
@@ -207,9 +222,9 @@ class AdminService {
 
         activities.add({
           'time': time,
-          'user': data['namaPenyewa'] ?? 'Penyewa',
+          'user': data['userName'] ?? data['namaPenyewa'] ?? 'Penyewa',
           'action': 'New Booking',
-          'detail': data['namaLapangan'] ?? '',
+          'detail': data['fieldName'] ?? data['namaLapangan'] ?? '',
           'status': data['status'] ?? 'menunggu',
           'type': 'booking',
         });

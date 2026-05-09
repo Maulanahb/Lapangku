@@ -76,14 +76,30 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
               ),
             ],
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
-              onPressed: () => ref.read(bookingsProvider.notifier).load(),
+          InkWell(
+            onTap: () => ref.read(bookingsProvider.notifier).load(),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.refresh_rounded, color: AppColors.primary, size: 18),
+                  SizedBox(width: 6),
+                  Text(
+                    'Refresh',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
