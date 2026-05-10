@@ -145,7 +145,7 @@ class AdminService {
 
   Future<void> updateFieldVerifikasi({
     required String fieldId,
-    required String mitraUid,
+    required String mitraId,
     required String status,
   }) async {
     final batch = _firestore.batch();
@@ -153,7 +153,7 @@ class AdminService {
 
     // Update the mitra collection
     batch.update(
-      _firestore.collection('mitra').doc(mitraUid),
+      _firestore.collection('mitra').doc(mitraId),
       {
         'statusVerifikasi': status,
         'isVerified': isVerified,
@@ -162,7 +162,7 @@ class AdminService {
     
     // Update the users collection
     batch.update(
-      _firestore.collection('users').doc(mitraUid),
+      _firestore.collection('users').doc(mitraId),
       {
         'statusVerifikasi': status,
         'isVerified': isVerified,

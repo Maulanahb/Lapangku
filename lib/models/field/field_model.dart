@@ -36,7 +36,7 @@ class FieldModel extends BaseFieldModel {
     required this.fasilitas,
     this.statusVerifikasi,
   }) : super(
-          fieldId: fieldId.isEmpty ? id : fieldId,
+          fieldId: fieldId == '' ? id : fieldId,
           mitraId: mitraId,
           namaVenue: namaVenue,
           namaLapangan: nama,

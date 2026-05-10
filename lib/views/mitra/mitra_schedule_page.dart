@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/models/mitra/mitra_schedule_model.dart';
@@ -114,6 +114,15 @@ class _ScheduleList extends ConsumerWidget {
 
   const _ScheduleList({required this.schedules});
 
+  // Helper map untuk mengonversi dayOfWeek (int) menjadi nama hari (String)
+  String _getNamaHari(int dayOfWeek) {
+    const mapHari = {
+      1: 'Senin', 2: 'Selasa', 3: 'Rabu',
+      4: 'Kamis', 5: 'Jumat', 6: 'Sabtu', 7: 'Minggu'
+    };
+    return mapHari[dayOfWeek] ?? 'Senin';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView.builder(
@@ -146,7 +155,7 @@ class _ScheduleList extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    s.hari,
+                    _getNamaHari(s.dayOfWeek), // Menggunakan helper fungsi
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,

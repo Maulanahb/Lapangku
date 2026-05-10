@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/controllers/admin/admin_controller.dart';
@@ -411,7 +411,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     if (confirm == true && mounted) {
       await ref.read(adminFieldsProvider.notifier).updateVerifikasi(
             fieldId: field.fieldId,
-            mitraUid: field.mitraUid,
+            mitraId: field.mitraId,
             status: status,
           );
     }

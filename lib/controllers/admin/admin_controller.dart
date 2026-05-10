@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/admin/admin_field_model.dart';
 import 'package:lapangku/models/admin/booking_model.dart';
 import 'package:lapangku/models/admin/admin_stats.dart';
@@ -127,12 +127,12 @@ class AdminFieldsNotifier extends StateNotifier<AsyncValue<List<AdminFieldModel>
 
   Future<void> updateVerifikasi({
     required String fieldId,
-    required String mitraUid,
+    required String mitraId,
     required String status,
   }) async {
     await _service.updateFieldVerifikasi(
       fieldId: fieldId,
-      mitraUid: mitraUid,
+      mitraId: mitraId,
       status: status,
     );
     await load();
