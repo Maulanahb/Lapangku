@@ -260,25 +260,15 @@ class MitraService {
   }
 
   static List<MitraScheduleModel> _defaultSchedule(String fieldId) {
-    const days = [
-      'Senin',
-      'Selasa',
-      'Rabu',
-      'Kamis',
-      'Jumat',
-      'Sabtu',
-      'Minggu'
-    ];
-    return days
-        .map((day) => MitraScheduleModel(
-              id: '',
-              fieldId: fieldId,
-              hari: day,
-              jamBuka: '08:00',
-              jamTutup: '22:00',
-              isActive: true,
-            ))
-        .toList();
+    // dayOfWeek: 1=Senin, 2=Selasa, ..., 7=Minggu
+    return List.generate(7, (index) => MitraScheduleModel(
+      id: '',
+      fieldId: fieldId,
+      dayOfWeek: index + 1,
+      jamBuka: '08:00',
+      jamTutup: '22:00',
+      isActive: true,
+    ));
   }
 
   // ————————————————————————————————————————————————————————————————————————————————

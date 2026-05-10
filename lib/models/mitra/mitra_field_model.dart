@@ -1,12 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lapangku/models/field/base_field_model.dart';
 
-class MitraFieldModel {
-  final String id;
-  final String MitraId;
-  final String namaVenue;
-  final String namaLapangan;
+class MitraFieldModel extends BaseFieldModel {
+  final String id; // alias dari fieldId untuk backward-compat
   final String jenisLapangan; // futsal, badminton, basket, tenis, voli
-  final int hargaPerJam;
   final String deskripsi;
   final String alamat;
   final List<String> photoUrls;
@@ -19,11 +16,11 @@ class MitraFieldModel {
 
   const MitraFieldModel({
     required this.id,
-    required this.MitraId,
-    this.namaVenue = '',
-    required this.namaLapangan,
+    required String mitraId,
+    String namaVenue = '',
+    required String namaLapangan,
     required this.jenisLapangan,
-    required this.hargaPerJam,
+    required int hargaPerJam,
     this.deskripsi = '',
     this.alamat = '',
     this.photoUrls = const [],
@@ -33,15 +30,24 @@ class MitraFieldModel {
     this.jamTutup = '22:00',
     this.isActive = true,
     this.createdAt,
-  });
+  }) : super(
+          fieldId: id,
+          mitraId: mitraId,
+          namaVenue: namaVenue,
+          namaLapangan: namaLapangan,
+          hargaPerJam: hargaPerJam,
+        );
 
   // Backward-compat getters
   String get name => namaLapangan;
   int get pricePerHour => hargaPerJam;
 
+  /// Backward-compat getter: tetap bisa akses .MitraId (kapital M)
+  String get MitraId => mitraId;
+
   MitraFieldModel copyWith({
     String? id,
-    String? MitraId,
+    String? mitraId,
     String? namaVenue,
     String? namaLapangan,
     String? jenisLapangan,
@@ -58,7 +64,7 @@ class MitraFieldModel {
   }) {
     return MitraFieldModel(
       id: id ?? this.id,
-      MitraId: MitraId ?? this.MitraId,
+      mitraId: mitraId ?? this.mitraId,
       namaVenue: namaVenue ?? this.namaVenue,
       namaLapangan: namaLapangan ?? this.namaLapangan,
       jenisLapangan: jenisLapangan ?? this.jenisLapangan,
@@ -77,7 +83,8 @@ class MitraFieldModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'MitraId': MitraId,
+      'mitraId': mitraId,
+      'MitraId': mitraId, // backward-compat key (kapital M)
       'nama_venue': namaVenue,
       'nama_lapangan': namaLapangan,
       'jenisLapangan': jenisLapangan,
@@ -99,7 +106,7 @@ class MitraFieldModel {
   factory MitraFieldModel.fromMap(Map<String, dynamic> map, String id) {
     return MitraFieldModel(
       id: id,
-      MitraId: map['MitraId'] ?? map['uid'] ?? '',
+      mitraId: map['mitraId'] ?? map['MitraId'] ?? map['id_pemilik'] ?? map['uid'] ?? '',
       namaVenue: map['nama_venue'] ?? map['namaVenue'] ?? '',
       namaLapangan: map['nama_lapangan'] ?? map['namaLapangan'] ??
           map['businessName'] ??

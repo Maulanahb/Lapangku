@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/mitra/mitra_schedule_model.dart';
 import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 import 'package:lapangku/services/firebase/mitra_service.dart';
@@ -40,12 +40,8 @@ class MitraScheduleNotifier extends StateNotifier<MitraScheduleState> {
     );
     try {
       final schedule = await _service.getSchedule(fieldId);
-      // Sort by day order
-      final dayOrder = [
-        'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
-      ];
-      schedule.sort((a, b) =>
-          dayOrder.indexOf(a.hari).compareTo(dayOrder.indexOf(b.hari)));
+      // Sort by dayOfWeek (1=Senin .. 7=Minggu)
+      schedule.sort((a, b) => a.dayOfWeek.compareTo(b.dayOfWeek));
       state = state.copyWith(schedule: AsyncData(schedule));
     } catch (e, st) {
       state = state.copyWith(schedule: AsyncError(e, st));

@@ -66,7 +66,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     try {
       final field = MitraFieldModel(
         id: '',
-        MitraId: _uid,
+        mitraId: _uid,
         namaVenue: namaVenue,
         namaLapangan: namaLapangan,
         jenisLapangan: jenisLapangan,

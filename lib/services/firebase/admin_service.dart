@@ -62,7 +62,7 @@ class AdminService {
 
         return AdminFieldModel(
           fieldId: d.id,
-          mitraUid: d.id,
+          mitraId: d.id,
           namaLapangan: data['namaLapangan'] ?? data['businessName'] ?? data['namaBisnis'] ?? 'Bisnis Baru',
           namaMitra: data['ownerName'] ?? data['mitraName'] ?? data['nama'] ?? 'Mitra',
           emailPemilik: data['email'] ?? 'mitra@example.com',

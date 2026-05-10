@@ -1,12 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lapangku/models/field/base_field_model.dart';
 
-class FieldModel {
-  final String id;
-  final String idLapangan;
-  final String namaVenue;
-  final String nama;
+class FieldModel extends BaseFieldModel {
+  final String id; // alias dari fieldId untuk backward-compat
   final String kategori;
-  final int hargaPerJam;
   final String alamat;
   final double latitude;
   final double longitude;
@@ -17,16 +14,16 @@ class FieldModel {
   final String fotoUtama;
   final List<String> fotoGaleri;
   final List<String> fasilitas;
-  final String idPemilik;
   final String? statusVerifikasi;
 
   const FieldModel({
     required this.id,
-    this.idLapangan = '',
-    this.namaVenue = '',
-    required this.nama,
+    String fieldId = '',
+    String mitraId = '',
+    String namaVenue = '',
+    required String nama,
     required this.kategori,
-    required this.hargaPerJam,
+    required int hargaPerJam,
     required this.alamat,
     required this.latitude,
     required this.longitude,
@@ -37,9 +34,23 @@ class FieldModel {
     required this.fotoUtama,
     required this.fotoGaleri,
     required this.fasilitas,
-    required this.idPemilik,
     this.statusVerifikasi,
-  });
+  }) : super(
+          fieldId: fieldId.isEmpty ? id : fieldId,
+          mitraId: mitraId,
+          namaVenue: namaVenue,
+          namaLapangan: nama,
+          hargaPerJam: hargaPerJam,
+        );
+
+  /// Backward-compat getter: tetap bisa akses .nama
+  String get nama => namaLapangan;
+
+  /// Backward-compat getter: tetap bisa akses .idPemilik
+  String get idPemilik => mitraId;
+
+  /// Backward-compat getter: tetap bisa akses .idLapangan
+  String get idLapangan => fieldId;
 
   factory FieldModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -56,7 +67,8 @@ class FieldModel {
 
     return FieldModel(
       id: doc.id,
-      idLapangan: data['id_lapangan'] ?? '',
+      fieldId: data['id_lapangan'] ?? data['fieldId'] ?? '',
+      mitraId: data['mitraId'] ?? data['id_pemilik'] ?? data['MitraId'] ?? '',
       namaVenue: data['nama_venue'] ?? data['namaVenue'] ?? '',
       nama: data['nama_lapangan'] ?? '',
       kategori: data['kategori_lapangan'] ?? '',
@@ -71,7 +83,6 @@ class FieldModel {
       fotoUtama: fotoLapangan.isNotEmpty ? fotoLapangan.first : '',
       fotoGaleri: fotoLapangan,
       fasilitas: List<String>.from(data['fasilitas'] ?? []),
-      idPemilik: data['id_pemilik'] ?? '',
       statusVerifikasi: data['status_verifikasi'],
     );
   }
@@ -79,9 +90,11 @@ class FieldModel {
   // Konversi dari FieldModel ke Map untuk dikirim ke Firestore
   Map<String, dynamic> toFirestore() {
     return {
-      'id_lapangan': idLapangan,
+      'id_lapangan': fieldId,
+      'mitraId': mitraId,
+      'id_pemilik': mitraId, // backward-compat key
       'nama_venue': namaVenue,
-      'nama_lapangan': nama,
+      'nama_lapangan': namaLapangan,
       'kategori_lapangan': kategori,
       'harga_sewa_jam': hargaPerJam,
       'alamat_lengkap': alamat,
@@ -92,7 +105,6 @@ class FieldModel {
       'total_ulasan': totalUlasan,
       'foto_lapangan': fotoGaleri,
       'fasilitas': fasilitas,
-      'id_pemilik': idPemilik,
       'status_verifikasi': statusVerifikasi,
     };
   }
