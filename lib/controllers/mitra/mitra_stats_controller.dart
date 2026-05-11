@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/services/firebase/booking_service.dart';
 import 'package:lapangku/controllers/mitra/mitra_controller.dart';
-import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:intl/intl.dart';
 
 final bookingServiceProvider = Provider<BookingService>((ref) {
@@ -13,17 +12,10 @@ final bookingServiceProvider = Provider<BookingService>((ref) {
 final mitraBookingsProvider = StreamProvider.family<List<BookingModel>, String>((ref, mitraId) {
   final bookingService = ref.watch(bookingServiceProvider);
   
-  // Kita butuh fieldIds milik mitra ini dulu
-  final fieldsAsync = ref.watch(mitraFieldProvider).fields;
-  
-  return fieldsAsync.when(
-    data: (fields) {
-      final fieldIds = fields.map((f) => f.id).toList();
-      return bookingService.streamMitraBookings(fieldIds);
-    },
-    loading: () => const Stream.empty(),
-    error: (e, s) => const Stream.empty(),
-  );
+  if (mitraId.isEmpty) return Stream.value([]);
+
+  // Query langsung via mitraId — tidak perlu tunggu field provider load
+  return bookingService.streamMitraBookingsByMitraId(mitraId);
 });
 
 /// Provider untuk pesanan yang menunggu konfirmasi (Waiting List)

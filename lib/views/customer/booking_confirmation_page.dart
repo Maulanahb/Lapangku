@@ -270,6 +270,7 @@ class _State extends ConsumerState<BookingConfirmationPage> {
         timeSlots: widget.selectedTimeSlots,
         metodePembayaran: _selectedPaymentMethod,
         biayaLayanan: _biayaLayanan, // dari AppConstants
+        mitraId: widget.field.mitraId, // WAJIB: agar query Mitra efisien
       );
 
       if (mounted) {

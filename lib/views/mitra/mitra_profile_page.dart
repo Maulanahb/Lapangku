@@ -448,6 +448,7 @@ class MitraProfilePage extends ConsumerWidget {
     );
   }
 
+
   Widget _buildLogoutButton(BuildContext context, WidgetRef ref) {
     return InkWell(
       onTap: () => _showLogoutDialog(context, ref),

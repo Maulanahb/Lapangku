@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/models/mitra/mitra_profile_model.dart';
 import 'package:lapangku/models/mitra/mitra_schedule_model.dart';
@@ -12,7 +12,10 @@ import 'package:lapangku/services/cloudinary_service.dart';
 import 'package:lapangku/standards/constants/app_constants.dart';
 
 class MitraService {
-  final FirebaseFirestore _db = FirestoreService.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'lapangku-db',
+  );
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
@@ -80,30 +83,19 @@ class MitraService {
     print('🔎 LOAD DATA UNTUK UID: $MitraId');
 
     try {
-      // 1. Koleksi 'fields'
+      // Query dari koleksi 'lapangan' — satu-satunya sumber data
       final snap = await _db
-          .collection('fields')
+          .collection('lapangan')
           .where('MitraId', isEqualTo: MitraId)
           .get(const GetOptions(source: Source.server));
 
-      print('📂 Koleksi "fields": Ditemukan ${snap.docs.length} dokumen');
+      print('📂 Koleksi "lapangan": Ditemukan ${snap.docs.length} dokumen');
       
       for (var doc in snap.docs) {
         final data = doc.data();
         final model = MitraFieldModel.fromMap(data, doc.id);
         allFields.add(model);
-        print('   ✅ [FIELDS] Lapangan: ${model.namaLapangan} | ID Doc: ${doc.id} | MitraId di DB: ${data['MitraId']}');
-      }
-
-      // 2. Koleksi 'mitra'
-      final mitraDoc = await _db.collection('mitra').doc(MitraId).get();
-      if (mitraDoc.exists) {
-        final data = mitraDoc.data()!;
-        if (data.containsKey('nama_lapangan') || data.containsKey('namaLapangan') || data.containsKey('businessName')) {
-          final model = MitraFieldModel.fromMap(data, mitraDoc.id);
-          allFields.add(model);
-          print('   🏠 [MITRA]  Lapangan: ${model.namaLapangan} | ID Doc: ${mitraDoc.id}');
-        }
+        print('   ✅ Lapangan: ${model.namaLapangan} | ID Doc: ${doc.id} | MitraId: ${data['MitraId']}');
       }
     } catch (e) {
       print('⚠️ ERROR LOAD: $e');
@@ -116,7 +108,7 @@ class MitraService {
 
   Stream<List<MitraFieldModel>> streamMitraFields(String MitraId) {
     return _db
-        .collection('fields')
+        .collection('lapangan')
         .where('MitraId', isEqualTo: MitraId)
         .snapshots()
         .map((snap) => snap.docs
@@ -128,7 +120,7 @@ class MitraService {
     MitraFieldModel field, {
     List<File>? photoFiles,
   }) async {
-    final docRef = _db.collection('fields').doc();
+    final docRef = _db.collection('lapangan').doc();
     final initialData = field.copyWith(id: docRef.id, photoUrls: []).toMap();
     await docRef.set(initialData);
 
@@ -141,7 +133,10 @@ class MitraService {
         );
         print('UPLOAD SUCCESS. URLs: $photoUrls');
 
-        await docRef.update({'photoUrls': photoUrls});
+        await docRef.update({
+          'photoUrls': photoUrls,
+          'foto_lapangan': photoUrls, // ✅ Key yang dibaca Customer
+        });
         print('FIRESTORE UPDATE SUCCESS');
         return docRef.id;
       } catch (e) {
@@ -173,53 +168,35 @@ class MitraService {
     }
 
     final data = field.copyWith(photoUrls: photoUrls).toMap();
-    // Tambahkan fallback key agar konsisten dengan pendaftaran
+    // toMap() sudah menulis 'foto_lapangan' dan 'photoUrls'
+    // Pastikan kedua key foto konsisten
     data['photoUrls'] = photoUrls;
-    data['photos'] = photoUrls;
+    data['foto_lapangan'] = photoUrls;
 
     print('FINAL DATA TO SAVE: $data');
 
-    final fieldRef = _db.collection('fields').doc(field.id);
+    final fieldRef = _db.collection('lapangan').doc(field.id);
     final fieldDoc = await fieldRef.get();
 
     if (fieldDoc.exists) {
-      print('Updating in "fields" collection...');
+      print('Updating in "lapangan" collection...');
       await fieldRef.update(data);
     } else {
-      final mitraRef = _db.collection('mitra').doc(field.id);
-      final mitraDoc = await mitraRef.get();
-      if (mitraDoc.exists) {
-        print('Updating in "mitra" collection...');
-        await mitraRef.update(data);
-      } else {
-        print(
-            'Document not found in either collection. Creating new in "fields"...');
-        await fieldRef.set(data);
-      }
+      print('Document not found. Creating new in "lapangan"...');
+      await fieldRef.set(data);
     }
     print('UPDATE COMPLETED SUCCESSFULLY');
   }
 
   Future<void> deleteField(String fieldId) async {
-    await _db.collection('fields').doc(fieldId).delete();
+    await _db.collection('lapangan').doc(fieldId).delete();
   }
 
   Future<void> toggleFieldStatus(String fieldId, bool isActive) async {
-    final fieldDoc = await _db.collection('fields').doc(fieldId).get();
-    if (fieldDoc.exists) {
-      await _db
-          .collection('fields')
-          .doc(fieldId)
-          .update({'isActive': isActive});
-    } else {
-      final mitraDoc = await _db.collection('mitra').doc(fieldId).get();
-      if (mitraDoc.exists) {
-        await _db
-            .collection('mitra')
-            .doc(fieldId)
-            .update({'isActive': isActive});
-      }
-    }
+    await _db
+        .collection('lapangan')
+        .doc(fieldId)
+        .update({'is_aktif': isActive});
   }
 
   // ————————————————————————————————————————————————————————————————————————————————

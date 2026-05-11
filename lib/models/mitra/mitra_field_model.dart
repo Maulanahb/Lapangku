@@ -85,18 +85,24 @@ class MitraFieldModel extends BaseFieldModel {
     return {
       'mitraId': mitraId,
       'MitraId': mitraId, // backward-compat key (kapital M)
+      'id_pemilik': mitraId, // backward-compat key untuk Customer FieldModel
       'nama_venue': namaVenue,
       'nama_lapangan': namaLapangan,
       'jenisLapangan': jenisLapangan,
+      'kategori_lapangan': jenisLapangan, // backward-compat key untuk Customer
       'hargaPerJam': hargaPerJam,
+      'harga_sewa_jam': hargaPerJam, // backward-compat key untuk Customer
       'deskripsi': deskripsi,
+      'deskripsi_fasilitas': deskripsi, // backward-compat key untuk Customer
       'alamat': alamat,
+      'alamat_lengkap': alamat, // backward-compat key untuk Customer
       'photoUrls': photoUrls,
+      'foto_lapangan': photoUrls, // backward-compat key untuk Customer
       'fasilitas': fasilitas,
       'hargaWeekend': hargaWeekend,
       'jamBuka': jamBuka,
       'jamTutup': jamTutup,
-      'isActive': isActive,
+      'is_aktif': isActive, // ✅ Sesuai key yang dibaca Customer
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
@@ -127,7 +133,7 @@ class MitraFieldModel extends BaseFieldModel {
       hargaWeekend: map['hargaWeekend'] as int?,
       jamBuka: map['jamBuka'] ?? '08:00',
       jamTutup: map['jamTutup'] ?? '22:00',
-      isActive: map['isActive'] ?? true,
+      isActive: map['is_aktif'] ?? map['isActive'] ?? true,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
     );
   }

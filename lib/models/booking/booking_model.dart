@@ -1,9 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Helper untuk validasi transisi status booking.
-///
-/// Tidak bisa menggunakan nama 'BookingStatus' karena sudah ada enum
-/// di `standards/models/booking_status.dart`.
+/// Helper untuk konstanta status dan validasi transisi booking.
 ///
 /// Flow: menunggu_bayar → menunggu_konfirmasi → dikonfirmasi → selesai
 ///       menunggu_bayar → expired / dibatalkan
@@ -11,7 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class BookingStatusHelper {
   BookingStatusHelper._();
 
-  // String constants untuk Firestore values
+  // ─── String Constants (Firestore values) ─────────────────────────────────
   static const String menungguBayar = 'menunggu_bayar';
   static const String menungguKonfirmasi = 'menunggu_konfirmasi';
   static const String dikonfirmasi = 'dikonfirmasi';
@@ -35,6 +32,17 @@ class BookingStatusHelper {
     expired,
   ];
 
+  /// Daftar semua status untuk validasi
+  static const List<String> allStatuses = [
+    menungguBayar,
+    menungguKonfirmasi,
+    dikonfirmasi,
+    selesai,
+    dibatalkan,
+    ditolak,
+    expired,
+  ];
+
   /// Cek apakah transisi status valid
   static bool isValidTransition(String from, String to) {
     final validTransitions = <String, List<String>>{
@@ -44,13 +52,35 @@ class BookingStatusHelper {
     };
     return validTransitions[from]?.contains(to) ?? false;
   }
+
+  /// Label user-friendly untuk ditampilkan di UI
+  static String getLabel(String status) {
+    switch (status) {
+      case menungguBayar:
+        return 'Menunggu Pembayaran';
+      case menungguKonfirmasi:
+        return 'Menunggu Konfirmasi';
+      case dikonfirmasi:
+        return 'Dikonfirmasi';
+      case selesai:
+        return 'Selesai';
+      case dibatalkan:
+        return 'Dibatalkan';
+      case ditolak:
+        return 'Ditolak';
+      case expired:
+        return 'Expired';
+      default:
+        return status;
+    }
+  }
 }
 
 class BookingModel {
   final String id;
   final String bookingId; // LPK-YYYYMMDD-XXX
   final String fieldId;
-  final String mitraId; // ← BARU: ID pemilik lapangan untuk query langsung
+  final String mitraId; // ID pemilik lapangan untuk query langsung oleh Mitra
   final String fieldName;
   final String fieldAddress;
   final String fieldCategory;
@@ -65,9 +95,9 @@ class BookingModel {
   final int totalBayar;
   final String metodePembayaran;
   final String? buktiTransferUrl;
-  final String status; // menunggu_bayar, menunggu_konfirmasi, dikonfirmasi, selesai, dibatalkan, ditolak, expired
-  final String? alasanPenolakan; // ← BARU: alasan jika ditolak oleh Mitra
-  final List<Map<String, dynamic>> statusTimeline; // [{status: 'menunggu_bayar', waktu: Timestamp}]
+  final String status;
+  final String? alasanPenolakan; // alasan jika ditolak oleh Mitra
+  final List<Map<String, dynamic>> statusTimeline; // [{status: '...', waktu: Timestamp}]
   final DateTime batasWaktuBayar;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -77,7 +107,7 @@ class BookingModel {
     required this.id,
     required this.bookingId,
     required this.fieldId,
-    this.mitraId = '',
+    required this.mitraId,
     required this.fieldName,
     required this.fieldAddress,
     required this.fieldCategory,
@@ -101,21 +131,29 @@ class BookingModel {
     this.isReviewed = false,
   });
 
+  // ─── Computed Properties ──────────────────────────────────────────────────
+
   /// Apakah booking masih aktif (memblokir slot)
   bool get isActive => BookingStatusHelper.activeStatuses.contains(status);
 
   /// Apakah booking sudah di terminal state
   bool get isTerminal => BookingStatusHelper.terminalStatuses.contains(status);
 
+  /// Apakah pembayaran sudah melewati batas waktu
+  bool get isPaymentExpired =>
+      status == BookingStatusHelper.menungguBayar &&
+      DateTime.now().isAfter(batasWaktuBayar);
+
+  // ─── Factory: fromFirestore ───────────────────────────────────────────────
+
   factory BookingModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
-    // Parse timeSlots properly
+
+    // Parse timeSlots — fallback ke format lama (jamMulai/jamSelesai)
     List<String> slots = [];
     if (data['timeSlots'] != null) {
       slots = List<String>.from(data['timeSlots']);
     } else if (data['jamMulai'] != null && data['jamSelesai'] != null) {
-      // Fallback for old data
       slots = ['${data['jamMulai']} - ${data['jamSelesai']}'];
     }
 
@@ -138,19 +176,25 @@ class BookingModel {
       totalBayar: data['totalBayar'] ?? data['totalHarga'] ?? 0,
       metodePembayaran: data['metodePembayaran'] ?? '',
       buktiTransferUrl: data['buktiTransferUrl'],
-      status: data['status'] ?? 'menunggu_bayar',
+      status: data['status'] ?? BookingStatusHelper.menungguBayar,
       alasanPenolakan: data['alasanPenolakan'],
-      statusTimeline: data['statusTimeline'] != null 
+      statusTimeline: data['statusTimeline'] != null
           ? List<Map<String, dynamic>>.from(data['statusTimeline'])
           : [
-              {'status': data['status'] ?? 'menunggu_bayar', 'waktu': data['createdAt'] ?? Timestamp.now()}
+              {
+                'status': data['status'] ?? BookingStatusHelper.menungguBayar,
+                'waktu': data['createdAt'] ?? Timestamp.now(),
+              }
             ],
-      batasWaktuBayar: (data['batasWaktuBayar'] as Timestamp?)?.toDate() ?? DateTime.now().add(const Duration(hours: 4)),
+      batasWaktuBayar: (data['batasWaktuBayar'] as Timestamp?)?.toDate() ??
+          DateTime.now().add(const Duration(hours: 4)),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isReviewed: data['isReviewed'] ?? false,
     );
   }
+
+  // ─── Method: toFirestore ──────────────────────────────────────────────────
 
   Map<String, dynamic> toFirestore() {
     return {
@@ -180,6 +224,8 @@ class BookingModel {
       'isReviewed': isReviewed,
     };
   }
+
+  // ─── Method: copyWith ─────────────────────────────────────────────────────
 
   /// Membuat salinan BookingModel dengan field yang diubah
   BookingModel copyWith({
@@ -237,4 +283,7 @@ class BookingModel {
       isReviewed: isReviewed ?? this.isReviewed,
     );
   }
+
+  @override
+  String toString() => 'BookingModel(id: $id, bookingId: $bookingId, status: $status)';
 }

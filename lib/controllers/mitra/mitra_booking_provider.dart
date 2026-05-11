@@ -1,18 +1,20 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/services/firebase/booking_service.dart';
 
 final _bookingSvcProvider =
     Provider<BookingService>((ref) => BookingService());
 
-// ── Stream Provider: booking berdasarkan lapangan Mitra ──────────
+// ── Stream Provider: booking berdasarkan mitraId (langsung dari auth) ──
 final MitraBookingStreamProvider =
     StreamProvider.family<List<BookingModel>, String?>((ref, statusFilter) {
-  final fieldsAsync = ref.watch(mitraFieldProvider).fields;
-  final fieldIds = fieldsAsync.value?.map((f) => f.id).toList() ?? [];
+  final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+  if (uid.isEmpty) return Stream.value([]);
+
   final service = ref.watch(_bookingSvcProvider);
-  return service.streamMitraBookings(fieldIds, statusFilter: statusFilter);
+  // Query langsung via mitraId — tidak perlu tunggu field provider load
+  return service.streamMitraBookingsByMitraId(uid, statusFilter: statusFilter);
 });
 
 // ── Mutating actions ───────────────────────────────────────────────

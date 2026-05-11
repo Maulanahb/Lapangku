@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final reviewServiceProvider = Provider((ref) => ReviewService());
@@ -9,7 +10,10 @@ final userReviewsProvider = FutureProvider.family<List<Map<String, dynamic>>, St
 });
 
 class ReviewService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'lapangku-db',
+  );
 
   Future<void> submitReview({
     required String bookingId,
@@ -19,11 +23,11 @@ class ReviewService {
     required int rating,
     required String comment,
   }) async {
-    final reviewRef = _db.collection('fields').doc(fieldId).collection('reviews').doc();
+    final reviewRef = _db.collection('lapangan').doc(fieldId).collection('reviews').doc();
     final bookingRef = _db.collection('bookings').doc(bookingId);
 
     await _db.runTransaction((transaction) async {
-      final fieldRef = _db.collection('fields').doc(fieldId);
+      final fieldRef = _db.collection('lapangan').doc(fieldId);
       final fieldSnap = await transaction.get(fieldRef);
 
       if (!fieldSnap.exists) {
@@ -31,15 +35,15 @@ class ReviewService {
       }
 
       final data = fieldSnap.data()!;
-      final currentAvg = (data['ratingAvg'] ?? 0.0) as num;
-      final currentTotal = (data['totalUlasan'] ?? 0) as int;
+      final currentAvg = (data['avg_rating'] ?? data['ratingAvg'] ?? 0.0) as num;
+      final currentTotal = (data['total_ulasan'] ?? data['totalUlasan'] ?? 0) as int;
 
       final newTotal = currentTotal + 1;
       final newAvg = ((currentAvg * currentTotal) + rating) / newTotal;
 
       transaction.update(fieldRef, {
-        'ratingAvg': double.parse(newAvg.toStringAsFixed(1)),
-        'totalUlasan': newTotal,
+        'avg_rating': double.parse(newAvg.toStringAsFixed(1)),
+        'total_ulasan': newTotal,
       });
       
       // Also update the review doc and booking doc within the same transaction to be safe?
@@ -51,8 +55,10 @@ class ReviewService {
         'rating': rating,
         'comment': comment,
         'createdAt': FieldValue.serverTimestamp(),
-        'fieldName': data['nama'] ?? data['namaLapangan'] ?? '',
-        'fieldImageUrl': data['fotoUtama'] ?? data['fieldImageUrl'] ?? '',
+        'fieldName': data['nama_lapangan'] ?? data['nama'] ?? data['namaLapangan'] ?? '',
+        'fieldImageUrl': data['foto_lapangan'] != null && (data['foto_lapangan'] as List).isNotEmpty 
+            ? (data['foto_lapangan'] as List).first 
+            : data['fotoUtama'] ?? data['fieldImageUrl'] ?? '',
       });
       transaction.update(bookingRef, {
         'isReviewed': true,
