@@ -149,12 +149,20 @@ class AuthService {
     required String name,
     required String email,
     required String phone,
+    String? gender,
+    String? city,
+    String? address,
+    String? birthday,
   }) async {
     // 1. Update Firestore
     await _db.collection('users').doc(uid).update({
       'nama': name,
       'email': email,
       'phone': phone,
+      'gender': gender,
+      'city': city,
+      'address': address,
+      'birthday': birthday,
     }).timeout(const Duration(seconds: 10), onTimeout: () {
       throw Exception('Waktu koneksi habis. Periksa internet Anda.');
     });
@@ -170,6 +178,32 @@ class AuthService {
         // We log or throw if we strictly want to enforce email update
         throw Exception('Gagal mengubah email Auth: $e');
       }
+    }
+  }
+
+  Future<void> updateAvatar(String uid, String? url) async {
+    // 1. Update Firestore
+    await _db.collection('users').doc(uid).update({
+      'avatarUrl': url,
+    });
+
+    // 2. Update FirebaseAuth PhotoURL
+    final user = _auth.currentUser;
+    if (user != null) {
+      await user.updatePhotoURL(url);
+    }
+  }
+
+  Future<void> updateTwoFactor(String uid, bool enabled) async {
+    await _db.collection('users').doc(uid).update({
+      'twoFactorEnabled': enabled,
+    });
+  }
+
+  Future<void> sendEmailVerification() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      await user.sendEmailVerification();
     }
   }
 
@@ -190,6 +224,11 @@ class AuthService {
       });
       await user.updatePassword(newPassword).timeout(const Duration(seconds: 10), onTimeout: () {
         throw Exception('Waktu koneksi habis saat mengubah password.');
+      });
+
+      // Update lastPasswordChange in Firestore
+      await _db.collection('users').doc(user.uid).update({
+        'lastPasswordChange': FieldValue.serverTimestamp(),
       });
     } on FirebaseAuthException catch (e) {
       if (e.code == 'wrong-password') {
@@ -235,6 +274,15 @@ class AuthService {
       if (user == null) return null;
       try {
         final data = await getUserData(user.uid);
+        
+        // Sync emailVerified from Auth to Firestore if different
+        if (data['emailVerified'] != user.emailVerified) {
+          await _db.collection('users').doc(user.uid).update({
+            'emailVerified': user.emailVerified,
+          });
+          data['emailVerified'] = user.emailVerified;
+        }
+
         return UserModel.fromFirestore(data);
       } catch (e) {
         return null;

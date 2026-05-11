@@ -50,6 +50,9 @@ class AppColors {
   /// Background chip/badge netral
   static const Color backgroundChip = Color(0xFFF7F8FA);
 
+  /// Background field input (biru sangat muda)
+  static const Color backgroundField = Color(0xFFEFF4FF);
+
   // ─── STATUS — BOOKING ─────────────────────────────────────────────────────
   /// Warna status "Menunggu Bayar" — oranye
   static const Color statusPending = Color(0xFFD97706);

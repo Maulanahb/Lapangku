@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/auth/user_model.dart';
 import 'package:lapangku/services/firebase/auth_service.dart';
 
@@ -128,15 +128,70 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String name,
     required String email,
     required String phone,
+    String? gender,
+    String? city,
+    String? address,
+    String? birthday,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await _service.updateProfile(uid: uid, name: name, email: email, phone: phone);
+      await _service.updateProfile(
+        uid: uid,
+        name: name,
+        email: email,
+        phone: phone,
+        gender: gender,
+        city: city,
+        address: address,
+        birthday: birthday,
+      );
       state = state.copyWith(isLoading: false, clearError: true);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Gagal mengupdate profil: $e',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> updateAvatar(String uid, String? url) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _service.updateAvatar(uid, url);
+      state = state.copyWith(isLoading: false, clearError: true);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Gagal mengupdate foto profil: $e',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> updateTwoFactor(String uid, bool enabled) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _service.updateTwoFactor(uid, enabled);
+      state = state.copyWith(isLoading: false, clearError: true);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Gagal mengupdate verifikasi 2 langkah: $e',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> sendEmailVerification() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _service.sendEmailVerification();
+      state = state.copyWith(isLoading: false, clearError: true);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Gagal mengirim email verifikasi: $e',
       );
       rethrow;
     }

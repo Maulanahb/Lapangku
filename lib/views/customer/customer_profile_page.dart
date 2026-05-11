@@ -1,20 +1,18 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:io'; // NEW:
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart'; // NEW:
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/models/auth/user_model.dart';
+import 'package:lapangku/services/cloudinary_service.dart'; // NEW:
+import 'package:lapangku/standards/constants/app_colors.dart';
+import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
+import 'package:lapangku/standards/widgets/loading_overlay.dart';
+import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 import 'personal_info_page.dart';
-import 'payment_method_page.dart';
 import 'security_page.dart';
-import 'favorites_page.dart';
-import 'reviews_page.dart';
 import 'help_page.dart';
-import 'terms_page.dart';
 import 'about_page.dart';
-import 'customer_orders_page.dart';
-
-import 'package:lapangku/controllers/profile/profile_provider.dart';
-import 'package:lapangku/controllers/favorite/favorite_controller.dart';
-import 'widgets/profile_menu_tile.dart';
 
 class CustomerProfilePage extends ConsumerStatefulWidget {
   const CustomerProfilePage({super.key});
@@ -24,433 +22,363 @@ class CustomerProfilePage extends ConsumerStatefulWidget {
 }
 
 class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
-  // Definisi warna yang digunakan
-  final Color primaryGreen = const Color(0xFF1B5E20); // Hijau Tua
-  final Color lightGreen = const Color(
-    0xFF438A5E,
-  ); // Hijau lebih terang untuk tombol Edit Profil
-
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(authStateProvider);
-    final profileState = ref.watch(profileStateProvider);
 
     return Scaffold(
-      backgroundColor: Colors.grey[200], // Background abu-abu muda
+      backgroundColor: AppColors.backgroundPage,
       body: userAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (error, _) => _buildErrorView(context, error.toString()),
-        data: (user) => _buildProfileContent(context, user, profileState),
+        data: (user) {
+          if (user == null) {
+            return EmptyStateWidget(
+              icon: Icons.person_off_outlined,
+              title: 'Data profil tidak ditemukan',
+              subtitle: 'Silakan masuk kembali untuk melihat profil Anda.',
+              actionButton: ElevatedButton(
+                onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                child: const Text('Ke Halaman Login', style: TextStyle(color: Colors.white)),
+              ),
+            );
+          }
+          return _buildProfileContent(context, user);
+        },
       ),
     );
   }
 
-  /// Tampilan error dengan tombol coba lagi
   Widget _buildErrorView(BuildContext context, String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.wifi_off_rounded, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            const Text(
-              'Gagal Memuat Profil',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Koneksi ke server gagal. Pastikan internet kamu stabil lalu coba lagi.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryGreen,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () {
-                // Refresh/invalidate provider untuk retry
-                ref.invalidate(authStateProvider);
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Coba Lagi'),
-            ),
-          ],
+    return EmptyStateWidget(
+      icon: Icons.error_outline,
+      title: 'Gagal Memuat Profil',
+      subtitle: error,
+      actionButton: ElevatedButton.icon(
+        onPressed: () => ref.invalidate(authStateProvider),
+        icon: const Icon(Icons.refresh),
+        label: const Text('Coba Lagi'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
         ),
       ),
     );
   }
 
-  /// Konten profil utama (dipindah dari build agar rapi)
-  Widget _buildProfileContent(BuildContext context, UserModel? user, ProfileState profileState) {
+  Widget _buildProfileContent(BuildContext context, UserModel user) {
     return SingleChildScrollView(
-        child: Stack(
-          children: [
-            // 1. Header Bagian Atas (Lengkungan Hijau)
-            ClipPath(
-              clipper: _HeaderClipper(),
-              child: Container(
-                width: double.infinity,
-                height: 290,
-                color: primaryGreen,
-                padding: const EdgeInsets.only(top: 60),
-                child: Column(
-                  children: [
-                    // Avatar
-                    CircleAvatar(
-                      radius: 35,
-                      backgroundColor: Colors.white,
-                      backgroundImage: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
-                          ? NetworkImage(user.avatarUrl!)
-                          : null,
-                      child: user?.avatarUrl == null || user!.avatarUrl!.isEmpty
-                          ? Text(
-                              user?.nama.isNotEmpty == true ? user!.nama[0].toUpperCase() : 'U',
-                              style: const TextStyle(
-                                color: Color(0xFF1B5E20),
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(height: 12),
-                    // Nama
-                    Text(
-                      user?.nama ?? 'User',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
+      child: Column(
+        children: [
+          // HEADER SECTION
+          _buildHeader(user),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // SECTION AKUN
+                _buildSectionTitle('Akun'),
+                _buildSectionCard([
+                  _buildMenuItem(
+                    icon: Icons.person_outlined,
+                    title: 'Informasi Pribadi',
+                    subtitle: 'Ubah data diri & profil',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalInfoPage())),
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.lock_outlined,
+                    title: 'Keamanan',
+                    subtitle: 'Kata sandi & PIN',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SecurityPage())),
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.notifications_outlined,
+                    title: 'Notifikasi',
+                    subtitle: 'Atur pemberitahuan',
+                    showDivider: false,
+                    onTap: () {
+                      // Implementasi notifikasi
+                    },
+                  ),
+                ]),
+
+                const SizedBox(height: 24),
+
+                // SECTION BANTUAN
+                _buildSectionTitle('Bantuan'),
+                _buildSectionCard([
+                  _buildMenuItem(
+                    icon: Icons.help_outlined,
+                    title: 'Bantuan & FAQ',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpPage())),
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.headset_mic_outlined,
+                    title: 'Hubungi CS',
+                    onTap: () {
+                      // Implementasi hubungi CS
+                    },
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.info_outlined,
+                    title: 'Tentang LapangKu',
+                    showDivider: false,
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPage())),
+                  ),
+                ]),
+
+                const SizedBox(height: 40),
+
+                // LOGOUT BUTTON
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _handleLogout(context),
+                    icon: const Icon(Icons.logout, color: AppColors.error),
+                    label: const Text(
+                      'Keluar dari Akun',
+                      style: TextStyle(
+                        color: AppColors.error,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    // Email
-                    Text(
-                      user?.email ?? 'email@domain.com',
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: const BorderSide(color: AppColors.error),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      backgroundColor: Colors.white,
                     ),
-                    const SizedBox(height: 12),
-                    // Tombol Edit Profil
-                    InkWell(
-                      onTap: () {
-                        // TODO: Navigate to Edit Profile Page
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: lightGreen,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.edit, color: Colors.white, size: 16),
-                            SizedBox(width: 6),
-                            Text(
-                              'Edit Profil',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+
+                const SizedBox(height: 16),
+
+                // VERSION TEXT
+                const Center(
+                  child: Text(
+                    'Versi Aplikasi 1.0.4',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
             ),
-
-            // 2. Konten Utama (Card Putih Murni di atas background abu-abu)
-            Container(
-              margin: const EdgeInsets.only(
-                top: 250,
-              ), // Overlap dengan header hijau sebesar 40px
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Baris Statistik (Pesanan, Rating, Favorit)
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withValues(alpha: 0.1),
-                            spreadRadius: 2,
-                            blurRadius: 10,
-                            offset: const Offset(
-                              0,
-                              4,
-                            ), // Bayangan ke bawah sedikit
-                          ),
-                        ],
-                      ),
-                      child: profileState.isLoading
-                          ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: CircularProgressIndicator(),
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildStatItem(profileState.totalOrders.toString(), 'Pesanan'),
-                                Container(
-                                  height: 40,
-                                  width: 1,
-                                  color: Colors.grey[200],
-                                ),
-                                _buildStatItemWithStar(profileState.rating.toString(), 'Rating'),
-                                Container(
-                                  height: 40,
-                                  width: 1,
-                                  color: Colors.grey[200],
-                                ),
-                                _buildStatItem(
-                                  ref.watch(favoritesCountProvider).when(
-                                    data: (count) => count.toString(),
-                                    loading: () => '...',
-                                    error: (_, __) => '0',
-                                  ),
-                                  'Favorit',
-                                ),
-                              ],
-                            ),
-                    ),
-                    const SizedBox(height: 30),
-
-                    // Grup Akun
-                    _buildSectionTitle('Akun'),
-                    ProfileMenuTile(
-                      icon: Icons.person_outline,
-                      title: 'Informasi Pribadi',
-                      showDivider: true,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalInfoPage())),
-                    ),
-                    ProfileMenuTile(
-                      icon: Icons.payments_outlined,
-                      title: 'Metode Pembayaran',
-                      subtitle: 'BCA, GoPay',
-                      showDivider: true,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentMethodPage())),
-                    ),
-                    _buildNotificationTile(context, profileState),
-                    ProfileMenuTile(
-                      icon: Icons.shield_outlined,
-                      title: 'Keamanan',
-                      showDivider: false,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SecurityPage())),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Grup Aktivitas
-                    _buildSectionTitle('Aktivitas'),
-                    ProfileMenuTile(
-                      icon: Icons.history,
-                      title: 'Riwayat Pesanan',
-                      showDivider: true,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerOrdersPage())),
-                    ),
-                    ProfileMenuTile(
-                      icon: Icons.favorite_border,
-                      title: 'Lapangan Favorit',
-                      showDivider: true,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FavoritesPage())),
-                    ),
-                    ProfileMenuTile(
-                      icon: Icons.rate_review_outlined,
-                      title: 'Ulasan Saya',
-                      showDivider: false,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewsPage())),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Grup Lainnya
-                    _buildSectionTitle('Lainnya'),
-                    ProfileMenuTile(
-                      icon: Icons.help_outline,
-                      title: 'Bantuan & FAQ',
-                      showDivider: true,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpPage())),
-                    ),
-                    ProfileMenuTile(
-                      icon: Icons.gavel_outlined,
-                      title: 'Syarat & Ketentuan',
-                      showDivider: true,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TermsPage())),
-                    ),
-                    ProfileMenuTile(
-                      icon: Icons.info_outline,
-                      title: 'Tentang LapangKu',
-                      subtitle: 'v1.0.0',
-                      showDivider: false,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPage())),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // Tombol Keluar / Logout
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.red, width: 1.5),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Konfirmasi Logout'),
-                              content: const Text('Apakah Anda yakin ingin keluar dari akun ini?'),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('Batal', style: TextStyle(color: Colors.grey)),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    ref.read(authProvider.notifier).logout();
-                                    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-                                  },
-                                  child: const Text('Keluar', style: TextStyle(color: Colors.white)),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.logout, color: Colors.red),
-                        label: const Text(
-                          'Keluar',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20), // Padding ekstra di bawah
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 
-  // --- Fungsi Bantuan Pembuatan Komponen ---
-
-  Widget _buildStatItem(String value, String label) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            color: primaryGreen,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
+  Widget _buildHeader(UserModel user) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 60, 20, 40),
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(40),
+          bottomRight: Radius.circular(40),
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+      ),
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.bottomRight,
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white,
+                backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                    ? NetworkImage(user.avatarUrl!)
+                    : null,
+                child: user.avatarUrl == null || user.avatarUrl!.isEmpty
+                    ? Text(
+                        user.nama.trim().split(' ').map((l) => l[0]).take(2).join().toUpperCase(),
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
+              ),
+              // NEW: GestureDetector untuk mengubah foto profil
+              GestureDetector(
+                onTap: () => _showImageSourceActionSheet(context, user),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.camera_alt_outlined, size: 16, color: AppColors.primary),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          Text(
+            user.nama,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primarySelected.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.5)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle_outline, color: Colors.white, size: 14),
+                SizedBox(width: 6),
+                Text(
+                  'Terverifikasi',
+                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildStatItemWithStar(String value, String label) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
+  // NEW: Fungsi untuk menampilkan pilihan sumber gambar (kamera/galeri)
+  void _showImageSourceActionSheet(BuildContext context, UserModel user) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Wrap(
           children: [
-            Text(
-              value,
-              style: TextStyle(
-                color: primaryGreen,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+              title: const Text('Ambil dari Kamera'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUploadImage(ImageSource.camera, user);
+              },
             ),
-            const SizedBox(width: 4),
-            const Icon(Icons.star, color: Colors.orange, size: 18),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+              title: const Text('Pilih dari Galeri'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUploadImage(ImageSource.gallery, user);
+              },
+            ),
+            if (user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: AppColors.error),
+                title: const Text('Hapus Foto', style: TextStyle(color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _handleDeletePhoto(user);
+                },
+              ),
           ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+      ),
     );
+  }
+
+  // NEW: Fungsi untuk mengambil dan mengupload gambar
+  Future<void> _pickAndUploadImage(ImageSource source, UserModel user) async {
+    final ImagePicker picker = ImagePicker();
+    try {
+      final XFile? image = await picker.pickImage(
+        source: source,
+        imageQuality: 70, // Kompresi untuk menghemat kuota Cloudinary
+      );
+
+      if (image != null) {
+        if (!mounted) return;
+        LoadingOverlay.show(context, message: 'Mengunggah foto...');
+
+        // 1. Upload ke Cloudinary
+        final String? imageUrl = await CloudinaryService.uploadImage(File(image.path));
+
+        if (imageUrl != null) {
+          // 2. Update di Firebase via AuthNotifier
+          await ref.read(authProvider.notifier).updateAvatar(user.uid, imageUrl);
+
+          if (!mounted) return;
+          LoadingOverlay.dismiss(context);
+          
+          // Force update UI
+          setState(() {});
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Foto profil berhasil diperbarui')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        LoadingOverlay.dismiss(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memperbarui foto: $e')),
+        );
+      }
+    }
+  }
+
+  // NEW: Fungsi untuk menghapus foto profil
+  Future<void> _handleDeletePhoto(UserModel user) async {
+    final confirm = await ConfirmationDialog.show(
+      context: context,
+      title: 'Hapus Foto',
+      message: 'Apakah Anda yakin ingin menghapus foto profil?',
+      confirmText: 'Hapus',
+      isDestructive: true,
+    );
+
+    if (confirm == true) {
+      if (!mounted) return;
+      LoadingOverlay.show(context, message: 'Menghapus foto...');
+
+      try {
+        await ref.read(authProvider.notifier).updateAvatar(user.uid, null);
+        
+        if (!mounted) return;
+        LoadingOverlay.dismiss(context);
+        
+        setState(() {});
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Foto profil telah dihapus')),
+        );
+      } catch (e) {
+        if (mounted) {
+          LoadingOverlay.dismiss(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal menghapus foto: $e')),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+      padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Text(
         title,
-        style: TextStyle(
-          color: primaryGreen,
+        style: const TextStyle(
+          color: AppColors.textHeading,
           fontSize: 16,
           fontWeight: FontWeight.bold,
         ),
@@ -458,67 +386,93 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
     );
   }
 
+  Widget _buildSectionCard(List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadow.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(children: children),
+    );
+  }
 
-  Widget _buildNotificationTile(BuildContext context, ProfileState state) {
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    bool showDivider = true,
+    required VoidCallback onTap,
+  }) {
     return Column(
       children: [
         ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(
-            Icons.notifications_none,
-            color: Colors.blueGrey,
-            size: 24,
+          onTap: onTap,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 22),
           ),
-          title: const Text(
-            'Notifikasi',
-            style: TextStyle(
-              color: Colors.black87,
+          title: Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.textHeading,
               fontWeight: FontWeight.w600,
-              fontSize: 14,
+              fontSize: 15,
             ),
           ),
-          trailing: Switch(
-            value: state.isNotificationOn,
-            activeThumbColor: Colors.white,
-            activeTrackColor: primaryGreen,
-            onChanged: (value) {
-              ref.read(profileStateProvider.notifier).toggleNotification();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    value ? 'Notifikasi diaktifkan' : 'Notifikasi dinonaktifkan',
-                  ),
-                  duration: const Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-          ),
+          subtitle: subtitle != null
+              ? Text(
+                  subtitle,
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                )
+              : null,
+          trailing: const Icon(Icons.chevron_right, color: AppColors.hint),
         ),
-        const Divider(height: 1, color: Color(0xFFEEEEEE), thickness: 1),
+        if (showDivider)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Divider(height: 1, color: Colors.grey.shade100),
+          ),
       ],
     );
   }
 
-}
-// --- Custom Clipper untuk Lengkungan Header ---
-class _HeaderClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    Path path = Path();
-    path.lineTo(0, size.height - 40);
-    // Membuat lengkungan kurva dari ujung kiri ke kanan ujung bawah
-    path.quadraticBezierTo(
-      size.width / 2,
-      size.height, // Control point
-      size.width,
-      size.height - 40, // End point
+  Future<void> _handleLogout(BuildContext context) async {
+    final confirm = await ConfirmationDialog.show(
+      context: context,
+      title: 'Konfirmasi Logout',
+      message: 'Apakah Anda yakin ingin keluar dari akun?',
+      confirmText: 'Keluar',
+      isDestructive: true,
     );
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
 
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+    if (confirm == true) {
+      if (!mounted) return;
+      LoadingOverlay.show(context, message: 'Mengeluarkan akun...');
+      
+      try {
+        await ref.read(authProvider.notifier).logout();
+        if (!mounted) return;
+        LoadingOverlay.dismiss(context);
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      } catch (e) {
+        if (!mounted) return;
+        LoadingOverlay.dismiss(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal logout: $e')),
+        );
+      }
+    }
+  }
 }

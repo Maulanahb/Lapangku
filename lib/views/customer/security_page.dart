@@ -1,7 +1,13 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
-import 'package:lapangku/utils/snackbar_helper.dart';
+import 'package:lapangku/models/auth/user_model.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
+import 'package:lapangku/standards/widgets/loading_overlay.dart';
+import 'package:lapangku/standards/widgets/empty_state_widget.dart';
+import 'package:lapangku/views/customer/change_password_page.dart';
 
 class SecurityPage extends ConsumerStatefulWidget {
   const SecurityPage({super.key});
@@ -11,209 +17,473 @@ class SecurityPage extends ConsumerStatefulWidget {
 }
 
 class _SecurityPageState extends ConsumerState<SecurityPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _oldPasswordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  
-  bool _isLoading = false;
-  bool _obscureOld = true;
-  bool _obscureNew = true;
-  bool _obscureConfirm = true;
+  String _deviceName = 'Memuat...';
 
   @override
-  void dispose() {
-    _oldPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _getDeviceInfo();
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
+  Future<void> _getDeviceInfo() async {
     try {
-      await ref.read(authProvider.notifier).changePassword(
-            oldPassword: _oldPasswordController.text,
-            newPassword: _newPasswordController.text,
-          );
+      final deviceInfo = DeviceInfoPlugin();
+      String name = 'Tidak diketahui';
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        name = androidInfo.model;
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        name = iosInfo.utsname.machine; // machine name like iPhone13,4
+      } else if (Platform.isWindows) {
+        final windowsInfo = await deviceInfo.windowsInfo;
+        name = windowsInfo.computerName;
+      }
+      if (mounted) setState(() => _deviceName = name);
+    } catch (e) {
+      if (mounted) setState(() => _deviceName = 'Gagal memuat info');
+    }
+  }
 
+  String _getTimeAgo(DateTime? dateTime) {
+    if (dateTime == null) return 'Belum pernah diubah';
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inDays >= 365) {
+      final years = (difference.inDays / 365).floor();
+      return '$years tahun lalu';
+    } else if (difference.inDays >= 30) {
+      final months = (difference.inDays / 30).floor();
+      return '$months bulan lalu';
+    } else if (difference.inDays >= 1) {
+      return '${difference.inDays} hari lalu';
+    } else {
+      return 'Hari ini';
+    }
+  }
+
+  Future<void> _handleToggleTwoFactor(UserModel user, bool value) async {
+    LoadingOverlay.show(context, message: 'Mengupdate keamanan...');
+    try {
+      await ref.read(authProvider.notifier).updateTwoFactor(user.uid, value);
       if (mounted) {
-        SnackbarHelper.showSuccess(context, 'Password berhasil diubah');
-        Navigator.pop(context);
+        LoadingOverlay.dismiss(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Verifikasi 2 langkah ${value ? 'diaktifkan' : 'dimatikan'}')),
+        );
       }
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, e.toString().replaceAll('Exception: ', ''));
+        LoadingOverlay.dismiss(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengupdate: $e')),
+        );
       }
-    } finally {
+    }
+  }
+
+  Future<void> _handleSendEmailVerification() async {
+    LoadingOverlay.show(context, message: 'Mengirim email...');
+    try {
+      await ref.read(authProvider.notifier).sendEmailVerification();
       if (mounted) {
-        setState(() => _isLoading = false);
+        LoadingOverlay.dismiss(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email verifikasi telah dikirim. Silakan cek inbox Anda.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        LoadingOverlay.dismiss(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengirim email: $e')),
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final userAsync = ref.watch(authStateProvider);
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.backgroundPage,
       appBar: AppBar(
         title: const Text(
           'Keamanan',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFF1B6B3A),
+        backgroundColor: AppColors.primary,
         iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Ubah Password',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+      body: userAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        error: (err, _) => EmptyStateWidget(
+          icon: Icons.error_outline,
+          title: 'Gagal Memuat Data',
+          subtitle: err.toString(),
+          actionButton: ElevatedButton(
+            onPressed: () => ref.invalidate(authStateProvider),
+            child: const Text('Coba Lagi'),
+          ),
+        ),
+        data: (user) {
+          if (user == null) {
+            return const EmptyStateWidget(
+              icon: Icons.person_off_outlined,
+              title: 'Data tidak ditemukan',
+              subtitle: 'Silakan login kembali.',
+            );
+          }
+          return _buildContent(context, user);
+        },
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, UserModel user) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // HERO SECTION
+          Center(
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.verified_user_outlined, color: AppColors.primary, size: 48),
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Pastikan password baru Anda terdiri dari minimal 8 karakter demi keamanan akun Anda.',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
-              ),
-              const SizedBox(height: 24),
-              _buildPasswordField(
-                controller: _oldPasswordController,
-                label: 'Password Lama',
-                obscureText: _obscureOld,
-                textInputAction: TextInputAction.next,
-                autofocus: true,
-                onToggleVisibility: () => setState(() => _obscureOld = !_obscureOld),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password lama wajib diisi';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildPasswordField(
-                controller: _newPasswordController,
-                label: 'Password Baru',
-                obscureText: _obscureNew,
-                textInputAction: TextInputAction.next,
-                onToggleVisibility: () => setState(() => _obscureNew = !_obscureNew),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password baru wajib diisi';
-                  }
-                  if (value.length < 8) {
-                    return 'Password minimal 8 karakter';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildPasswordField(
-                controller: _confirmPasswordController,
-                label: 'Konfirmasi Password Baru',
-                obscureText: _obscureConfirm,
-                textInputAction: TextInputAction.done,
-                onToggleVisibility: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Konfirmasi password wajib diisi';
-                  }
-                  if (value != _newPasswordController.text) {
-                    return 'Password tidak cocok';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1B6B3A),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 16),
+                const Text(
+                  'Akun Kamu Aman',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textHeading,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Kelola keamanan akun dan lindungi data pribadimu',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // SECTION 1 — PASSWORD
+          _buildSectionTitle('Password'),
+          _buildCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Password',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Ubah password akun secara berkala untuk menjaga keamanan akun kamu.',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Terakhir diubah ${_getTimeAgo(user.lastPasswordChange)}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ChangePasswordPage()),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.primary),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text(
+                      'Ubah Password',
+                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  onPressed: _isLoading ? null : _submit,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Simpan Password',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+
+          const SizedBox(height: 24),
+
+          // SECTION 2 — VERIFIKASI AKUN
+          _buildSectionTitle('Verifikasi Akun'),
+          _buildCard(
+            child: Column(
+              children: [
+                _buildVerificationRow(
+                  icon: Icons.email_outlined,
+                  label: 'Email',
+                  value: user.email,
+                  isVerified: user.emailVerified,
+                  onAction: user.emailVerified ? null : _handleSendEmailVerification,
+                  actionText: 'Kirim Ulang',
+                ),
+                const Divider(height: 24),
+                _buildVerificationRow(
+                  icon: Icons.phone_android_outlined,
+                  label: 'Nomor HP',
+                  value: user.phone ?? '-',
+                  isVerified: user.phoneVerified,
+                  onAction: user.phoneVerified ? null : () {
+                    // TODO: Implement phone verification flow (OTP)
+                  },
+                  actionText: 'Verifikasi',
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // SECTION 3 — VERIFIKASI 2 LANGKAH
+          _buildSectionTitle('Verifikasi 2 Langkah'),
+          _buildCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.shield_outlined, color: AppColors.primary),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Verifikasi 2 Langkah',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                    ),
+                    Switch(
+                      value: user.twoFactorEnabled,
+                      activeColor: AppColors.primary,
+                      onChanged: (value) => _handleToggleTwoFactor(user, value),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Aktifkan verifikasi 2 langkah untuk keamanan ekstra',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // SECTION 4 — PERANGKAT LOGIN
+          _buildSectionTitle('Perangkat Login'),
+          _buildCard(
+            child: Column(
+              children: [
+                _buildDeviceRow(
+                  icon: Platform.isAndroid ? Icons.phone_android : (Platform.isIOS ? Icons.phone_iphone : Icons.laptop),
+                  name: _deviceName,
+                  location: user.city ?? 'Lokasi tidak diketahui',
+                  isCurrent: true,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: AppColors.textHeading,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
   }
 
-  Widget _buildPasswordField({
-    required TextEditingController controller,
-    required String label,
-    required bool obscureText,
-    required VoidCallback onToggleVisibility,
-    TextInputAction? textInputAction,
-    bool autofocus = false,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      textInputAction: textInputAction,
-      autofocus: autofocus,
-      validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: const Icon(Icons.lock_outline, color: Colors.blueGrey),
-        suffixIcon: IconButton(
-          icon: Icon(
-            obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-            color: Colors.grey,
+  Widget _buildCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadow.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          onPressed: onToggleVisibility,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF1B6B3A)),
-        ),
-        filled: true,
-        fillColor: Colors.white,
+        ],
       ),
+      child: child,
+    );
+  }
+
+  Widget _buildVerificationRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool isVerified,
+    VoidCallback? onAction,
+    String? actionText,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.textSecondary, size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
+              Text(
+                value,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+        if (isVerified)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 12),
+                SizedBox(width: 4),
+                Text(
+                  'Terverifikasi',
+                  style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          )
+        else
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Belum Verifikasi',
+                  style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ),
+              if (onAction != null)
+                TextButton(
+                  onPressed: onAction,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 24),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    actionText ?? 'Verifikasi',
+                    style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDeviceRow({
+    required IconData icon,
+    required String name,
+    required String location,
+    bool isCurrent = false,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.textSecondary, size: 24),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      name,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ),
+                  if (isCurrent) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Aktif sekarang',
+                        style: TextStyle(color: AppColors.primary, fontSize: 9, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              Text(
+                location,
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        if (isCurrent)
+          const Text(
+            'Perangkat Ini',
+            style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+      ],
     );
   }
 }
