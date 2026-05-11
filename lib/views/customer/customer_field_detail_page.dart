@@ -151,7 +151,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   );
 
   // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
-  Widget _ph() => Container(color: AppColors.primaryLight, child: const Center(child: Icon(Icons.sports_soccer, size: 60, color: AppColors.primary)));
+  Widget _ph() => Container(color: AppColors.primaryLight, child: const Center(child: Icon(Icons.stadium_outlined, size: 60, color: AppColors.primary)));
 
   Widget _body() {
     return Container(
@@ -272,7 +272,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     if (f.contains('ruang ganti') || f.contains('ganti')) return Icons.checkroom;
     if (f.contains('tribun') || f.contains('penonton') || f.contains('kursi')) return Icons.stadium;
     if (f.contains('ac') || f.contains('pendingin')) return Icons.ac_unit;
-    if (f.contains('bola') || f.contains('sewa bola')) return Icons.sports_soccer;
+    if (f.contains('bola') || f.contains('sewa bola')) return Icons.stadium_outlined;
     if (f.contains('p3k') || f.contains('medis') || f.contains('kesehatan')) return Icons.medical_services;
     return Icons.check_circle_outline;
   }

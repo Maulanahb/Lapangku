@@ -200,6 +200,13 @@ class AuthService {
     });
   }
 
+  Future<void> updateNotificationSettings(
+      String uid, Map<String, bool> settings) async {
+    await _db.collection('users').doc(uid).update({
+      'notificationSettings': settings,
+    });
+  }
+
   Future<void> sendEmailVerification() async {
     final user = _auth.currentUser;
     if (user != null) {

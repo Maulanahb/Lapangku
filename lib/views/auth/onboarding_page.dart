@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 
 class OnboardingPage extends StatefulWidget {
@@ -181,7 +181,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       child: Text(
                         _currentPage < _slides.length - 1
                             ? 'Selanjutnya'
-                            : 'Mulai Sekarang â†’',
+                            : 'Mulai Sekarang →',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -334,7 +334,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           const Positioned(
             right: 30,
             top: 80,
-            child: Icon(Icons.sports_soccer, size: 60, color: Colors.white70),
+            child: Icon(Icons.stadium_outlined, size: 60, color: Colors.white70),
           ),
         ],
       ),

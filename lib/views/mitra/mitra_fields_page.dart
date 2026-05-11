@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
@@ -98,7 +98,7 @@ class _MitraFieldsPageState extends ConsumerState<MitraFieldsPage> {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(color: const Color(0xFF1B6B3A).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-                      child: const Icon(Icons.sports_soccer, color: Color(0xFF1B6B3A), size: 30),
+                      child: const Icon(Icons.stadium_outlined, color: Color(0xFF1B6B3A), size: 30),
                     ),
                     const SizedBox(width: 16),
                     Expanded(

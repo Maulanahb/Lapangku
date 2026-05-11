@@ -23,6 +23,7 @@ class UserModel {
   final bool twoFactorEnabled;
   final bool emailVerified;
   final bool phoneVerified;
+  final Map<String, bool> notificationSettings;
 
   const UserModel({
     required this.uid,
@@ -45,6 +46,13 @@ class UserModel {
     this.twoFactorEnabled = false,
     this.emailVerified = false,
     this.phoneVerified = false,
+    this.notificationSettings = const {
+      'notificationOrder': true,
+      'notificationReminder': true,
+      'notificationPayment': true,
+      'notificationPromo': true,
+      'notificationSystem': true,
+    },
   });
 
   factory UserModel.fromFirestore(Map<String, dynamic> data) {
@@ -78,6 +86,15 @@ class UserModel {
       twoFactorEnabled: data['twoFactorEnabled'] == true,
       emailVerified: data['emailVerified'] == true,
       phoneVerified: data['phoneVerified'] == true,
+      notificationSettings: data['notificationSettings'] != null
+          ? Map<String, bool>.from(data['notificationSettings'])
+          : {
+              'notificationOrder': true,
+              'notificationReminder': true,
+              'notificationPayment': true,
+              'notificationPromo': true,
+              'notificationSystem': true,
+            },
     );
   }
 
@@ -103,6 +120,7 @@ class UserModel {
       'twoFactorEnabled': twoFactorEnabled,
       'emailVerified': emailVerified,
       'phoneVerified': phoneVerified,
+      'notificationSettings': notificationSettings,
     };
   }
 }

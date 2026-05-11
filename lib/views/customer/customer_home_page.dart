@@ -257,7 +257,7 @@ class _FieldCard extends StatelessWidget {
                   field.fotoUtama.isNotEmpty
                       ? Image.network(field.fotoUtama, height: 180, width: double.infinity, fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(height: 180, color: AppColors.primaryLight,
-                            child: const Center(child: Icon(Icons.sports_soccer, size: 56, color: AppColors.primary))))
+                            child: const Center(child: Icon(Icons.stadium_outlined, size: 56, color: AppColors.primary))))
                       : Container(height: 180, color: AppColors.primaryLight,
                           child: const Center(child: Icon(Icons.image_not_supported, size: 56, color: AppColors.primary))),
                   Positioned(

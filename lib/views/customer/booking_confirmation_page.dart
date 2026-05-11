@@ -121,7 +121,7 @@ class _State extends ConsumerState<BookingConfirmationPage> {
         const SizedBox(height: 16),
         Row(children: [
           Expanded(child: _buildDetailItem(Icons.timer_outlined, 'Durasi', '$_durasi Jam')),
-          Expanded(child: _buildDetailItem(Icons.sports_soccer_outlined, 'Olahraga', widget.field.kategori)),
+          Expanded(child: _buildDetailItem(Icons.stadium_outlined, 'Olahraga', widget.field.kategori)),
         ]),
       ]),
     );

@@ -127,7 +127,7 @@ class BookingDetailPage extends ConsumerWidget {
   Widget _placeholderImage() => Container(
       height: 140,
       color: AppColors.primaryLight,
-      child: const Center(child: Icon(Icons.sports_soccer, size: 48, color: AppColors.primary)));
+      child: const Center(child: Icon(Icons.stadium_outlined, size: 48, color: AppColors.primary)));
 
   Widget _buildStatusTimeline(BookingModel booking) {
     return Container(

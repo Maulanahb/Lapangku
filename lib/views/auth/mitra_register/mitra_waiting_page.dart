@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 
@@ -73,7 +73,7 @@ class MitraWaitingPage extends ConsumerWidget {
                         size: 18, color: primary),
                     SizedBox(width: 8),
                     Text(
-                      'Estimasi 1â€“2 hari kerja',
+                      'Estimasi 1–2 hari kerja',
                       style: TextStyle(
                         color: primary,
                         fontWeight: FontWeight.w800,

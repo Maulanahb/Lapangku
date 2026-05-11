@@ -13,6 +13,8 @@ import 'personal_info_page.dart';
 import 'security_page.dart';
 import 'help_page.dart';
 import 'about_page.dart';
+import 'contact_cs_page.dart'; // FIX:
+import 'notification_settings_page.dart'; // FIX:
 
 class CustomerProfilePage extends ConsumerStatefulWidget {
   const CustomerProfilePage({super.key});
@@ -99,9 +101,11 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
                     title: 'Notifikasi',
                     subtitle: 'Atur pemberitahuan',
                     showDivider: false,
-                    onTap: () {
-                      // Implementasi notifikasi
-                    },
+                    onTap: () => Navigator.push( // FIX:
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const NotificationSettingsPage()),
+                    ),
                   ),
                 ]),
 
@@ -118,9 +122,10 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
                   _buildMenuItem(
                     icon: Icons.headset_mic_outlined,
                     title: 'Hubungi CS',
-                    onTap: () {
-                      // Implementasi hubungi CS
-                    },
+                    onTap: () => Navigator.push( // FIX:
+                      context,
+                      MaterialPageRoute(builder: (_) => const ContactCsPage()),
+                    ),
                   ),
                   _buildMenuItem(
                     icon: Icons.info_outlined,
@@ -233,9 +238,9 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primarySelected.withOpacity(0.3),
+              color: AppColors.primarySelected.withAlpha(77),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.5)),
+              border: Border.all(color: Colors.white.withAlpha(128)),
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
@@ -393,7 +398,7 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow.withOpacity(0.05),
+            color: AppColors.shadow.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

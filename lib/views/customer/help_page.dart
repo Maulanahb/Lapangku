@@ -1,193 +1,418 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:lapangku/utils/snackbar_helper.dart';
 
-class HelpPage extends StatelessWidget {
+class HelpPage extends StatefulWidget {
   const HelpPage({super.key});
 
-  Future<void> _launchWhatsApp(BuildContext context) async {
-    final Uri url = Uri.parse('https://wa.me/6281234567890?text=Halo%20Admin%20LapangKu,%20saya%20butuh%20bantuan');
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      if (context.mounted) {
-        SnackbarHelper.showError(context, 'Tidak dapat membuka WhatsApp');
-      }
-    }
+  @override
+  State<HelpPage> createState() => _HelpPageState();
+}
+
+class _HelpPageState extends State<HelpPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedCategory = 'Booking';
+  String _searchQuery = '';
+
+  final List<String> _categories = [
+    'Booking',
+    'Pembayaran',
+    'E-Tiket',
+    'Refund',
+  ];
+
+  final List<Map<String, String>> _faqs = [
+    {
+      'category': 'Booking',
+      'question': 'Bagaimana cara booking lapangan?',
+      'answer':
+          'Pilih lapangan yang Anda inginkan, tentukan tanggal dan jam, lalu tekan tombol "Booking Sekarang". Ikuti langkah pembayaran hingga selesai.',
+    },
+    {
+      'category': 'Pembayaran',
+      'question': 'Bagaimana jika pembayaran gagal?',
+      'answer':
+          'Pastikan saldo Anda mencukupi dan koneksi internet stabil. Jika dana sudah terpotong namun status belum berubah, hubungi Customer Service kami.',
+    },
+    {
+      'category': 'E-Tiket',
+      'question': 'Di mana saya melihat e-tiket?',
+      'answer':
+          'Buka menu "Pesanan Saya" di navigasi bawah. Pilih pesanan yang sudah lunas, dan e-tiket akan muncul di detail pesanan tersebut.',
+    },
+    {
+      'category': 'Refund',
+      'question': 'Apakah bisa membatalkan booking?',
+      'answer':
+          'Pembatalan bisa dilakukan melalui menu detail pesanan. Kebijakan pengembalian dana tergantung pada peraturan masing-masing penyedia lapangan.',
+    },
+    {
+      'category': 'Booking',
+      'question': 'Apakah bisa booking untuk minggu depan?',
+      'answer':
+          'Tentu! Anda bisa memilih tanggal hingga 30 hari ke depan sesuai ketersediaan jadwal lapangan.',
+    },
+    {
+      'category': 'Pembayaran',
+      'question': 'Metode pembayaran apa saja yang tersedia?',
+      'answer':
+          'Kami mendukung pembayaran via Transfer Bank (Virtual Account), E-Wallet (OVO, GoPay, Dana), dan QRIS.',
+    },
+  ];
+
+  List<Map<String, String>> get _filteredFaqs {
+    return _faqs.where((faq) {
+      final matchesCategory = faq['category'] == _selectedCategory;
+      final matchesSearch = faq['question']!
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()) ||
+          faq['answer']!.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    }).toList();
   }
 
-  Future<void> _launchEmail(BuildContext context) async {
-    final Uri url = Uri.parse('mailto:support@lapangku.com?subject=Bantuan%20LapangKu');
+  Future<void> _launchURL(String urlString) async {
+    final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      if (context.mounted) {
-        SnackbarHelper.showError(context, 'Tidak dapat membuka Email');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tidak dapat membuka aplikasi')),
+        );
       }
     }
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.backgroundPage,
       appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        elevation: 0,
         title: const Text(
           'Bantuan & FAQ',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        backgroundColor: const Color(0xFF1B6B3A),
-        iconTheme: const IconThemeData(color: Colors.white),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Hubungi Kami',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+            // SEARCH BAR SECTION
+            _buildSearchBar(),
+
+            const SizedBox(height: 24),
+
+            // QUICK HELP SECTION
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'BANTUAN CEPAT',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 1.2,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            _buildContactCard(
-              icon: Icons.chat_bubble_outline,
-              title: 'WhatsApp Admin',
-              subtitle: 'Respon cepat (08:00 - 20:00)',
-              color: Colors.green,
-              onTap: () => _launchWhatsApp(context),
             ),
             const SizedBox(height: 12),
-            _buildContactCard(
-              icon: Icons.email_outlined,
-              title: 'Email Support',
-              subtitle: 'support@lapangku.com',
-              color: Colors.blue,
-              onTap: () => _launchEmail(context),
-            ),
+            _buildCategoryChips(),
+
+            const SizedBox(height: 24),
+
+            // FAQ LIST SECTION
+            _buildFaqSection(),
+
             const SizedBox(height: 32),
-            const Text(
-              'FAQ (Pertanyaan Umum)',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildFaqItem(
-              'Bagaimana cara memesan lapangan?',
-              'Anda dapat mencari lapangan melalui halaman Beranda atau Pencarian, pilih jadwal yang tersedia, dan ikuti instruksi pembayaran untuk menyelesaikan pesanan.',
-            ),
-            _buildFaqItem(
-              'Metode pembayaran apa saja yang didukung?',
-              'Saat ini kami mendukung pembayaran melalui transfer bank (BCA, Mandiri, BNI) dan E-Wallet (GoPay, OVO, Dana).',
-            ),
-            _buildFaqItem(
-              'Apakah saya bisa membatalkan pesanan?',
-              'Pesanan dapat dibatalkan maksimal 24 jam sebelum jadwal main. Dana akan dikembalikan ke saldo LapangKu Anda.',
-            ),
-            _buildFaqItem(
-              'Bagaimana jika lapangan tutup saat jadwal saya?',
-              'Silakan hubungi admin melalui WhatsApp beserta bukti pesanan Anda. Kami akan memproses pengembalian dana 100%.',
-            ),
+
+            // DIRECT HELP SECTION
+            _buildDirectHelpSection(),
+
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildContactCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+  Widget _buildSearchBar() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+      ),
       child: Container(
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.05),
+              color: AppColors.shadow,
               blurRadius: 10,
-              offset: const Offset(0, 4),
+              offset: Offset(0, 4),
             ),
           ],
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-          ],
+        child: TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+          },
+          decoration: const InputDecoration(
+            hintText: 'Cari bantuan atau pertanyaan...',
+            hintStyle: TextStyle(color: AppColors.hint, fontSize: 14),
+            prefixIcon: Icon(Icons.search, color: AppColors.textSecondary),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(vertical: 15),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFaqItem(String question, String answer) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+  Widget _buildCategoryChips() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: _categories.map((category) {
+          final isActive = _selectedCategory == category;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(category),
+              selected: isActive,
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() {
+                    _selectedCategory = category;
+                  });
+                }
+              },
+              selectedColor: AppColors.primary,
+              backgroundColor: Colors.white,
+              labelStyle: TextStyle(
+                color: isActive ? Colors.white : AppColors.textSecondary,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: isActive ? AppColors.primary : AppColors.divider,
+                ),
+              ),
+              elevation: 0,
+              pressElevation: 0,
+            ),
+          );
+        }).toList(),
       ),
-      child: ExpansionTile(
-        title: Text(
-          question,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
+    );
+  }
+
+  Widget _buildFaqSection() {
+    final filteredFaqs = _filteredFaqs;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 15,
+              offset: Offset(0, 5),
+            ),
+          ],
         ),
-        childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-        expandedAlignment: Alignment.centerLeft,
+        child: filteredFaqs.isEmpty
+            ? _buildEmptyState()
+            : ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredFaqs.length,
+                separatorBuilder: (context, index) => const Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: AppColors.divider,
+                ),
+                itemBuilder: (context, index) {
+                  final faq = filteredFaqs[index];
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      dividerColor: Colors.transparent,
+                    ),
+                    child: ExpansionTile(
+                      title: Text(
+                        faq['question']!,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textHeading,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.check_circle_outline,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      children: [
+                        Text(
+                          faq['answer']!,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
         children: [
-          Text(
-            answer,
+          Icon(Icons.search_off, size: 48, color: AppColors.hint.withAlpha(128)),
+          const SizedBox(height: 16),
+          const Text(
+            'Pertanyaan tidak ditemukan',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDirectHelpSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'BUTUH BANTUAN LANGSUNG?',
             style: TextStyle(
-              color: Colors.grey.shade700,
-              height: 1.5,
-              fontSize: 13,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textHeading,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.shadow,
+                  blurRadius: 15,
+                  offset: Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                _buildHelpTile(
+                  title: 'Hubungi Customer Service',
+                  subtitle: 'Respon rata-rata < 5 menit',
+                  subtitleColor: AppColors.primary, // Using primary for green
+                  icon: Icons.headset_mic_outlined,
+                  onTap: () {
+                    // Navigate to CS Chat page or perform action
+                  },
+                ),
+                const Divider(height: 1, indent: 60, color: AppColors.divider),
+                _buildHelpTile(
+                  title: 'Chat via WhatsApp',
+                  subtitle: '0812-3456-7890',
+                  icon: Icons.chat_outlined,
+                  onTap: () => _launchURL('https://wa.me/6281234567890'),
+                ),
+                const Divider(height: 1, indent: 60, color: AppColors.divider),
+                _buildHelpTile(
+                  title: 'Email Support',
+                  subtitle: 'support@lapangku.id',
+                  icon: Icons.email_outlined,
+                  onTap: () => _launchURL('mailto:support@lapangku.id'),
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHelpTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+    Color? subtitleColor,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withAlpha(26),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: AppColors.primary, size: 24),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: AppColors.textHeading,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          fontSize: 12,
+          color: subtitleColor ?? AppColors.textSecondary,
+        ),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right,
+        color: AppColors.textSecondary,
+        size: 20,
       ),
     );
   }

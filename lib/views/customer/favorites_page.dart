@@ -261,7 +261,7 @@ class _FavoriteFieldCard extends ConsumerWidget {
                     ? Image.network(field.fotoUtama, fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
                           color: AppColors.primaryLight, // REFAKTOR: Color(0xFFE8F5EC)
-                          child: const Center(child: Icon(Icons.sports_soccer, size: 32, color: AppColors.primary)),
+                          child: const Center(child: Icon(Icons.stadium_outlined, size: 32, color: AppColors.primary)),
                         ))
                     : Container(
                         color: AppColors.primaryLight, // REFAKTOR: Color(0xFFE8F5EC)

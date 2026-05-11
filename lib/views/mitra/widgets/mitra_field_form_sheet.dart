@@ -199,7 +199,7 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
                   DropdownButtonFormField<String>(
                     initialValue: _selectedJenis,
                     decoration:
-                        _inputDecor('Jenis Lapangan', Icons.sports_soccer),
+                        _inputDecor('Jenis Lapangan', Icons.stadium_outlined),
                     items: _jenisOptions
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),

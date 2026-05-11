@@ -130,7 +130,7 @@ class _ReviewCard extends StatelessWidget {
                       : null,
                 ),
                 child: fieldImageUrl.isEmpty
-                    ? const Center(child: Icon(Icons.sports_soccer, color: Color(0xFF1B6B3A)))
+                    ? const Center(child: Icon(Icons.stadium_outlined, color: Color(0xFF1B6B3A)))
                     : null,
               ),
               const SizedBox(width: 12),

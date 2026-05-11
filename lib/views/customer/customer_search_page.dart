@@ -643,7 +643,7 @@ class _HorizontalFieldCard extends StatelessWidget {
       // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
       color: AppColors.primaryLight,
       child: const Center(
-        child: Icon(Icons.sports_soccer, size: 30, color: AppColors.primary),
+        child: Icon(Icons.stadium_outlined, size: 30, color: AppColors.primary),
       ),
     );
   }

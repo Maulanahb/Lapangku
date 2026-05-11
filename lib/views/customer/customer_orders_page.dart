@@ -447,7 +447,7 @@ class _BookingCard extends ConsumerWidget {
                     ),
                     child: booking.fieldImageUrl.isEmpty
                         ? const Center(
-                            child: Icon(Icons.sports_soccer,
+                            child: Icon(Icons.stadium_outlined,
                                 size: 28, color: AppColors.primary))
                         : null,
                   ),

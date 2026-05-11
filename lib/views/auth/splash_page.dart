@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/core/utils/navigation_helper.dart';
@@ -51,7 +51,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.sports_soccer,
+                Icons.stadium_outlined,
                 color: Colors.white,
                 size: 50,
               ),

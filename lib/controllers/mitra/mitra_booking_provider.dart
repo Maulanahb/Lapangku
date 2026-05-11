@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/services/firebase/booking_service.dart';
@@ -6,7 +6,7 @@ import 'package:lapangku/services/firebase/booking_service.dart';
 final _bookingSvcProvider =
     Provider<BookingService>((ref) => BookingService());
 
-// â”€â”€ Stream Provider: booking berdasarkan lapangan Mitra â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Stream Provider: booking berdasarkan lapangan Mitra ──────────
 final MitraBookingStreamProvider =
     StreamProvider.family<List<BookingModel>, String?>((ref, statusFilter) {
   final fieldsAsync = ref.watch(mitraFieldProvider).fields;
@@ -15,7 +15,7 @@ final MitraBookingStreamProvider =
   return service.streamMitraBookings(fieldIds, statusFilter: statusFilter);
 });
 
-// â”€â”€ Mutating actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Mutating actions ───────────────────────────────────────────────
 class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
   final BookingService _service;
 

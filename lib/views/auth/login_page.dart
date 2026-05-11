@@ -143,7 +143,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
-                        Icons.sports_soccer,
+                        Icons.stadium_outlined,
                         color: Colors.white,
                         size: 20,
                       ),

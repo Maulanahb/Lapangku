@@ -190,6 +190,23 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPage,
+      appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          'Informasi Pribadi',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: userAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (err, _) => EmptyStateWidget(
@@ -326,7 +343,7 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 50, 20, 30),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
       decoration: const BoxDecoration(
         color: AppColors.primary,
         borderRadius: BorderRadius.only(
@@ -336,49 +353,37 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-              ),
-              const Expanded(
-                child: Center(
-                  child: Text(
-                    'Informasi Pribadi',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 48),
-            ],
-          ),
-          const SizedBox(height: 20),
           CircleAvatar(
             radius: 40,
             backgroundColor: Colors.white,
-            backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty ? NetworkImage(user.avatarUrl!) : null,
+            backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                ? NetworkImage(user.avatarUrl!)
+                : null,
             child: user.avatarUrl == null || user.avatarUrl!.isEmpty
                 ? Text(
                     initials,
-                    style: const TextStyle(color: AppColors.primary, fontSize: 28, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold),
                   )
                 : null,
           ),
           const SizedBox(height: 16),
           Text(
             user.nama,
-            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
             'Customer LapangKu',
-            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+            style: TextStyle(color: Colors.white.withAlpha(204), fontSize: 14),
           ),
           const SizedBox(height: 4),
           Text(
             'Kelola informasi akun pribadi kamu',
-            style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+            style: TextStyle(color: Colors.white.withAlpha(153), fontSize: 12),
           ),
         ],
       ),
@@ -393,7 +398,7 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow.withOpacity(0.05),
+            color: AppColors.shadow.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -609,7 +614,7 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withAlpha(13),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     )

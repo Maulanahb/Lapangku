@@ -163,7 +163,7 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
-                        Icons.sports_soccer,
+                        Icons.stadium_outlined,
                         color: Colors.white,
                         size: 26,
                       ),

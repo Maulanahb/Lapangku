@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/services/firebase/favorite_service.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 

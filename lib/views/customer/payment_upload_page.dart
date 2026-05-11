@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -439,7 +439,7 @@ class _State extends ConsumerState<PaymentUploadPage> {
     }
   }
 
-  /// Handle QRIS payment â€” update status ke menunggu_konfirmasi
+  /// Handle QRIS payment — update status ke menunggu_konfirmasi
   Future<void> _handleQrisPayment() async {
     setState(() => _isUploading = true);
     try {

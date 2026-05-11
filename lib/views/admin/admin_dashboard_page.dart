@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
@@ -101,7 +101,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.sports_soccer, color: Colors.white, size: 24),
+                  child: const Icon(Icons.stadium_outlined, color: Colors.white, size: 24),
                 ),
                 const SizedBox(width: 16),
                 const Column(

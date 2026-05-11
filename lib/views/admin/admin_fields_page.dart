@@ -276,7 +276,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                 color: _primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.sports_soccer, color: _primary, size: 24),
+              child: const Icon(Icons.stadium_outlined, color: _primary, size: 24),
             ),
             const SizedBox(width: 12),
             Column(

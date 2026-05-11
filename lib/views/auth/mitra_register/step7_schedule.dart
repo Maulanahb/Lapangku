@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class Step7Schedule extends StatelessWidget {
   final TextEditingController priceController;

@@ -183,6 +183,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> updateNotificationSettings(
+      String uid, Map<String, bool> settings) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _service.updateNotificationSettings(uid, settings);
+      state = state.copyWith(isLoading: false, clearError: true);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Gagal mengupdate pengaturan notifikasi: $e',
+      );
+      rethrow;
+    }
+  }
+
   Future<void> sendEmailVerification() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
