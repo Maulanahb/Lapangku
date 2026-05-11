@@ -93,6 +93,7 @@ class BookingService {
   }
 
   /// Create a new booking
+  /// NOTE: Menyimpan mitraId dari FieldModel agar Mitra bisa query langsung.
   Future<BookingModel> createBooking({
     required FieldModel field,
     required UserModel user,
@@ -112,6 +113,7 @@ class BookingService {
       id: docRef.id,
       bookingId: _generateBookingId(),
       fieldId: field.id,
+      mitraId: field.mitraId, // ← Simpan mitraId untuk query Mitra
       fieldName: field.namaVenue.isNotEmpty ? '${field.namaVenue} - ${field.nama}' : field.nama,
       fieldAddress: field.alamat,
       fieldCategory: field.kategori,
@@ -338,6 +340,40 @@ class BookingService {
       'alasanPenolakan': reason ?? '',
       'statusTimeline': timeline,
       'updatedAt': Timestamp.fromDate(now),
+    });
+  }
+
+  /// Tandai booking sebagai selesai
+  /// Transisi: dikonfirmasi → selesai
+  Future<void> completeBooking(String bookingId) async {
+    final doc = await _db.collection('bookings').doc(bookingId).get();
+    if (!doc.exists) throw Exception('Booking tidak ditemukan');
+
+    final now = DateTime.now();
+    final timeline = List<Map<String, dynamic>>.from(
+        doc.data()?['statusTimeline'] ?? []);
+    timeline.add({
+      'status': 'selesai',
+      'waktu': Timestamp.fromDate(now),
+    });
+
+    await _db.collection('bookings').doc(bookingId).update({
+      'status': 'selesai',
+      'statusTimeline': timeline,
+      'updatedAt': Timestamp.fromDate(now),
+    });
+  }
+
+  /// Stream seluruh booking (untuk Admin monitoring)
+  Stream<List<BookingModel>> streamAllBookings({String? statusFilter}) {
+    Query query = _db.collection('bookings');
+    if (statusFilter != null) {
+      query = query.where('status', isEqualTo: statusFilter);
+    }
+    return query.snapshots().map((snap) {
+      final bookings = snap.docs.map((d) => BookingModel.fromFirestore(d)).toList();
+      bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return bookings;
     });
   }
 }

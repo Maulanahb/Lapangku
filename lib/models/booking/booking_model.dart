@@ -1,9 +1,56 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Helper untuk validasi transisi status booking.
+///
+/// Tidak bisa menggunakan nama 'BookingStatus' karena sudah ada enum
+/// di `standards/models/booking_status.dart`.
+///
+/// Flow: menunggu_bayar → menunggu_konfirmasi → dikonfirmasi → selesai
+///       menunggu_bayar → expired / dibatalkan
+///       menunggu_konfirmasi → ditolak / dibatalkan
+class BookingStatusHelper {
+  BookingStatusHelper._();
+
+  // String constants untuk Firestore values
+  static const String menungguBayar = 'menunggu_bayar';
+  static const String menungguKonfirmasi = 'menunggu_konfirmasi';
+  static const String dikonfirmasi = 'dikonfirmasi';
+  static const String selesai = 'selesai';
+  static const String dibatalkan = 'dibatalkan';
+  static const String ditolak = 'ditolak';
+  static const String expired = 'expired';
+
+  /// Status yang dianggap "aktif" (memblokir slot waktu)
+  static const List<String> activeStatuses = [
+    menungguBayar,
+    menungguKonfirmasi,
+    dikonfirmasi,
+  ];
+
+  /// Status yang dianggap "selesai" (terminal state)
+  static const List<String> terminalStatuses = [
+    selesai,
+    dibatalkan,
+    ditolak,
+    expired,
+  ];
+
+  /// Cek apakah transisi status valid
+  static bool isValidTransition(String from, String to) {
+    final validTransitions = <String, List<String>>{
+      menungguBayar: [menungguKonfirmasi, expired, dibatalkan],
+      menungguKonfirmasi: [dikonfirmasi, ditolak, dibatalkan],
+      dikonfirmasi: [selesai],
+    };
+    return validTransitions[from]?.contains(to) ?? false;
+  }
+}
+
 class BookingModel {
   final String id;
   final String bookingId; // LPK-YYYYMMDD-XXX
   final String fieldId;
+  final String mitraId; // ← BARU: ID pemilik lapangan untuk query langsung
   final String fieldName;
   final String fieldAddress;
   final String fieldCategory;
@@ -18,7 +65,8 @@ class BookingModel {
   final int totalBayar;
   final String metodePembayaran;
   final String? buktiTransferUrl;
-  final String status; // menunggu_bayar, menunggu_konfirmasi, dikonfirmasi, selesai, dibatalkan
+  final String status; // menunggu_bayar, menunggu_konfirmasi, dikonfirmasi, selesai, dibatalkan, ditolak, expired
+  final String? alasanPenolakan; // ← BARU: alasan jika ditolak oleh Mitra
   final List<Map<String, dynamic>> statusTimeline; // [{status: 'menunggu_bayar', waktu: Timestamp}]
   final DateTime batasWaktuBayar;
   final DateTime createdAt;
@@ -29,6 +77,7 @@ class BookingModel {
     required this.id,
     required this.bookingId,
     required this.fieldId,
+    this.mitraId = '',
     required this.fieldName,
     required this.fieldAddress,
     required this.fieldCategory,
@@ -44,12 +93,19 @@ class BookingModel {
     required this.metodePembayaran,
     this.buktiTransferUrl,
     required this.status,
+    this.alasanPenolakan,
     required this.statusTimeline,
     required this.batasWaktuBayar,
     required this.createdAt,
     required this.updatedAt,
     this.isReviewed = false,
   });
+
+  /// Apakah booking masih aktif (memblokir slot)
+  bool get isActive => BookingStatusHelper.activeStatuses.contains(status);
+
+  /// Apakah booking sudah di terminal state
+  bool get isTerminal => BookingStatusHelper.terminalStatuses.contains(status);
 
   factory BookingModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -67,6 +123,7 @@ class BookingModel {
       id: doc.id,
       bookingId: data['bookingId'] ?? 'LPK-${doc.id.substring(0, 8).toUpperCase()}',
       fieldId: data['fieldId'] ?? '',
+      mitraId: data['mitraId'] ?? '',
       fieldName: data['fieldName'] ?? data['namaLapangan'] ?? '',
       fieldAddress: data['fieldAddress'] ?? '',
       fieldCategory: data['fieldCategory'] ?? '',
@@ -82,6 +139,7 @@ class BookingModel {
       metodePembayaran: data['metodePembayaran'] ?? '',
       buktiTransferUrl: data['buktiTransferUrl'],
       status: data['status'] ?? 'menunggu_bayar',
+      alasanPenolakan: data['alasanPenolakan'],
       statusTimeline: data['statusTimeline'] != null 
           ? List<Map<String, dynamic>>.from(data['statusTimeline'])
           : [
@@ -98,6 +156,7 @@ class BookingModel {
     return {
       'bookingId': bookingId,
       'fieldId': fieldId,
+      'mitraId': mitraId,
       'fieldName': fieldName,
       'fieldAddress': fieldAddress,
       'fieldCategory': fieldCategory,
@@ -113,11 +172,69 @@ class BookingModel {
       'metodePembayaran': metodePembayaran,
       'buktiTransferUrl': buktiTransferUrl,
       'status': status,
+      'alasanPenolakan': alasanPenolakan,
       'statusTimeline': statusTimeline,
       'batasWaktuBayar': Timestamp.fromDate(batasWaktuBayar),
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'isReviewed': isReviewed,
     };
+  }
+
+  /// Membuat salinan BookingModel dengan field yang diubah
+  BookingModel copyWith({
+    String? id,
+    String? bookingId,
+    String? fieldId,
+    String? mitraId,
+    String? fieldName,
+    String? fieldAddress,
+    String? fieldCategory,
+    String? fieldImageUrl,
+    String? userId,
+    String? userName,
+    DateTime? tanggal,
+    List<String>? timeSlots,
+    int? durasi,
+    int? hargaLapangan,
+    int? biayaLayanan,
+    int? totalBayar,
+    String? metodePembayaran,
+    String? buktiTransferUrl,
+    String? status,
+    String? alasanPenolakan,
+    List<Map<String, dynamic>>? statusTimeline,
+    DateTime? batasWaktuBayar,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? isReviewed,
+  }) {
+    return BookingModel(
+      id: id ?? this.id,
+      bookingId: bookingId ?? this.bookingId,
+      fieldId: fieldId ?? this.fieldId,
+      mitraId: mitraId ?? this.mitraId,
+      fieldName: fieldName ?? this.fieldName,
+      fieldAddress: fieldAddress ?? this.fieldAddress,
+      fieldCategory: fieldCategory ?? this.fieldCategory,
+      fieldImageUrl: fieldImageUrl ?? this.fieldImageUrl,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      tanggal: tanggal ?? this.tanggal,
+      timeSlots: timeSlots ?? this.timeSlots,
+      durasi: durasi ?? this.durasi,
+      hargaLapangan: hargaLapangan ?? this.hargaLapangan,
+      biayaLayanan: biayaLayanan ?? this.biayaLayanan,
+      totalBayar: totalBayar ?? this.totalBayar,
+      metodePembayaran: metodePembayaran ?? this.metodePembayaran,
+      buktiTransferUrl: buktiTransferUrl ?? this.buktiTransferUrl,
+      status: status ?? this.status,
+      alasanPenolakan: alasanPenolakan ?? this.alasanPenolakan,
+      statusTimeline: statusTimeline ?? this.statusTimeline,
+      batasWaktuBayar: batasWaktuBayar ?? this.batasWaktuBayar,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isReviewed: isReviewed ?? this.isReviewed,
+    );
   }
 }

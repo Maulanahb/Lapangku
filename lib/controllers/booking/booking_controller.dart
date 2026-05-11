@@ -2,6 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/services/firebase/booking_service.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 
+// Re-export lifecycle providers agar bisa diakses via booking_controller.dart
+export 'package:lapangku/controllers/booking/booking_lifecycle_provider.dart';
+
 final bookingServiceProvider = Provider<BookingService>((ref) {
   return BookingService();
 });
