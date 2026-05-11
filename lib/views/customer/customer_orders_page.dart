@@ -540,11 +540,10 @@ class _BookingCard extends ConsumerWidget {
       case BookingStatus.dikonfirmasi:
       case BookingStatus.aktif:
         return [
-          _actionBtn(Icons.confirmation_num_outlined, 'Lihat Tiket',
+          _actionBtn(Icons.qr_code_2, 'E-Ticket',
               AppColors.primary, () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('Fitur tiket segera hadir!'),
-                backgroundColor: AppColors.primary));
+            Navigator.pushNamed(context, '/booking-detail',
+                arguments: booking.id);
           }),
         ];
       case BookingStatus.selesai:

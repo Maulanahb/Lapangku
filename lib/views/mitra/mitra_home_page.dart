@@ -8,6 +8,7 @@ import 'package:lapangku/controllers/mitra/mitra_stats_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_booking_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
+import 'package:lapangku/views/mitra/mitra_qr_scanner_page.dart';
 import 'package:intl/intl.dart';
 
 class MitraHomePage extends ConsumerStatefulWidget {
@@ -62,6 +63,20 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
               ),
             ),
           ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const MitraQrScannerPage()),
+        ),
+        backgroundColor: _primaryGreen,
+        foregroundColor: Colors.white,
+        elevation: 6,
+        icon: const Icon(Icons.qr_code_scanner, size: 22),
+        label: const Text(
+          'Scan Tiket',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
         ),
       ),
     );

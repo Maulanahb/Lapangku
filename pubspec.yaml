@@ -46,6 +46,8 @@ dependencies:
   universal_html: ^2.3.0
   path_provider: ^2.1.5
   device_info_plus: ^12.4.0
+  mobile_scanner: ^5.0.0
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

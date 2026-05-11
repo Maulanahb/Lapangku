@@ -42,6 +42,18 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
   }
 
   bool isLoading(String bookingId) => state.contains(bookingId);
+
+  /// Validasi E-Ticket via QR scan — returns BookingModel jika sukses
+  Future<BookingModel> validateTicket(String bookingId) async {
+    state = {...state, bookingId};
+    try {
+      final mitraId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      if (mitraId.isEmpty) throw Exception('Anda belum login.');
+      return await _service.validateAndCompleteBooking(bookingId, mitraId);
+    } finally {
+      state = state.difference({bookingId});
+    }
+  }
 }
 
 final MitraBookingActionsProvider =

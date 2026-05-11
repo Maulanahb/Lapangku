@@ -406,6 +406,48 @@ class BookingService {
     );
   }
 
+  /// [Mitra] Validasi E-Ticket dari QR Code dan selesaikan booking.
+  ///
+  /// Validasi meliputi:
+  /// 1. Apakah tiket ada di database
+  /// 2. Apakah tiket milik lapangan mitra yang scan
+  /// 3. Apakah tiket sudah pernah digunakan
+  /// 4. Apakah status tiket valid (dikonfirmasi)
+  Future<BookingModel> validateAndCompleteBooking(
+    String bookingId,
+    String mitraId,
+  ) async {
+    final doc = await _db.collection('bookings').doc(bookingId).get();
+    if (!doc.exists) {
+      throw Exception('Tiket tidak ditemukan atau tidak valid.');
+    }
+
+    final booking = BookingModel.fromFirestore(doc);
+
+    // Cek kepemilikan — tiket harus milik lapangan mitra yang scan
+    if (booking.mitraId != mitraId) {
+      throw Exception('Akses Ditolak: Tiket ini bukan untuk lapangan Anda.');
+    }
+
+    // Cek apakah sudah pernah di-scan
+    if (booking.status == BookingStatusHelper.selesai) {
+      throw Exception('Tiket ini sudah pernah digunakan (Selesai).');
+    }
+
+    // Cek status — hanya tiket dikonfirmasi yang bisa di-scan
+    if (booking.status != BookingStatusHelper.dikonfirmasi) {
+      throw Exception(
+        'Tiket belum siap. Status saat ini: ${BookingStatusHelper.getLabel(booking.status)}',
+      );
+    }
+
+    // Semua validasi lulus — ubah status jadi selesai
+    await _updateStatus(bookingId, newStatus: BookingStatusHelper.selesai);
+
+    // Return booking yang sudah diupdate untuk ditampilkan di UI
+    return booking.copyWith(status: BookingStatusHelper.selesai);
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // ADMIN ACTIONS
   // ═══════════════════════════════════════════════════════════════════════════
