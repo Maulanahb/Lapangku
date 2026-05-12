@@ -4,7 +4,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/controllers/admin/admin_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
-import 'package:lapangku/models/admin/admin_stats.dart';
 import 'package:lapangku/views/admin/admin_fields_page.dart';
 import 'package:lapangku/views/admin/admin_bookings_page.dart';
 import 'package:lapangku/views/admin/admin_users_page.dart';
@@ -227,9 +226,11 @@ class _DashboardBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDesktop = MediaQuery.of(context).size.width >= 800;
-    final statsAsync = ref.watch(adminStatsProvider);
+    final bookingsAsync = ref.watch(adminAllBookingsProvider);
+    final fieldsAsync = ref.watch(adminAllFieldsProvider);
+    final dashboardStats = ref.watch(adminDashboardStatsProvider);
+    
     final chartAsync = ref.watch(bookingsChartProvider);
-    final bookingsAsync = ref.watch(bookingsProvider);
     final activitiesAsync = ref.watch(activitiesProvider);
     final authState = ref.watch(authProvider);
 
@@ -237,9 +238,9 @@ class _DashboardBody extends ConsumerWidget {
       child: RefreshIndicator(
         color: _primary,
         onRefresh: () async {
-          ref.read(adminStatsProvider.notifier).load();
+          ref.refresh(adminAllBookingsProvider);
+          ref.refresh(adminAllFieldsProvider);
           ref.read(bookingsChartProvider.notifier).load();
-          ref.read(bookingsProvider.notifier).load();
           ref.read(activitiesProvider.notifier).load();
         },
         child: SingleChildScrollView(
@@ -251,11 +252,12 @@ class _DashboardBody extends ConsumerWidget {
               _buildHeader(context, ref, authState.user?.nama ?? 'Admin'),
               const SizedBox(height: 32),
               
-              statsAsync.when(
-                loading: () => _buildStatsShimmer(isDesktop),
-                error: (e, _) => _buildError(e.toString()),
-                data: (stats) => _buildStatsGrid(stats, isDesktop),
-              ),
+              if (bookingsAsync.isLoading || fieldsAsync.isLoading)
+                _buildStatsShimmer(isDesktop)
+              else if (bookingsAsync.hasError || fieldsAsync.hasError)
+                _buildError(bookingsAsync.error?.toString() ?? fieldsAsync.error.toString())
+              else
+                _buildStatsGrid(dashboardStats, isDesktop),
               const SizedBox(height: 24),
               
               if (isDesktop)
@@ -347,7 +349,7 @@ class _DashboardBody extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsGrid(AdminStats stats, bool isDesktop) {
+  Widget _buildStatsGrid(AdminDashboardStats stats, bool isDesktop) {
     String fmt(int n) {
       if (n >= 1000000) return 'Rp ${(n / 1000000).toStringAsFixed(1)} jt';
       if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)} rb';
@@ -355,19 +357,18 @@ class _DashboardBody extends ConsumerWidget {
     }
 
     final cards = [
-      _StatData('TOTAL PENGGUNA', stats.totalUsers.toString(), Icons.people_alt, const Color(0xFF1B6B3A), isGreen: false),
-      _StatData('TOTAL PEMILIK LAPANGAN', stats.lapanganAktif.toString(), Icons.storefront, const Color(0xFF4285F4), isGreen: false),
-      _StatData('TOTAL BOOKING HARI INI', stats.pesananHariIni.toString(), Icons.receipt_long, const Color(0xFFFF9800), isGreen: false),
-      _StatData('PENGHASILAN PLATFORM', fmt(stats.totalPendapatan), Icons.payments, Colors.white, isGreen: true),
+      _StatData('TOTAL LAPANGAN', stats.totalLapangan.toString(), Icons.stadium, const Color(0xFF1B6B3A), isGreen: false),
+      _StatData('TRANSAKSI BERHASIL', stats.totalBookingSelesai.toString(), Icons.receipt_long, const Color(0xFF4285F4), isGreen: false),
+      _StatData('PENDAPATAN PLATFORM', fmt(stats.totalPendapatan), Icons.payments, Colors.white, isGreen: true),
     ];
 
     return GridView.count(
-      crossAxisCount: isDesktop ? 4 : 2,
+      crossAxisCount: isDesktop ? 3 : 1,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      childAspectRatio: isDesktop ? 2.2 : 1.8,
+      childAspectRatio: isDesktop ? 2.5 : 2.5,
       children: cards.map((c) => _buildStatCard(c)).toList(),
     );
   }
@@ -438,13 +439,13 @@ class _DashboardBody extends ConsumerWidget {
 
   Widget _buildStatsShimmer(bool isDesktop) {
     return GridView.count(
-      crossAxisCount: isDesktop ? 4 : 2,
+      crossAxisCount: isDesktop ? 3 : 1,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      childAspectRatio: isDesktop ? 2.2 : 1.8,
-      children: List.generate(4, (_) => Container(decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12)))),
+      childAspectRatio: isDesktop ? 2.5 : 2.5,
+      children: List.generate(3, (_) => Container(decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12)))),
     );
   }
 
