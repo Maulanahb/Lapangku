@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
+import 'package:lapangku/services/cloudinary_service.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/views/customer/payment_upload_page.dart';
@@ -566,6 +569,8 @@ class _BookingCard extends ConsumerWidget {
     int rating = 5;
     final commentController = TextEditingController();
     bool isSubmitting = false;
+    File? imageFile;
+    final ImagePicker picker = ImagePicker();
 
     showDialog(
       context: context,
@@ -576,49 +581,100 @@ class _BookingCard extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(16)),
             title: const Text('Beri Ulasan',
                 style: TextStyle(fontWeight: FontWeight.bold)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Bagaimana pengalaman Anda di ${booking.fieldName}?',
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (index) {
-                    return IconButton(
-                      icon: Icon(
-                        index < rating
-                            ? Icons.star_rounded
-                            : Icons.star_border_rounded,
-                        color: AppColors.star,
-                        size: 32,
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Bagaimana pengalaman Anda di ${booking.fieldName}?',
+                    style: const TextStyle(
+                        fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < rating
+                              ? Icons.star_rounded
+                              : Icons.star_border_rounded,
+                          color: AppColors.star,
+                          size: 32,
+                        ),
+                        onPressed: () {
+                          setState(() => rating = index + 1);
+                        },
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: commentController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'Tuliskan ulasan Anda (opsional)...',
+                      hintStyle:
+                          const TextStyle(fontSize: 13, color: Colors.grey),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            BorderSide(color: Colors.grey.shade300),
                       ),
-                      onPressed: () {
-                        setState(() => rating = index + 1);
-                      },
-                    );
-                  }),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: commentController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'Tuliskan ulasan Anda (opsional)...',
-                    hintStyle:
-                        const TextStyle(fontSize: 13, color: Colors.grey),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.grey.shade300),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  const Text('Upload Foto (Opsional)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () async {
+                      final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+                      if (image != null) {
+                        setState(() => imageFile = File(image.path));
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+                      ),
+                      child: imageFile != null
+                          ? Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.file(imageFile!, fit: BoxFit.cover),
+                                ),
+                                Positioned(
+                                  top: 4, right: 4,
+                                  child: GestureDetector(
+                                    onTap: () => setState(() => imageFile = null),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                      child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_a_photo_outlined, size: 32, color: Colors.grey.shade400),
+                                const SizedBox(height: 8),
+                                Text('Ketuk untuk tambah foto', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                              ],
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
@@ -632,6 +688,11 @@ class _BookingCard extends ConsumerWidget {
                     : () async {
                         setState(() => isSubmitting = true);
                         try {
+                          String? imageUrl;
+                          if (imageFile != null) {
+                            imageUrl = await CloudinaryService.uploadImage(imageFile!);
+                          }
+                          
                           final service = ref.read(reviewServiceProvider);
                           await service.submitReview(
                             bookingId: booking.id,
@@ -640,6 +701,7 @@ class _BookingCard extends ConsumerWidget {
                             userName: booking.userName,
                             rating: rating,
                             comment: commentController.text.trim(),
+                            imageUrl: imageUrl,
                           );
                           if (ctx.mounted) {
                             Navigator.pop(ctx);

@@ -7,6 +7,7 @@ import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/models/auth/user_model.dart';
 import 'package:lapangku/standards/constants/app_constants.dart';
+import 'package:lapangku/services/cloudinary_service.dart';
 
 /// Service layer utama untuk seluruh siklus hidup booking (Booking Lifecycle).
 ///
@@ -161,11 +162,12 @@ class BookingLifecycleService {
           'Batas waktu pembayaran telah terlewat. Booking otomatis expired.');
     }
 
-    // Upload ke Storage
-    final storageRef = _storage.ref().child(
-        'payment_proofs/${booking.bookingId}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-    final uploadTask = await storageRef.putFile(imageFile);
-    final imageUrl = await uploadTask.ref.getDownloadURL();
+    // Upload ke Cloudinary
+    final imageUrl = await CloudinaryService.uploadImage(imageFile);
+    
+    if (imageUrl == null) {
+      throw Exception('Gagal mengupload bukti pembayaran. Silakan coba lagi.');
+    }
 
     // Transisi status + simpan URL bukti
     await _transitionStatus(
@@ -179,7 +181,7 @@ class BookingLifecycleService {
   /// Transisi: menunggu_bayar → menunggu_konfirmasi
   Future<void> uploadDummyPaymentProof(String bookingId) async {
     const dummyUrl =
-        'https://firebasestorage.googleapis.com/v0/b/lapangku-4e610.firebasestorage.app/o/placeholder%2Fdummy_payment.png?alt=media';
+        'https://res.cloudinary.com/drlgzbypb/image/upload/v1778622411/tpn0ihw9tmeyq1aysui2.jpg';
 
     await _transitionStatus(
       bookingId,

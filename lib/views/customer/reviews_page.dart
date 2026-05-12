@@ -87,10 +87,10 @@ class _ReviewCard extends StatelessWidget {
     final comment = (review['comment'] ?? '') as String;
     final fieldName = (review['fieldName'] ?? 'Lapangan') as String;
     final fieldImageUrl = (review['fieldImageUrl'] ?? '') as String;
+    final reviewImageUrl = (review['reviewImageUrl'] ?? '') as String;
     
     DateTime date = DateTime.now();
     if (review['createdAt'] != null) {
-      // In getUserReviews we already converted to DateTime, but let's be safe
       if (review['createdAt'] is DateTime) {
         date = review['createdAt'] as DateTime;
       } else {
@@ -185,6 +185,24 @@ class _ReviewCard extends StatelessWidget {
               child: Text(
                 comment,
                 style: const TextStyle(color: Color(0xFF4A5568), fontSize: 13, height: 1.4),
+              ),
+            ),
+          ],
+          
+          if (reviewImageUrl.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                reviewImageUrl,
+                width: double.infinity,
+                height: 160,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 160,
+                  color: Colors.grey.shade200,
+                  child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                ),
               ),
             ),
           ],

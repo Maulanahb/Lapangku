@@ -49,7 +49,7 @@ class BookingDetailPage extends ConsumerWidget {
                     const SizedBox(height: 16),
                     _buildStatusTimeline(booking),
                     const SizedBox(height: 16),
-                    _buildPaymentInfo(booking),
+                    _buildPaymentInfo(context, booking),
                     const SizedBox(height: 24),
                     _buildActionButtons(context, ref, booking),
                     const SizedBox(height: 40),
@@ -209,7 +209,7 @@ class BookingDetailPage extends ConsumerWidget {
     ]);
   }
 
-  Widget _buildPaymentInfo(BookingModel booking) {
+  Widget _buildPaymentInfo(BuildContext context, BookingModel booking) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
@@ -228,21 +228,24 @@ class BookingDetailPage extends ConsumerWidget {
         ]),
         if (booking.buktiTransferUrl != null) ...[
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppColors.backgroundPage, borderRadius: BorderRadius.circular(12)),
-            child: Row(children: [
-              Container(
-                width: 40, height: 40,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  image: DecorationImage(image: NetworkImage(booking.buktiTransferUrl!), fit: BoxFit.cover),
+          GestureDetector(
+            onTap: () => _showBuktiTransferDialog(context, booking.buktiTransferUrl!),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: AppColors.backgroundPage, borderRadius: BorderRadius.circular(12)),
+              child: Row(children: [
+                Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    image: DecorationImage(image: NetworkImage(booking.buktiTransferUrl!), fit: BoxFit.cover),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(child: Text('Bukti Transfer', style: TextStyle(fontWeight: FontWeight.w500))),
-              const Text('Lihat Bukti', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 12)),
-            ]),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('Bukti Transfer', style: TextStyle(fontWeight: FontWeight.w500))),
+                const Text('Lihat Bukti', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 12)),
+              ]),
+            ),
           ),
         ],
       ]),
@@ -651,5 +654,43 @@ class BookingDetailPage extends ConsumerWidget {
             SnackBar(content: Text('Gagal: $e'), backgroundColor: AppColors.error));
       }
     }
+  }
+
+  void _showBuktiTransferDialog(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                  },
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Center(child: Icon(Icons.broken_image, size: 64, color: Colors.white)),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

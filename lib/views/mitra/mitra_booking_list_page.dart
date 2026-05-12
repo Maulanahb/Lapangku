@@ -366,7 +366,7 @@ class _BookingCard extends ConsumerWidget {
                 const Spacer(),
                 if (booking.buktiTransferUrl != null)
                   TextButton.icon(
-                    onPressed: () {},
+                    onPressed: () => _showBuktiTransferDialog(context, booking.buktiTransferUrl!),
                     icon: const Icon(Icons.link,
                         size: 18, color: AppColors.primary),
                     label: const Text('Lihat Bukti',
@@ -492,6 +492,44 @@ class _BookingCard extends ConsumerWidget {
         }
       }
     }
+  }
+
+  void _showBuktiTransferDialog(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                  },
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Center(child: Icon(Icons.broken_image, size: 64, color: Colors.white)),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

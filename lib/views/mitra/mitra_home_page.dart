@@ -514,7 +514,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
           if (booking.buktiTransferUrl != null)
             GestureDetector(
               onTap: () {
-                // Show bukti transfer dialog or full screen
+                _showBuktiTransferDialog(context, booking.buktiTransferUrl!);
               },
               child: Container(
                   padding:
@@ -725,5 +725,43 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
             color: isToday ? _primaryGreen : Colors.grey[500],
           )),
     ]);
+  }
+
+  void _showBuktiTransferDialog(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(child: CircularProgressIndicator(color: Color(0xFF0F5A3C)));
+                  },
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Center(child: Icon(Icons.broken_image, size: 64, color: Colors.white)),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -22,6 +22,7 @@ class ReviewService {
     required String userName,
     required int rating,
     required String comment,
+    String? imageUrl,
   }) async {
     final reviewRef = _db.collection('lapangan').doc(fieldId).collection('reviews').doc();
     final bookingRef = _db.collection('bookings').doc(bookingId);
@@ -54,6 +55,7 @@ class ReviewService {
         'userName': userName,
         'rating': rating,
         'comment': comment,
+        'reviewImageUrl': imageUrl,
         'createdAt': FieldValue.serverTimestamp(),
         'fieldName': data['nama_lapangan'] ?? data['nama'] ?? data['namaLapangan'] ?? '',
         'fieldImageUrl': data['foto_lapangan'] != null && (data['foto_lapangan'] as List).isNotEmpty 
@@ -93,4 +95,24 @@ class ReviewService {
 
     return docs;
   }
+
+  Future<List<Map<String, dynamic>>> getFieldReviews(String fieldId) async {
+    final querySnapshot = await _db
+        .collection('lapangan')
+        .doc(fieldId)
+        .collection('reviews')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    return querySnapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return data;
+    }).toList();
+  }
 }
+
+final fieldReviewsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, fieldId) async {
+  final service = ref.watch(reviewServiceProvider);
+  return service.getFieldReviews(fieldId);
+});
