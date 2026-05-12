@@ -1,9 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
+import 'package:lapangku/services/firebase/booking_service.dart';
+import 'package:lapangku/models/booking/booking_model.dart' as global_booking;
+import 'package:lapangku/models/field/field_model.dart';
+
 import 'package:lapangku/models/admin/admin_field_model.dart';
 import 'package:lapangku/models/admin/booking_model.dart';
 import 'package:lapangku/models/admin/admin_stats.dart';
 import 'package:lapangku/services/firebase/admin_service.dart';
-
 // â”€â”€â”€ Service Provider â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 final adminServiceProvider = Provider<AdminService>((ref) {
@@ -191,4 +196,60 @@ class ActivitiesNotifier extends StateNotifier<AsyncValue<List<Map<String, dynam
 
 final activitiesProvider = StateNotifierProvider<ActivitiesNotifier, AsyncValue<List<Map<String, dynamic>>>>((ref) {
   return ActivitiesNotifier(ref.watch(adminServiceProvider));
+});
+
+// ─── NEW REQUIREMENTS ────────────────────────────────────────────────────────
+
+final bookingServiceProvider = Provider<BookingService>((ref) {
+  return BookingService();
+});
+
+final adminAllBookingsProvider = StreamProvider<List<global_booking.BookingModel>>((ref) {
+  return ref.watch(bookingServiceProvider).streamAllBookings();
+});
+
+final adminAllFieldsProvider = StreamProvider<List<FieldModel>>((ref) {
+  return FirestoreService.instance.collection('lapangan').snapshots().map((snapshot) {
+    return snapshot.docs.map((doc) => FieldModel.fromFirestore(doc)).toList();
+  });
+});
+
+class AdminDashboardStats {
+  final int totalBookingSelesai;
+  final int totalPendapatan;
+  final int totalLapangan;
+
+  AdminDashboardStats({
+    required this.totalBookingSelesai,
+    required this.totalPendapatan,
+    required this.totalLapangan,
+  });
+}
+
+final adminDashboardStatsProvider = Provider<AdminDashboardStats>((ref) {
+  final bookingsAsync = ref.watch(adminAllBookingsProvider);
+  final fieldsAsync = ref.watch(adminAllFieldsProvider);
+
+  int totalBookingSelesai = 0;
+  int totalPendapatan = 0;
+  int totalLapangan = 0;
+
+  if (bookingsAsync.hasValue) {
+    for (var b in bookingsAsync.value!) {
+      if (b.status == 'selesai') {
+        totalBookingSelesai++;
+        totalPendapatan += b.biayaLayanan;
+      }
+    }
+  }
+
+  if (fieldsAsync.hasValue) {
+    totalLapangan = fieldsAsync.value!.length;
+  }
+
+  return AdminDashboardStats(
+    totalBookingSelesai: totalBookingSelesai,
+    totalPendapatan: totalPendapatan,
+    totalLapangan: totalLapangan,
+  );
 });

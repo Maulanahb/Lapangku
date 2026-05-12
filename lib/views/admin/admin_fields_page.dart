@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lapangku/controllers/admin/admin_controller.dart';
-import 'package:lapangku/models/admin/admin_field_model.dart';
-
+import 'package:lapangku/models/field/field_model.dart';
 class AdminFieldsPage extends ConsumerStatefulWidget {
   const AdminFieldsPage({super.key});
 
@@ -17,7 +17,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final fieldsAsync = ref.watch(adminFieldsProvider);
+    final fieldsAsync = ref.watch(adminAllFieldsProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,7 +38,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     );
   }
 
-  Widget _buildHeader(AsyncValue<List<AdminFieldModel>> fieldsAsync) {
+  Widget _buildHeader(AsyncValue<List<FieldModel>> fieldsAsync) {
     int pendingCount = 0;
     if (fieldsAsync.hasValue) {
       pendingCount = fieldsAsync.value!.where((f) => f.statusVerifikasi == 'menunggu').length;
@@ -120,7 +120,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     );
   }
 
-  Widget _buildTabs(AsyncValue<List<AdminFieldModel>> fieldsAsync) {
+  Widget _buildTabs(AsyncValue<List<FieldModel>> fieldsAsync) {
     int pendingCount = 0;
     if (fieldsAsync.hasValue) {
       pendingCount = fieldsAsync.value!.where((f) => f.statusVerifikasi == 'menunggu').length;
@@ -167,10 +167,10 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     );
   }
 
-  Widget _buildContent(List<AdminFieldModel> fields) {
+  Widget _buildContent(List<FieldModel> fields) {
     final filtered = fields.where((f) {
       if (_filterStatus == 'semua') return true;
-      return f.statusVerifikasi.toLowerCase().trim() == _filterStatus.toLowerCase().trim();
+      return (f.statusVerifikasi ?? 'menunggu').toLowerCase().trim() == _filterStatus.toLowerCase().trim();
     }).toList();
 
     return Padding(
@@ -205,10 +205,10 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                   dataRowMinHeight: 72,
                   columns: const [
                     DataColumn(label: Text('NAMA BISNIS/LAPANGAN', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('PEMILIK', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('KATEGORI', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
                     DataColumn(label: Text('LOKASI', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('TANGGAL PENGAJUAN', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('AKSI', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('STATUS (IS_AKTIF)', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('AKSI VERIFIKASI', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.bold))),
                   ],
                   rows: filtered.map((f) => _buildRow(f)).toList(),
                 ),
@@ -248,22 +248,8 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     );
   }
 
-  DataRow _buildRow(AdminFieldModel field) {
-    final dateFormat = DateFormat('dd MMM yyyy');
-    final dateStr = field.createdAt != null ? dateFormat.format(field.createdAt!) : '-';
-    
-    String timeAgo = '-';
-    Color timeAgoColor = Colors.grey;
-    if (field.createdAt != null) {
-      final diff = DateTime.now().difference(field.createdAt!);
-      if (diff.inDays == 0) {
-        timeAgo = 'Hari ini';
-        timeAgoColor = const Color(0xFF10B981);
-      } else {
-        timeAgo = '${diff.inDays} hari lalu';
-        timeAgoColor = const Color(0xFFF59E0B);
-      }
-    }
+  DataRow _buildRow(FieldModel field) {
+    final statusVerifikasi = (field.statusVerifikasi ?? 'menunggu').toLowerCase().trim();
 
     return DataRow(
       cells: [
@@ -284,38 +270,36 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(field.namaLapangan, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF111827))),
-                Text(field.jenis, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                Text(field.namaVenue, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
               ],
             ),
           ],
         )),
-        DataCell(Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(field.namaMitra, style: const TextStyle(fontSize: 14, color: Color(0xFF111827))),
-            Text(field.emailPemilik, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-          ],
-        )),
+        DataCell(Text(field.kategori, style: const TextStyle(fontSize: 14, color: Color(0xFF111827)))),
         DataCell(Row(
           children: [
             const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF6B7280)),
             const SizedBox(width: 4),
-            Text(field.lokasi, style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563))),
+            Text(field.alamat, style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563)), maxLines: 1, overflow: TextOverflow.ellipsis),
           ],
         )),
-        DataCell(Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        DataCell(Row(
           children: [
-            Text(dateStr, style: const TextStyle(fontSize: 14, color: Color(0xFF111827))),
-            Text(timeAgo, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: timeAgoColor)),
+            Switch(
+              value: field.isAktif,
+              activeColor: _primary,
+              onChanged: (val) {
+                FirebaseFirestore.instance.collection('lapangan').doc(field.id).update({'is_aktif': val});
+              },
+            ),
+            const SizedBox(width: 8),
+            Text(field.isAktif ? 'Aktif' : 'Nonaktif', style: TextStyle(color: field.isAktif ? _primary : Colors.grey, fontWeight: FontWeight.bold)),
           ],
         )),
         DataCell(Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (field.statusVerifikasi.toLowerCase().trim() == 'menunggu') ...[
+            if (statusVerifikasi == 'menunggu') ...[
               ElevatedButton.icon(
                 onPressed: () => _updateStatus(field, 'aktif'),
                 icon: const Icon(Icons.check, size: 14),
@@ -344,17 +328,17 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
               ),
               const SizedBox(width: 8),
             ],
-            if (field.statusVerifikasi.toLowerCase().trim() != 'menunggu') ...[
+            if (statusVerifikasi != 'menunggu') ...[
                Container(
                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                  decoration: BoxDecoration(
-                   color: field.statusVerifikasi == 'aktif' ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2),
+                   color: statusVerifikasi == 'aktif' ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2),
                    borderRadius: BorderRadius.circular(6),
                  ),
                  child: Text(
-                   field.statusVerifikasi == 'aktif' ? 'Terverifikasi' : 'Ditolak',
+                   statusVerifikasi == 'aktif' ? 'Terverifikasi' : 'Ditolak',
                    style: TextStyle(
-                     color: field.statusVerifikasi == 'aktif' ? const Color(0xFF065F46) : const Color(0xFF991B1B),
+                     color: statusVerifikasi == 'aktif' ? const Color(0xFF065F46) : const Color(0xFF991B1B),
                      fontWeight: FontWeight.bold,
                      fontSize: 12,
                    ),
@@ -382,7 +366,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     );
   }
 
-  Future<void> _updateStatus(AdminFieldModel field, String status) async {
+  Future<void> _updateStatus(FieldModel field, String status) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -409,11 +393,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     );
 
     if (confirm == true && mounted) {
-      await ref.read(adminFieldsProvider.notifier).updateVerifikasi(
-            fieldId: field.fieldId,
-            mitraId: field.mitraId,
-            status: status,
-          );
+      await FirebaseFirestore.instance.collection('lapangan').doc(field.id).update({'status_verifikasi': status});
     }
   }
 }
