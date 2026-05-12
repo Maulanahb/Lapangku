@@ -15,13 +15,13 @@ class MitraProfileNotifier
     if (uid != null) loadProfile(uid);
   }
 
-  Future<void> loadProfile(String uid) async {
-    state = const AsyncLoading();
+  Future<void> loadProfile(String uid, {bool silent = false}) async {
+    if (!silent) state = const AsyncLoading();
     try {
       final profile = await _service.getProfile(uid);
       state = AsyncData(profile);
     } catch (e, st) {
-      state = AsyncError(e, st);
+      if (!silent) state = AsyncError(e, st);
     }
   }
 
@@ -105,8 +105,15 @@ class MitraProfileNotifier
     try {
       final url = await _service.uploadLogo(current.id, image);
       final updated = current.copyWith(logoUrl: url);
+      
+      // Update Firestore first
       await _service.updateProfile(updated);
+      
+      // Update local state immediately
       state = AsyncData(updated);
+      
+      // Silent reload from server to ensure consistency
+      await loadProfile(current.id, silent: true);
     } catch (e) {
       rethrow;
     }

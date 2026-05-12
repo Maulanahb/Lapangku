@@ -230,12 +230,14 @@ class MitraProfilePage extends ConsumerWidget {
           Stack(
             children: [
               CircleAvatar(
+                key: ValueKey(profile.logoUrl),
                 radius: 45,
                 backgroundColor: Colors.white,
                 // NEW: Tampilkan foto jika ada, jika tidak tampilkan inisial
-                backgroundImage: profile.logoUrl != null && profile.logoUrl!.isNotEmpty
-                    ? NetworkImage(profile.logoUrl!)
-                    : null,
+                backgroundImage:
+                    profile.logoUrl != null && profile.logoUrl!.isNotEmpty
+                        ? NetworkImage(profile.logoUrl!)
+                        : null,
                 child: profile.logoUrl == null || profile.logoUrl!.isEmpty
                     ? Text(
                         _getInitials(profile.businessName),

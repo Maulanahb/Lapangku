@@ -7,8 +7,10 @@ import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_stats_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_booking_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
+import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/views/mitra/mitra_qr_scanner_page.dart';
+import 'package:lapangku/views/mitra/mitra_booking_list_page.dart';
 import 'package:intl/intl.dart';
 
 class MitraHomePage extends ConsumerStatefulWidget {
@@ -89,10 +91,24 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(children: [
-            const CircleAvatar(
-                radius: 20,
-                backgroundImage:
-                    NetworkImage('https://i.pravatar.cc/150?img=12')),
+            ref.watch(mitraProfileProvider).when(
+                  data: (profile) => CircleAvatar(
+                    key: ValueKey(profile.logoUrl),
+                    radius: 20,
+                    backgroundImage: profile.logoUrl != null
+                        ? NetworkImage(profile.logoUrl!)
+                        : const NetworkImage(
+                            'https://i.pravatar.cc/150?img=12'),
+                  ),
+                  loading: () => const CircleAvatar(
+                    radius: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  error: (_, __) => const CircleAvatar(
+                    radius: 20,
+                    child: Icon(Icons.person),
+                  ),
+                ),
             const SizedBox(width: 12),
             Text('LapangKu',
                 style: TextStyle(
@@ -110,8 +126,9 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
                         color: Color(0xFFE04443), shape: BoxShape.circle),
-                    child: const Text('2',
-                        style: TextStyle(
+                    child: Text(
+                        '${ref.watch(mitraWaitingBookingsProvider(_uid)).length}',
+                        style: const TextStyle(
                             color: Colors.white,
                             fontSize: 8,
                             fontWeight: FontWeight.bold)))),
@@ -218,12 +235,26 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: _buildStatCard(
-              label: 'Rating Rata-rata',
-              value: '4.8', // Masih dummy karena belum ada review service
-              hasStar: true,
-              footer: '(67 ulasan)',
-            ),
+            child: ref.watch(mitraProfileProvider).when(
+                  data: (profile) => _buildStatCard(
+                    label: 'Rating Rata-rata',
+                    value: profile.rating.toStringAsFixed(1),
+                    hasStar: true,
+                    footer: '(Berdasarkan ulasan)',
+                  ),
+                  loading: () => _buildStatCard(
+                    label: 'Rating Rata-rata',
+                    value: '...',
+                    hasStar: true,
+                    footer: 'Memuat...',
+                  ),
+                  error: (_, __) => _buildStatCard(
+                    label: 'Rating Rata-rata',
+                    value: '0.0',
+                    hasStar: true,
+                    footer: 'Error',
+                  ),
+                ),
           ),
         ]),
       ),
@@ -336,7 +367,12 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
       ]),
       GestureDetector(
         onTap: () {
-          // Navigasi ke tab pesanan atau filter menunggu
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const MitraBookingListPage(initialIndex: 1),
+            ),
+          );
         },
         child: Row(children: [
           Text('Lihat Semua',
