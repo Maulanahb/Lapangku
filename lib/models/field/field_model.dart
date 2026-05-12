@@ -73,7 +73,7 @@ class FieldModel extends BaseFieldModel {
       nama: data['nama_lapangan'] ?? '',
       kategori: data['kategori_lapangan'] ?? '',
       hargaPerJam: (data['harga_sewa_jam'] ?? 0).toInt(),
-      alamat: data['alamat_lengkap'] ?? '',
+      alamat: data['alamat_lengkap'] ?? data['alamat'] ?? '',
       latitude: lat,
       longitude: lng,
       deskripsi: data['deskripsi_fasilitas'] ?? '',

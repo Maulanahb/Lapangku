@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
@@ -329,16 +330,136 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       Text(t, style: const TextStyle(fontSize: 13, color: AppColors.textBody)),
     ]));
 
-  Widget _lokasiTab() => Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    // REFAKTOR: sebelumnya Color(0xFFE2E8F0) dan Color(0xFF718096)
-    Container(height: 160, decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: AppColors.borderLight),
-      child: const Center(child: Icon(Icons.map_outlined, size: 48, color: AppColors.textSecondary))),
-    const SizedBox(height: 12),
-    Row(children: [
-      // REFAKTOR: sebelumnya Color(0xFF1B6B3A) dan Color(0xFF4A5568)
-      const Icon(Icons.location_on, size: 18, color: AppColors.primary), const SizedBox(width: 8),
-      Expanded(child: Text(widget.field.alamat, style: const TextStyle(fontSize: 13, color: AppColors.textBody)))]),
-  ]));
+  Widget _lokasiTab() {
+    final lat = widget.field.latitude;
+    final lng = widget.field.longitude;
+    final hasCoordinates = lat != 0.0 && lng != 0.0;
+
+    // OpenStreetMap static tile (gratis, tanpa API key)
+    final mapImageUrl = hasCoordinates
+        ? 'https://staticmap.openstreetmap.de/staticmap.php?center=$lat,$lng&zoom=15&size=600x300&markers=$lat,$lng,red-pushpin'
+        : null;
+
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Peta preview
+        GestureDetector(
+          onTap: hasCoordinates
+              ? () => _openGoogleMaps(lat, lng)
+              : null,
+          child: Container(
+            height: 180,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: AppColors.borderLight,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: mapImageUrl != null
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        mapImageUrl,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary, strokeWidth: 2,
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.map_outlined, size: 48, color: AppColors.textSecondary),
+                              SizedBox(height: 8),
+                              Text('Gagal memuat peta', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Overlay gradient + label
+                      Positioned(
+                        bottom: 0, left: 0, right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [Colors.black.withOpacity(0.6), Colors.transparent],
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.open_in_new, size: 14, color: Colors.white),
+                              SizedBox(width: 6),
+                              Text('Ketuk untuk buka di Google Maps',
+                                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.map_outlined, size: 48, color: AppColors.textSecondary),
+                        SizedBox(height: 8),
+                        Text('Lokasi peta belum tersedia', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Alamat teks
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Icon(Icons.location_on, size: 18, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              widget.field.alamat.isNotEmpty ? widget.field.alamat : 'Alamat belum diisi',
+              style: TextStyle(
+                fontSize: 13,
+                color: widget.field.alamat.isNotEmpty ? AppColors.textBody : AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ]),
+        if (hasCoordinates) ...[
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _openGoogleMaps(lat, lng),
+              icon: const Icon(Icons.directions, size: 18),
+              label: const Text('Buka di Google Maps', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      ]),
+    );
+  }
+
+  Future<void> _openGoogleMaps(double lat, double lng) async {
+    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 
   // ── SCHEDULER (REAL-TIME) ──
   Widget _scheduler() {

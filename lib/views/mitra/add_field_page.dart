@@ -7,6 +7,7 @@ import 'package:lapangku/controllers/mitra/mitra_location_controller.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lapangku/views/mitra/widgets/field_form_widgets.dart';
+import 'package:lapangku/views/mitra/mitra_map_picker_page.dart';
 
 class AddFieldPage extends ConsumerStatefulWidget {
   const AddFieldPage({super.key});
@@ -101,6 +102,7 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
     setState(() => _isSubmitting = true);
     try {
       final notifier = ref.read(mitraFieldProvider.notifier);
+      final locationState = ref.read(mitraLocationProvider);
       await notifier.addField(
         namaVenue: _venueController.text,
         namaLapangan: _nameController.text,
@@ -112,6 +114,8 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
         jamBuka: _formatTime(_openingTime),
         jamTutup: _formatTime(_closingTime),
         alamat: _addressController.text,
+        latitude: locationState.latitude ?? 0.0,
+        longitude: locationState.longitude ?? 0.0,
         deskripsi: _descriptionController.text,
         fasilitas: _selectedFacilities,
         photoFiles: _photoFiles,
@@ -216,7 +220,7 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
         const SizedBox(height: 24),
         FieldFormWidgets.buildLabel('Alamat Lengkap'),
         FieldFormWidgets.buildTextField(
-            _addressController, 'Tuliskan alamat lengkap lapangan...',
+            _addressController, 'Jl. Soekarno Hatta No. 9, Malang (Sesuai Google Maps)',
             maxLines: 3),
         const SizedBox(height: 40),
       ],
@@ -472,32 +476,83 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
   }
 
   Widget _buildLocationPicker() {
-    return Container(
-      height: 150,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        image: const DecorationImage(
-            image: NetworkImage(
-                'https://maps.googleapis.com/maps/api/staticmap?center=-7.9666,112.6326&zoom=13&size=600x300&key=YOUR_KEY'),
-            fit: BoxFit.cover),
-      ),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)
-              ]),
-          child: const Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.location_on, color: Color(0xFF1B6B3A), size: 18),
-            SizedBox(width: 8),
-            Text('Pilih Lokasi di Peta',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))
-          ]),
+    final locationState = ref.watch(mitraLocationProvider);
+    final hasLocation = locationState.latitude != null && locationState.longitude != null;
+
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push<MapPickerResult>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MitraMapPickerPage(
+              initialLat: locationState.latitude,
+              initialLng: locationState.longitude,
+            ),
+          ),
+        );
+        if (result != null) {
+          ref.read(mitraLocationProvider.notifier).updateLocation(
+                result.latitude,
+                result.longitude,
+              );
+          _addressController.text = result.address;
+        }
+      },
+      child: Container(
+        height: 150,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: const Color(0xFFF0F4FF),
+          border: Border.all(
+            color: hasLocation ? const Color(0xFF0F5A3C) : const Color(0xFFE2E8F0),
+            width: hasLocation ? 2 : 1,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                hasLocation ? Icons.check_circle : Icons.map_outlined,
+                color: hasLocation ? const Color(0xFF0F5A3C) : const Color(0xFF718096),
+                size: 36,
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(
+                    Icons.location_on,
+                    color: const Color(0xFF1B6B3A),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    hasLocation ? 'Ubah Lokasi di Peta' : 'Pilih Lokasi di Peta',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ]),
+              ),
+              if (hasLocation) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '${locationState.latitude!.toStringAsFixed(5)}, ${locationState.longitude!.toStringAsFixed(5)}',
+                  style: const TextStyle(color: Color(0xFF718096), fontSize: 11),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

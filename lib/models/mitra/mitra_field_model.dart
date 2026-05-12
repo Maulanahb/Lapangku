@@ -6,6 +6,8 @@ class MitraFieldModel extends BaseFieldModel {
   final String jenisLapangan; // futsal, badminton, basket, tenis, voli
   final String deskripsi;
   final String alamat;
+  final double latitude;
+  final double longitude;
   final List<String> photoUrls;
   final List<String> fasilitas;
   final int? hargaWeekend;
@@ -23,6 +25,8 @@ class MitraFieldModel extends BaseFieldModel {
     required int hargaPerJam,
     this.deskripsi = '',
     this.alamat = '',
+    this.latitude = 0.0,
+    this.longitude = 0.0,
     this.photoUrls = const [],
     this.fasilitas = const [],
     this.hargaWeekend,
@@ -54,6 +58,8 @@ class MitraFieldModel extends BaseFieldModel {
     int? hargaPerJam,
     String? deskripsi,
     String? alamat,
+    double? latitude,
+    double? longitude,
     List<String>? photoUrls,
     List<String>? fasilitas,
     int? hargaWeekend,
@@ -71,6 +77,8 @@ class MitraFieldModel extends BaseFieldModel {
       hargaPerJam: hargaPerJam ?? this.hargaPerJam,
       deskripsi: deskripsi ?? this.deskripsi,
       alamat: alamat ?? this.alamat,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       photoUrls: photoUrls ?? this.photoUrls,
       fasilitas: fasilitas ?? this.fasilitas,
       hargaWeekend: hargaWeekend ?? this.hargaWeekend,
@@ -96,6 +104,9 @@ class MitraFieldModel extends BaseFieldModel {
       'deskripsi_fasilitas': deskripsi, // backward-compat key untuk Customer
       'alamat': alamat,
       'alamat_lengkap': alamat, // backward-compat key untuk Customer
+      'location': (latitude != 0.0 && longitude != 0.0)
+          ? GeoPoint(latitude, longitude)
+          : null, // GeoPoint untuk Customer Maps
       'photoUrls': photoUrls,
       'foto_lapangan': photoUrls, // backward-compat key untuk Customer
       'fasilitas': fasilitas,
@@ -122,7 +133,9 @@ class MitraFieldModel extends BaseFieldModel {
       jenisLapangan: map['jenisLapangan'] ?? 'Futsal',
       hargaPerJam: (map['hargaPerJam'] ?? map['pricePerHour'] ?? 0) as int,
       deskripsi: map['deskripsi'] ?? '',
-      alamat: map['alamat'] ?? map['location'] ?? '',
+      alamat: map['alamat'] ?? map['alamat_lengkap'] ?? '',
+      latitude: _extractLat(map),
+      longitude: _extractLng(map),
       photoUrls: (map['photoUrls'] as List?)?.map((e) => e.toString()).toList() ??
           (map['photos'] as List?)?.map((e) => e.toString()).toList() ??
           (map['images'] as List?)?.map((e) => e.toString()).toList() ??
@@ -136,5 +149,15 @@ class MitraFieldModel extends BaseFieldModel {
       isActive: map['is_aktif'] ?? map['isActive'] ?? true,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
     );
+  }
+
+  static double _extractLat(Map<String, dynamic> map) {
+    if (map['location'] is GeoPoint) return (map['location'] as GeoPoint).latitude;
+    return (map['latitude'] ?? 0.0).toDouble();
+  }
+
+  static double _extractLng(Map<String, dynamic> map) {
+    if (map['location'] is GeoPoint) return (map['location'] as GeoPoint).longitude;
+    return (map['longitude'] ?? 0.0).toDouble();
   }
 }

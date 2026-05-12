@@ -59,6 +59,8 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     String jamTutup = '22:00',
     String deskripsi = '',
     String alamat = '',
+    double latitude = 0.0,
+    double longitude = 0.0,
     List<String> fasilitas = const [],
     List<File>? photoFiles,
   }) async {
@@ -76,6 +78,8 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
         jamTutup: jamTutup,
         deskripsi: deskripsi,
         alamat: alamat,
+        latitude: latitude,
+        longitude: longitude,
         fasilitas: fasilitas,
       );
       await _service.addField(field, photoFiles: photoFiles);
@@ -96,6 +100,8 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     String jamTutup = '22:00',
     String deskripsi = '',
     String alamat = '',
+    double latitude = 0.0,
+    double longitude = 0.0,
     List<String> fasilitas = const [],
     List<String> photoUrls = const [],
     List<File>? newPhotoFiles,
@@ -114,6 +120,8 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
         jamTutup: jamTutup,
         deskripsi: deskripsi,
         alamat: alamat,
+        latitude: latitude,
+        longitude: longitude,
         fasilitas: fasilitas,
         photoUrls: photoUrls,
       );
