@@ -161,7 +161,7 @@ class BookingModel {
       id: doc.id,
       bookingId: data['bookingId'] ?? 'LPK-${doc.id.substring(0, 8).toUpperCase()}',
       fieldId: data['fieldId'] ?? '',
-      mitraId: data['mitraId'] ?? '',
+      mitraId: data['mitraId'] ?? data['MitraId'] ?? data['id_pemilik'] ?? '',
       fieldName: data['fieldName'] ?? data['namaLapangan'] ?? '',
       fieldAddress: data['fieldAddress'] ?? '',
       fieldCategory: data['fieldCategory'] ?? '',

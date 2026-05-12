@@ -149,4 +149,49 @@ class MitraProfileModel {
       bankAccount: '',
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MitraProfileModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          businessName == other.businessName &&
+          MitraName == other.MitraName &&
+          email == other.email &&
+          phone == other.phone &&
+          alamat == other.alamat &&
+          logoUrl == other.logoUrl &&
+          ktpUrl == other.ktpUrl &&
+          npwpUrl == other.npwpUrl &&
+          description == other.description &&
+          isVerified == other.isVerified &&
+          totalFields == other.totalFields &&
+          totalOrders == other.totalOrders &&
+          rating == other.rating &&
+          notificationOrder == other.notificationOrder &&
+          notificationPromo == other.notificationPromo &&
+          bankName == other.bankName &&
+          bankAccount == other.bankAccount;
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      businessName.hashCode ^
+      MitraName.hashCode ^
+      email.hashCode ^
+      phone.hashCode ^
+      alamat.hashCode ^
+      logoUrl.hashCode ^
+      ktpUrl.hashCode ^
+      npwpUrl.hashCode ^
+      description.hashCode ^
+      isVerified.hashCode ^
+      totalFields.hashCode ^
+      totalOrders.hashCode ^
+      rating.hashCode ^
+      notificationOrder.hashCode ^
+      notificationPromo.hashCode ^
+      bankName.hashCode ^
+      bankAccount.hashCode;
 }
