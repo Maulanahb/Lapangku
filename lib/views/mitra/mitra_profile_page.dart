@@ -1,197 +1,76 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
 import 'package:lapangku/models/mitra/mitra_profile_model.dart';
-import 'package:lapangku/utils/snackbar_helper.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
+import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
+import 'package:lapangku/standards/widgets/loading_overlay.dart';
+import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 
-// Import newly created pages
-import 'widgets/mitra_menu_tile.dart';
-import 'mitra_profile_document_page.dart';
+// Import target halaman navigasi
 import 'mitra_fields_page.dart';
 import 'mitra_schedule_page.dart';
-import 'mitra_payout_page.dart';
+import 'mitra_booking_list_page.dart';
 import 'mitra_revenue_page.dart';
 import 'mitra_reviews_page.dart';
+import 'mitra_profile_document_page.dart';
 import 'mitra_help_page.dart';
-import 'mitra_language_page.dart';
 
 class MitraProfilePage extends ConsumerWidget {
   const MitraProfilePage({super.key});
-
-  final Color _primaryGreen = const Color(0xFF1B6B3A);
-  final Color _lightGreen = const Color(0xFFD1FAE5);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(mitraProfileProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
-      body: profileAsync.when(
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: Color(0xFF1B6B3A))),
-        error: (err, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 48),
-              const SizedBox(height: 16),
-              Text('Gagal memuat profil',
-                  style: TextStyle(color: Colors.grey.shade700)),
-              TextButton(
-                onPressed: () {
-                  final uid = FirebaseAuth.instance.currentUser?.uid;
-                  if (uid != null) {
-                    ref.read(mitraProfileProvider.notifier).loadProfile(uid);
-                  }
-                },
-                child: const Text('Coba Lagi',
-                    style: TextStyle(color: Color(0xFF1B6B3A))),
-              )
-            ],
+      backgroundColor: AppColors.backgroundPage,
+      appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        elevation: 0,
+        centerTitle: true,
+        // FIX: Hapus AppBar leading (icon menu)
+        // FIX: Hapus AppBar actions (icon lonceng)
+        title: const Text(
+          'Profil Mitra',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
         ),
-        data: (profileState) => SingleChildScrollView(
+      ),
+      body: profileAsync.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+        error: (err, stack) => EmptyStateWidget(
+          icon: Icons.error_outline,
+          title: 'Gagal memuat profil',
+          subtitle: err.toString(),
+          actionButton: ElevatedButton(
+            onPressed: () => ref.refresh(mitraProfileProvider),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Coba Lagi', style: TextStyle(color: Colors.white)),
+          ),
+        ),
+        data: (profile) => SingleChildScrollView(
           child: Column(
             children: [
-              _buildProfileHeader(context, profileState),
-              _buildStatsBar(profileState),
-              const SizedBox(height: 8),
-              _buildSectionTitle('BISNIS'),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    MitraMenuTile(
-                      icon: Icons.description_outlined,
-                      title: 'Profil & Dokumen',
-                      subtitle: 'KTP, NPWP, dll',
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) =>
-                                  const MitraProfileDocumentPage())),
-                    ),
-                    MitraMenuTile(
-                      icon: Icons.stadium_outlined,
-                      title: 'Lapangan Saya',
-                      subtitle: '${profileState.totalFields} lapangan',
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const MitraFieldsPage())),
-                    ),
-                    MitraMenuTile(
-                      icon: Icons.calendar_today_outlined,
-                      title: 'Jadwal & Ketersediaan',
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const MitraSchedulePage())),
-                    ),
-                    MitraMenuTile(
-                      icon: Icons.account_balance_outlined,
-                      title: 'Rekening Payout',
-                      subtitle: profileState.bankName.isNotEmpty
-                          ? '${profileState.bankName} • ${profileState.bankAccount}'
-                          : 'Belum diatur',
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const MitraPayoutPage())),
-                    ),
-                  ],
-                ),
-              ),
-              _buildSectionTitle('LAPORAN'),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    MitraMenuTile(
-                      icon: Icons.bar_chart_rounded,
-                      title: 'Laporan Pendapatan',
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const MitraRevenuePage())),
-                    ),
-                    MitraMenuTile(
-                      icon: Icons.star_outline_rounded,
-                      title: 'Ulasan Pelanggan',
-                      subtitle: '${profileState.rating} â­ rata-rata',
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const MitraReviewsPage())),
-                    ),
-                  ],
-                ),
-              ),
-              _buildSectionTitle('PENGATURAN'),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    MitraMenuTile(
-                      icon: Icons.notifications_outlined,
-                      title: 'Notifikasi Pesanan',
-                      trailing: Switch(
-                        value: profileState.notificationOrder,
-                        onChanged: (v) =>
-                            _toggleOrderNotif(context, ref, profileState),
-                        activeThumbColor: Colors.white,
-                        activeTrackColor: _primaryGreen,
-                        inactiveThumbColor: Colors.white,
-                        inactiveTrackColor: Colors.grey[300],
-                      ),
-                      onTap: () =>
-                          _toggleOrderNotif(context, ref, profileState),
-                    ),
-                    MitraMenuTile(
-                      icon: Icons.campaign_outlined,
-                      title: 'Notifikasi Promo',
-                      trailing: Switch(
-                        value: profileState.notificationPromo,
-                        onChanged: (v) =>
-                            _togglePromoNotif(context, ref, profileState),
-                        activeThumbColor: Colors.white,
-                        activeTrackColor: _primaryGreen,
-                        inactiveThumbColor: Colors.white,
-                        inactiveTrackColor: Colors.grey[300],
-                      ),
-                      onTap: () =>
-                          _togglePromoNotif(context, ref, profileState),
-                    ),
-                    MitraMenuTile(
-                      icon: Icons.language_rounded,
-                      title: 'Bahasa',
-                      trailing: Text('Indonesia',
-                          style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500)),
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const MitraLanguagePage())),
-                    ),
-                    MitraMenuTile(
-                      icon: Icons.help_outline_rounded,
-                      title: 'Bantuan & FAQ',
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const MitraHelpPage())),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildLogoutButton(context, ref),
-                  ],
-                ),
-              ),
+              _buildHeroSection(profile),
+              const SizedBox(height: 24),
+              _buildSectionTitle('MANAJEMEN BISNIS'), // FIX: Teks langsung tanpa container khusus
+              _buildBusinessManagementCard(context, profile),
+              const SizedBox(height: 24),
+              _buildSectionTitle('LAPORAN'), // FIX: Teks langsung
+              _buildReportCard(context, profile),
+              const SizedBox(height: 24),
+              _buildSectionTitle('AKUN & PENGATURAN'), // FIX: Teks langsung
+              _buildSettingsCard(context),
               const SizedBox(height: 32),
+              _buildLogoutSection(context, ref),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -199,255 +78,240 @@ class MitraProfilePage extends ConsumerWidget {
     );
   }
 
-  void _toggleOrderNotif(
-      BuildContext context, WidgetRef ref, MitraProfileModel state) async {
-    try {
-      await ref.read(mitraProfileProvider.notifier).toggleNotificationOrder();
-      if (context.mounted) {
-        SnackbarHelper.showSuccess(context,
-            'Notifikasi pesanan ${!state.notificationOrder ? "diaktifkan" : "dimatikan"}');
+  Widget _buildHeroSection(MitraProfileModel profile) {
+    final String businessName = profile.businessName.toUpperCase();
+    String initial = 'M';
+    if (businessName.isNotEmpty) {
+      final parts = businessName.split(' ');
+      if (parts.length >= 2) {
+        initial = parts[0][0] + parts[1][0];
+      } else {
+        initial = businessName.length >= 3 ? businessName.substring(0, 3) : businessName;
       }
-    } catch (e) {
-      if (context.mounted)
-        SnackbarHelper.showError(context, 'Gagal mengubah notifikasi');
     }
-  }
 
-  void _togglePromoNotif(
-      BuildContext context, WidgetRef ref, MitraProfileModel state) async {
-    try {
-      await ref.read(mitraProfileProvider.notifier).toggleNotificationPromo();
-      if (context.mounted) {
-        SnackbarHelper.showSuccess(context,
-            'Notifikasi promo ${!state.notificationPromo ? "diaktifkan" : "dimatikan"}');
-      }
-    } catch (e) {
-      if (context.mounted)
-        SnackbarHelper.showError(context, 'Gagal mengubah notifikasi');
-    }
-  }
-
-  Widget _buildProfileHeader(BuildContext context, MitraProfileModel state) {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: _primaryGreen,
-        borderRadius: const BorderRadius.only(
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(32),
           bottomRight: Radius.circular(32),
         ),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 24, bottom: 40),
-          child: Column(
+      padding: const EdgeInsets.only(bottom: 32),
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          Stack( // FIX: Tetapkan icon camera di hero section
             children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    state.businessName.isNotEmpty
-                        ? state.businessName[0].toUpperCase()
-                        : 'G',
-                    style: TextStyle(
-                        color: _primaryGreen,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900),
+              CircleAvatar(
+                radius: 45,
+                backgroundColor: Colors.white,
+                child: Text(
+                  initial,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    state.businessName,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900),
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
                   ),
-                  if (state.isVerified) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                          color: _lightGreen,
-                          borderRadius: BorderRadius.circular(12)),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.check_circle,
-                              color: _primaryGreen, size: 12),
-                          const SizedBox(width: 3),
-                          Text('Terverifikasi',
-                              style: TextStyle(
-                                  color: _primaryGreen,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold)),
-                        ],
-                      ),
+                  child: const Icon(
+                    Icons.camera_alt_outlined,
+                    size: 16,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            profile.businessName,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (profile.isVerified)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white, size: 14),
+                  SizedBox(width: 4),
+                  Text(
+                    'Mitra Terverifikasi',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
+                  ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                state.MitraName,
-                style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 16),
-              GestureDetector(
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const MitraProfileDocumentPage())),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.4), width: 1),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.edit, color: Colors.white, size: 14),
-                      SizedBox(width: 6),
-                      Text('Edit Profil Bisnis',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
+          const SizedBox(height: 8),
+          Text(
+            profile.MitraName,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 14,
+            ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsBar(MitraProfileModel state) {
-    return Transform.translate(
-      offset: const Offset(0, -24),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 28),
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4)),
-          ],
-        ),
-        child: Row(
-          children: [
-            _buildStatItem('${state.totalFields}', 'Lapangan'),
-            _buildStatDivider(),
-            _buildStatItem('${state.totalOrders}', 'Pesanan'),
-            _buildStatDivider(),
-            _buildStatItemWithStar('${state.rating}', 'Rating'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String value, String label) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.black)),
-          const SizedBox(height: 2),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
-  Widget _buildStatItemWithStar(String value, String label) {
-    return Expanded(
+  Widget _buildBusinessManagementCard(BuildContext context, MitraProfileModel profile) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 4))],
+      ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(value,
-                  style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.black)),
-              const SizedBox(width: 3),
-              const Icon(Icons.star, color: Color(0xFFFFB800), size: 16),
-            ],
+          _buildMenuItem(
+            icon: Icons.stadium_outlined,
+            title: 'Lapangan Saya',
+            subtitle: '${profile.totalFields} lapangan aktif',
+            subtitleColor: Colors.green, // FIX: Colors.green
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MitraFieldsPage())),
           ),
-          const SizedBox(height: 2),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.w500)),
+          // FIX: Hapus Divider
+          _buildMenuItem(
+            icon: Icons.calendar_month_outlined,
+            title: 'Jadwal & Ketersediaan',
+            subtitle: 'Atur slot booking',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MitraSchedulePage())),
+          ),
+          // FIX: Hapus Divider
+          _buildMenuItem(
+            icon: Icons.receipt_long_outlined,
+            title: 'Pesanan Masuk',
+            subtitle: '${profile.totalOrders} perlu konfirmasi',
+            subtitleColor: Colors.orange, // FIX: Colors.orange
+            badge: profile.totalOrders > 0 ? '${profile.totalOrders}' : null, // FIX: Tetapkan badge merah
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MitraBookingListPage())),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatDivider() {
-    return Container(width: 1, height: 36, color: Colors.grey[200]);
+  Widget _buildReportCard(BuildContext context, MitraProfileModel profile) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 4))],
+      ),
+      child: Column(
+        children: [
+          _buildMenuItem(
+            icon: Icons.trending_up,
+            title: 'Pendapatan',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MitraRevenuePage())),
+          ),
+          // FIX: Hapus Divider
+          _buildMenuItem(
+            icon: Icons.star,
+            title: 'Ulasan Pelanggan',
+            subtitle: '${profile.rating} rata-rata',
+            subtitleColor: Colors.orange, // FIX: Colors.orange
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MitraReviewsPage())),
+          ),
+          // FIX: Hapus Divider
+          _buildMenuItem(
+            icon: Icons.bar_chart,
+            title: 'Statistik Booking',
+            onTap: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsCard(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 4))],
+      ),
+      child: Column(
+        children: [
+          _buildMenuItem(
+            icon: Icons.person_outline,
+            title: 'Informasi Pribadi',
+            subtitle: 'Ubah data diri & profil',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MitraProfileDocumentPage())),
+          ),
+          // FIX: Hapus Divider
+          _buildMenuItem(
+            icon: Icons.lock_outlined,
+            title: 'Keamanan',
+            subtitle: 'Kata sandi & PIN',
+            onTap: () {},
+          ),
+          // FIX: Hapus Divider
+          _buildMenuItem(
+            icon: Icons.notifications_outlined,
+            title: 'Notifikasi',
+            subtitle: 'Atur pemberitahuan',
+            onTap: () {},
+          ),
+          // FIX: Hapus Divider
+          _buildMenuItem(
+            icon: Icons.info_outline,
+            title: 'Tentang LapangKu',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MitraHelpPage())),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
           title,
-          style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: Colors.grey[500],
-              letterSpacing: 0.8),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textHeading, // FIX: AppColors.textHeading
+          ),
         ),
       ),
     );
   }
 
+<<<<<<< Updated upstream
 
   Widget _buildLogoutButton(BuildContext context, WidgetRef ref) {
     return InkWell(
@@ -484,40 +348,107 @@ class MitraProfilePage extends ConsumerWidget {
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFFE04443)),
+=======
+  Widget _buildLogoutSection(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _handleLogout(context, ref),
+              icon: const Icon(Icons.logout_rounded, color: Colors.red),
+              label: const Text('Keluar dari Akun', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.red),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+>>>>>>> Stashed changes
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          const Text('Versi Aplikasi 1.0.4', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+        ],
       ),
     );
   }
 
-  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Keluar'),
-        content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
-          ),
-          TextButton(
-            onPressed: () async {
-              final nav = Navigator.of(context);
-              nav.pop();
-              await ref.read(authProvider.notifier).logout();
-              nav.pushNamedAndRemoveUntil('/login', (route) => false);
-            },
-            child: const Text('Keluar',
-                style: TextStyle(
-                    color: Color(0xFFE04443), fontWeight: FontWeight.bold)),
-          ),
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    Color? subtitleColor,
+    String? badge,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.primaryLight, // FIX: Semua background icon SAMA
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: AppColors.primary, size: 24), // FIX: Semua icon color SAMA
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textDark),
+      ),
+      subtitle: subtitle != null
+          ? Text(
+              subtitle,
+              style: TextStyle(fontSize: 12, color: subtitleColor ?? AppColors.textSecondary),
+            )
+          : null,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (badge != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                badge,
+                style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
+          const SizedBox(width: 8),
+          const Icon(Icons.chevron_right, color: Colors.grey, size: 20), // FIX: Tetapkan Chevron
         ],
       ),
     );
+  }
+
+  Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
+    final confirm = await ConfirmationDialog.show(
+      context: context,
+      title: 'Keluar',
+      message: 'Apakah Anda yakin ingin keluar dari akun?',
+      confirmText: 'Keluar',
+      isDestructive: true,
+    );
+
+    if (confirm) {
+      LoadingOverlay.show(context, message: 'Mengeluarkan...');
+      try {
+        await ref.read(authProvider.notifier).logout();
+        if (context.mounted) {
+          LoadingOverlay.dismiss(context);
+          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        }
+      } catch (e) {
+        if (context.mounted) {
+          LoadingOverlay.dismiss(context);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal keluar: $e')));
+        }
+      }
+    }
   }
 }
