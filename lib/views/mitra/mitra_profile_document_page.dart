@@ -140,6 +140,7 @@ class _MitraProfileDocumentPageState
                     child: Stack(
                       children: [
                         Container(
+                          key: ValueKey(profile.logoUrl),
                           width: 100,
                           height: 100,
                           decoration: BoxDecoration(
@@ -147,9 +148,12 @@ class _MitraProfileDocumentPageState
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 4),
                             boxShadow: [
-                              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)
+                              BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 8)
                             ],
-                            image: profile.logoUrl != null && profile.logoUrl!.isNotEmpty
+                            image: profile.logoUrl != null &&
+                                    profile.logoUrl!.isNotEmpty
                                 ? DecorationImage(
                                     image: NetworkImage(profile.logoUrl!),
                                     fit: BoxFit.cover,

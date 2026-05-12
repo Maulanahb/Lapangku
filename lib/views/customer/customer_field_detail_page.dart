@@ -6,7 +6,7 @@ import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/favorite/favorite_controller.dart';
-// REFAKTOR: import shared constants & formatter
+import 'package:lapangku/services/firebase/review_service.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
 
@@ -291,43 +291,105 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
 
   Widget _ulasanTab() {
     final f = widget.field;
+    final reviewsAsync = ref.watch(fieldReviewsProvider(f.id));
+
     return Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // REFAKTOR: sebelumnya Color(0xFFF0FDF4) dan Color(0xFF1B6B3A)
-      Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: AppColors.backgroundChipGreen, borderRadius: BorderRadius.circular(16)),
-        child: Row(children: [
-          Column(children: [
-            Text(f.ratingAvg.toStringAsFixed(1), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: AppColors.primary)),
-            Row(children: List.generate(5, (i) => Icon(i < f.ratingAvg.round() ? Icons.star_rounded : Icons.star_border_rounded, color: Colors.amber, size: 16))),
-            Text('${f.totalUlasan} ulasan', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-          ]),
-          const SizedBox(width: 24),
-          Expanded(child: Column(children: [_rb('5', 0.65), _rb('4', 0.2), _rb('3', 0.1), _rb('2', 0.03), _rb('1', 0.02)])),
-        ])),
-      const SizedBox(height: 16),
-      _rc('Ahmad R.', 5, 'Lapangan bagus dan terawat!', '2 hari lalu'),
-      _rc('Budi S.', 4, 'Tempatnya oke, parkir agak sempit.', '1 minggu lalu'),
+      reviewsAsync.when(
+        loading: () => Column(children: [
+          _buildSummaryBox(f, 0, 0, 0, 0, 0),
+          const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator(color: AppColors.primary))),
+        ]),
+        error: (e, _) => Column(children: [
+          _buildSummaryBox(f, 0, 0, 0, 0, 0),
+          Padding(padding: const EdgeInsets.all(24), child: Center(child: Text('Gagal memuat ulasan: $e', style: const TextStyle(color: Colors.red)))),
+        ]),
+        data: (reviews) {
+          int c5 = 0, c4 = 0, c3 = 0, c2 = 0, c1 = 0;
+          for (var r in reviews) {
+            int rating = r['rating'] ?? 5;
+            if (rating == 5) c5++;
+            else if (rating == 4) c4++;
+            else if (rating == 3) c3++;
+            else if (rating == 2) c2++;
+            else if (rating == 1) c1++;
+          }
+          int t = reviews.length;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSummaryBox(f, t>0?c5/t:0, t>0?c4/t:0, t>0?c3/t:0, t>0?c2/t:0, t>0?c1/t:0),
+              const SizedBox(height: 16),
+              if (reviews.isEmpty)
+                const Center(child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Text('Belum ada ulasan untuk lapangan ini.', style: TextStyle(color: AppColors.textSecondary)),
+                ))
+              else
+                Column(
+                  children: reviews.map((review) {
+                    final n = review['userName'] ?? 'Pengguna';
+                    final s = review['rating'] ?? 5;
+                    final t = review['comment'] ?? '';
+                    final reviewImageUrl = review['reviewImageUrl'] ?? '';
+                    DateTime date = DateTime.now();
+                    if (review['createdAt'] != null) {
+                      if (review['createdAt'] is DateTime) date = review['createdAt'] as DateTime;
+                      else date = review['createdAt'].toDate();
+                    }
+                    final time = DateFormat('dd MMM yyyy').format(date);
+                    return _rc(n, s, t, time, reviewImageUrl);
+                  }).toList(),
+                ),
+            ],
+          );
+        },
+      ),
     ]));
   }
 
+  Widget _buildSummaryBox(FieldModel f, double p5, double p4, double p3, double p2, double p1) {
+    return Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: AppColors.backgroundChipGreen, borderRadius: BorderRadius.circular(16)),
+      child: Row(children: [
+        Column(children: [
+          Text(f.ratingAvg.toStringAsFixed(1), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: AppColors.primary)),
+          Row(children: List.generate(5, (i) => Icon(i < f.ratingAvg.round() ? Icons.star_rounded : Icons.star_border_rounded, color: Colors.amber, size: 16))),
+          Text('${f.totalUlasan} ulasan', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+        ]),
+        const SizedBox(width: 24),
+        Expanded(child: Column(children: [_rb('5', p5), _rb('4', p4), _rb('3', p3), _rb('2', p2), _rb('1', p1)])),
+      ]));
+  }
+
   Widget _rb(String s, double p) => Padding(padding: const EdgeInsets.only(bottom: 4), child: Row(children: [
-    // REFAKTOR: sebelumnya Color(0xFF718096)
     Text(s, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)), const SizedBox(width: 8),
     Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: p, backgroundColor: Colors.grey.shade200, color: Colors.amber, minHeight: 6)))]));
 
-  Widget _rc(String n, int s, String t, String time) => Container(margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(14),
+  Widget _rc(String n, int s, String t, String time, String reviewImageUrl) => Container(margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(14)),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
-        // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
         CircleAvatar(radius: 14, backgroundColor: AppColors.primary, child: Text(n[0], style: const TextStyle(color: Colors.white, fontSize: 12))),
         const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(n, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
           Row(children: [...List.generate(s, (_) => const Icon(Icons.star_rounded, size: 12, color: Colors.amber)), const SizedBox(width: 6),
-            // REFAKTOR: sebelumnya Color(0xFF718096)
             Text(time, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary))])]))]),
-      const SizedBox(height: 8),
-      // REFAKTOR: sebelumnya Color(0xFF4A5568)
-      Text(t, style: const TextStyle(fontSize: 13, color: AppColors.textBody)),
+      if (t.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        Text(t, style: const TextStyle(fontSize: 13, color: AppColors.textBody)),
+      ],
+      if (reviewImageUrl.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            reviewImageUrl,
+            width: double.infinity,
+            height: 140,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(height: 140, color: Colors.grey.shade200, child: const Center(child: Icon(Icons.broken_image, color: Colors.grey))),
+          ),
+        ),
+      ],
     ]));
 
   Widget _lokasiTab() {

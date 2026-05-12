@@ -18,10 +18,20 @@ class MitraRevenueModel {
   final int totalRevenue;
   final int totalOrders;
   final List<MitraTransactionModel> transactions;
+  final int todayRevenue;
+  final int pendingPayout;
+  final int disbursedRevenue;
+  final int activeBookings;
+  final double payoutSuccessRate;
 
   const MitraRevenueModel({
     required this.totalRevenue,
     required this.totalOrders,
     required this.transactions,
+    this.todayRevenue = 0,
+    this.pendingPayout = 0,
+    this.disbursedRevenue = 0,
+    this.activeBookings = 0,
+    this.payoutSuccessRate = 0.92,
   });
 }

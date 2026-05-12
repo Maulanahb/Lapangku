@@ -131,14 +131,13 @@ class AdminFieldsNotifier extends StateNotifier<AsyncValue<List<AdminFieldModel>
   }
 
   Future<void> updateVerifikasi({
-    required String fieldId,
     required String mitraId,
     required String status,
   }) async {
     await _service.updateFieldVerifikasi(
-      fieldId: fieldId,
       mitraId: mitraId,
       status: status,
+      fieldId: '', // Tetap panggil service, tapi fieldId kosong karena verifikasi mitra
     );
     await load();
   }
@@ -209,8 +208,38 @@ final adminAllBookingsProvider = StreamProvider<List<global_booking.BookingModel
 });
 
 final adminAllFieldsProvider = StreamProvider<List<FieldModel>>((ref) {
-  return FirestoreService.instance.collection('lapangan').snapshots().map((snapshot) {
+  return FirestoreService.instance
+      .collection('lapangan')
+      .snapshots()
+      .map((snapshot) {
     return snapshot.docs.map((doc) => FieldModel.fromFirestore(doc)).toList();
+  });
+});
+
+final adminAllMitrasProvider = StreamProvider<List<AdminFieldModel>>((ref) {
+  return FirestoreService.instance
+      .collection('mitra')
+      .snapshots()
+      .map((snapshot) {
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      String status = (data['statusVerifikasi'] ?? 'menunggu').toString().toLowerCase().trim();
+      if (!data.containsKey('statusVerifikasi')) {
+        status = (data['isVerified'] == true) ? 'aktif' : 'menunggu';
+      }
+      return AdminFieldModel(
+        fieldId: doc.id,
+        mitraId: doc.id,
+        namaLapangan: data['businessName'] ?? data['namaBisnis'] ?? 'Bisnis Baru',
+        namaMitra: data['MitraName'] ?? data['ownerName'] ?? 'Mitra',
+        emailPemilik: data['email'] ?? '',
+        lokasi: data['alamat'] ?? 'Alamat belum diatur',
+        hargaPerJam: 0,
+        jenis: '',
+        statusVerifikasi: status,
+        createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      );
+    }).toList();
   });
 });
 

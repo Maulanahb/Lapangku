@@ -285,25 +285,51 @@ class MitraService {
     }).toList();
 
     int totalRevenue = 0;
+    int todayRevenue = 0;
+    int activeBookings = 0;
     List<MitraTransactionModel> transactions = [];
 
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
     for (var b in validBookings) {
-      totalRevenue += b.totalBayar;
-      transactions.add(MitraTransactionModel(
-        id: b.id,
-        customerName: b.userName,
-        fieldName: b.fieldName,
-        amount: b.totalBayar,
-        date: b.tanggal,
-      ));
+      if (b.status == 'selesai') {
+        totalRevenue += b.totalBayar;
+        
+        // Cek jika transaksi hari ini
+        if (b.tanggal.year == today.year && 
+            b.tanggal.month == today.month && 
+            b.tanggal.day == today.day) {
+          todayRevenue += b.totalBayar;
+        }
+
+        transactions.add(MitraTransactionModel(
+          id: b.id,
+          customerName: b.userName,
+          fieldName: b.fieldName,
+          amount: b.totalBayar,
+          date: b.tanggal,
+        ));
+      } else if (b.status == 'dikonfirmasi') {
+        activeBookings++;
+      }
     }
 
     transactions.sort((a, b) => b.date.compareTo(a.date));
 
+    // Simulasi Payout (15% tertunda, 85% cair)
+    final pendingPayout = (totalRevenue * 0.15).round();
+    final disbursedRevenue = totalRevenue - pendingPayout;
+
     return MitraRevenueModel(
       totalRevenue: totalRevenue,
-      totalOrders: validBookings.length,
+      totalOrders: transactions.length,
       transactions: transactions,
+      todayRevenue: todayRevenue,
+      pendingPayout: pendingPayout,
+      disbursedRevenue: disbursedRevenue,
+      activeBookings: activeBookings,
+      payoutSuccessRate: 0.92,
     );
   }
 
