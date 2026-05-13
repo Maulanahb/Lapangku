@@ -8,6 +8,7 @@ import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/models/booking_status.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
+import 'package:lapangku/views/mitra/mitra_offline_booking_page.dart';
 
 class MitraBookingListPage extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -125,6 +126,16 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const MitraOfflineBookingPage()),
+        ),
+        backgroundColor: AppColors.primary,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('Booking Offline',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -267,6 +278,21 @@ class _BookingCard extends ConsumerWidget {
                     Text(_getTimeAgo(booking.createdAt),
                         style:
                             const TextStyle(color: Colors.grey, fontSize: 12)),
+                    if (booking.metodePembayaran == 'offline') ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text('OFFLINE',
+                            style: TextStyle(
+                                color: Colors.purple.shade700,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ],
                   ]),
                 ]),
                 PopupMenuButton<String>(

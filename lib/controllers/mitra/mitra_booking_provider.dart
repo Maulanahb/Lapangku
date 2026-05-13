@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
+import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/services/firebase/booking_service.dart';
 
 final _bookingSvcProvider =
@@ -84,6 +85,32 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
     } finally {
       state = state.difference({bookingId});
     }
+  }
+
+  /// Buat booking offline (manual) untuk memblokir slot.
+  Future<BookingModel> createOfflineBooking({
+    required MitraFieldModel field,
+    required String mitraId,
+    required DateTime date,
+    required List<String> timeSlots,
+    required String namaPenyewa,
+    String catatan = '',
+  }) async {
+    return await _service.createOfflineBooking(
+      fieldId: field.id,
+      mitraId: mitraId,
+      fieldName: field.namaVenue.isNotEmpty
+          ? '${field.namaVenue} - ${field.namaLapangan}'
+          : field.namaLapangan,
+      fieldAddress: field.alamat,
+      fieldCategory: field.jenisLapangan,
+      fieldImageUrl: field.photoUrls.isNotEmpty ? field.photoUrls.first : '',
+      date: date,
+      timeSlots: timeSlots,
+      hargaPerJam: field.hargaPerJam,
+      namaPenyewa: namaPenyewa,
+      catatan: catatan,
+    );
   }
 }
 
