@@ -45,6 +45,24 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
     }
   }
 
+  Future<void> approveReschedule(String bookingId) async {
+    state = {...state, bookingId};
+    try {
+      await _service.approveReschedule(bookingId);
+    } finally {
+      state = state.difference({bookingId});
+    }
+  }
+
+  Future<void> rejectReschedule(String bookingId) async {
+    state = {...state, bookingId};
+    try {
+      await _service.rejectReschedule(bookingId);
+    } finally {
+      state = state.difference({bookingId});
+    }
+  }
+
   bool isLoading(String bookingId) => state.contains(bookingId);
 
   /// Validasi E-Ticket via QR scan — returns BookingModel jika sukses

@@ -375,7 +375,9 @@ class _BookingCard extends ConsumerWidget {
               ]),
             ]),
           ),
-          if (booking.status == BookingStatus.menungguKonfirmasi.firestoreValue)
+          if (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending')
+            _buildRescheduleRequestUI(context, ref, booking)
+          else if (booking.status == BookingStatus.menungguKonfirmasi.firestoreValue)
             Padding(
               padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
               child: Row(children: [
@@ -419,6 +421,108 @@ class _BookingCard extends ConsumerWidget {
                 ),
               ]),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRescheduleRequestUI(BuildContext context, WidgetRef ref, BookingModel booking) {
+    final isLoading = ref.watch(MitraBookingActionsProvider).contains(booking.id);
+    final newDateStr = booking.rescheduleDate != null 
+        ? DateFormat('EEEE, d MMM yyyy', 'id_ID').format(booking.rescheduleDate!) 
+        : '-';
+    final newTimeStr = booking.rescheduleTimeSlots?.join(', ') ?? '-';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.edit_calendar, color: Colors.orange.shade800, size: 20),
+              const SizedBox(width: 8),
+              Text('Pengajuan Reschedule', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade900, fontSize: 15)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Tanggal Baru:', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    Text(newDateStr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Jam Baru:', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    Text(newTimeStr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  ],
+                ),
+                const Divider(height: 20),
+                const Text('Alasan:', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 4),
+                Text(booking.rescheduleReason ?? '-', style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: isLoading ? null : () async {
+                    try {
+                      await ref.read(MitraBookingActionsProvider.notifier).rejectReschedule(booking.id);
+                      if (context.mounted) SnackbarHelper.showSuccess(context, 'Pengajuan reschedule ditolak');
+                    } catch (e) {
+                      if (context.mounted) SnackbarHelper.showError(context, 'Gagal: $e');
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.orange.shade800),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text('Tolak', style: TextStyle(color: Colors.orange.shade800, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : () async {
+                    try {
+                      await ref.read(MitraBookingActionsProvider.notifier).approveReschedule(booking.id);
+                      if (context.mounted) SnackbarHelper.showSuccess(context, 'Pengajuan reschedule disetujui');
+                    } catch (e) {
+                      if (context.mounted) SnackbarHelper.showError(context, 'Gagal: $e');
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.shade700,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: isLoading 
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Setujui', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

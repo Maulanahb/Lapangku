@@ -102,6 +102,13 @@ class BookingModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isReviewed;
+  
+  // Reschedule Fields
+  final bool isRescheduleRequested;
+  final DateTime? rescheduleDate;
+  final List<String>? rescheduleTimeSlots;
+  final String? rescheduleReason;
+  final String? rescheduleStatus; // 'pending', 'approved', 'rejected'
 
   const BookingModel({
     required this.id,
@@ -129,6 +136,11 @@ class BookingModel {
     required this.createdAt,
     required this.updatedAt,
     this.isReviewed = false,
+    this.isRescheduleRequested = false,
+    this.rescheduleDate,
+    this.rescheduleTimeSlots,
+    this.rescheduleReason,
+    this.rescheduleStatus,
   });
 
   // ─── Computed Properties ──────────────────────────────────────────────────
@@ -143,6 +155,31 @@ class BookingModel {
   bool get isPaymentExpired =>
       status == BookingStatusHelper.menungguBayar &&
       DateTime.now().isAfter(batasWaktuBayar);
+
+  /// Apakah e-ticket sudah hangus (melewati jam selesai main)
+  bool get isTicketExpired {
+    if (status != BookingStatusHelper.dikonfirmasi) return false;
+    if (timeSlots.isEmpty) return false;
+
+    try {
+      final lastSlot = timeSlots.last;
+      final endTimeStr = lastSlot.split(' - ')[1];
+      final parts = endTimeStr.split(':');
+      if (parts.length >= 2) {
+        final endHour = int.tryParse(parts[0]) ?? 0;
+        final endMinute = int.tryParse(parts[1]) ?? 0;
+        final endDateTime = DateTime(
+          tanggal.year,
+          tanggal.month,
+          tanggal.day,
+          endHour,
+          endMinute,
+        );
+        return DateTime.now().isAfter(endDateTime);
+      }
+    } catch (_) {}
+    return false;
+  }
 
   // ─── Factory: fromFirestore ───────────────────────────────────────────────
 
@@ -191,6 +228,13 @@ class BookingModel {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isReviewed: data['isReviewed'] ?? false,
+      isRescheduleRequested: data['isRescheduleRequested'] ?? false,
+      rescheduleDate: (data['rescheduleDate'] as Timestamp?)?.toDate(),
+      rescheduleTimeSlots: data['rescheduleTimeSlots'] != null
+          ? List<String>.from(data['rescheduleTimeSlots'])
+          : null,
+      rescheduleReason: data['rescheduleReason'],
+      rescheduleStatus: data['rescheduleStatus'],
     );
   }
 
@@ -222,6 +266,11 @@ class BookingModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'isReviewed': isReviewed,
+      'isRescheduleRequested': isRescheduleRequested,
+      if (rescheduleDate != null) 'rescheduleDate': Timestamp.fromDate(rescheduleDate!),
+      if (rescheduleTimeSlots != null) 'rescheduleTimeSlots': rescheduleTimeSlots,
+      if (rescheduleReason != null) 'rescheduleReason': rescheduleReason,
+      if (rescheduleStatus != null) 'rescheduleStatus': rescheduleStatus,
     };
   }
 
@@ -254,6 +303,11 @@ class BookingModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isReviewed,
+    bool? isRescheduleRequested,
+    DateTime? rescheduleDate,
+    List<String>? rescheduleTimeSlots,
+    String? rescheduleReason,
+    String? rescheduleStatus,
   }) {
     return BookingModel(
       id: id ?? this.id,
@@ -281,6 +335,11 @@ class BookingModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isReviewed: isReviewed ?? this.isReviewed,
+      isRescheduleRequested: isRescheduleRequested ?? this.isRescheduleRequested,
+      rescheduleDate: rescheduleDate ?? this.rescheduleDate,
+      rescheduleTimeSlots: rescheduleTimeSlots ?? this.rescheduleTimeSlots,
+      rescheduleReason: rescheduleReason ?? this.rescheduleReason,
+      rescheduleStatus: rescheduleStatus ?? this.rescheduleStatus,
     );
   }
 
