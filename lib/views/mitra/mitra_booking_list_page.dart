@@ -154,8 +154,10 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
             ),
             child: TextField(
               controller: _searchController,
+              onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(
                 hintText: 'Cari nama atau ID pesanan...',
+
                 hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
                 border: InputBorder.none,
                 icon: Icon(Icons.search, color: Colors.grey),
@@ -201,21 +203,50 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
 
     return bookingsAsync.when(
       data: (bookings) {
-        if (bookings.isEmpty) {
-          return const EmptyStateWidget(
-            icon: Icons.receipt_long_outlined,
-            title: 'Belum ada pesanan',
-            subtitle: 'Pesanan akan muncul di sini',
+        // Apply Search Filter
+        final filteredBookings = bookings.where((b) {
+          final query = _searchController.text.toLowerCase();
+          return b.userName.toLowerCase().contains(query) ||
+              b.bookingId.toLowerCase().contains(query);
+        }).toList();
+
+        // Apply Sorting
+        switch (_selectedSort) {
+          case 'Terbaru':
+            filteredBookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            break;
+          case 'Terlama':
+            filteredBookings.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            break;
+          case 'Nilai Tertinggi':
+            filteredBookings
+                .sort((a, b) => b.totalBayar.compareTo(a.totalBayar));
+            break;
+        }
+
+        if (filteredBookings.isEmpty) {
+          return EmptyStateWidget(
+            icon: _searchController.text.isEmpty
+                ? Icons.receipt_long_outlined
+                : Icons.search_off_outlined,
+            title: _searchController.text.isEmpty
+                ? 'Belum ada pesanan'
+                : 'Tidak ditemukan',
+            subtitle: _searchController.text.isEmpty
+                ? 'Pesanan akan muncul di sini'
+                : 'Coba kata kunci atau filter lain',
             iconSize: 64,
           );
         }
+
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: bookings.length,
+          itemCount: filteredBookings.length,
           itemBuilder: (context, index) =>
-              _BookingCard(booking: bookings[index]),
+              _BookingCard(booking: filteredBookings[index]),
         );
       },
+
       loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary)),
       error: (e, st) => Center(child: Text('Error: $e')),

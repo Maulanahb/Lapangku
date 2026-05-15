@@ -88,7 +88,6 @@ class MitraProfileModel {
       'MitraName': MitraName,
       'email': email,
       'phone': phone,
-      'telepon': phone,
       'alamat': alamat,
       'logoUrl': logoUrl,
       'fotoLogo': logoUrl,
