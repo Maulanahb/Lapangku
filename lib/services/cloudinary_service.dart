@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class CloudinaryService {
@@ -9,7 +10,7 @@ class CloudinaryService {
 
   static Future<String?> uploadImage(File file) async {
     try {
-      print('DEBUG CLOUDINARY: Memulai upload file ${file.path}');
+      debugPrint('DEBUG CLOUDINARY: Memulai upload file ${file.path}');
       final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
       
       final request = http.MultipartRequest('POST', url)
@@ -26,25 +27,28 @@ class CloudinaryService {
       if (response.statusCode == 200) {
         final jsonMap = jsonDecode(responseString);
         final secureUrl = jsonMap['secure_url'] as String;
-        print('DEBUG CLOUDINARY: Berhasil! URL: $secureUrl');
+        debugPrint('DEBUG CLOUDINARY: Berhasil! URL: $secureUrl');
         return secureUrl;
       } else {
-        print('DEBUG CLOUDINARY: Gagal! Status: ${response.statusCode}');
-        print('DEBUG CLOUDINARY: Respon Server: $responseString');
+        debugPrint('DEBUG CLOUDINARY: Gagal! Status: ${response.statusCode}');
+        debugPrint('DEBUG CLOUDINARY: Respon Server: $responseString');
         // Lempar error agar ditangkap di catch block MitraRegisterPage
         throw Exception('Cloudinary Upload Failed (${response.statusCode}): $responseString');
       }
     } catch (e) {
-      print('DEBUG CLOUDINARY: Error terjadi: $e');
+      debugPrint('DEBUG CLOUDINARY: Error terjadi: $e');
       rethrow; // Lempar ulang agar ditangkap UI
     }
   }
 
   static Future<List<String>> uploadMultipleImages(List<File> files) async {
-    final uploadTasks = files.map((file) => uploadImage(file)).toList();
-    final results = await Future.wait(uploadTasks);
-    // Sekarang uploadImage melempar Exception jika gagal, 
-    // jadi results hanya akan berisi URL yang valid (String).
-    return results.cast<String>().toList();
+    final List<String> results = [];
+    for (var file in files) {
+      final url = await uploadImage(file);
+      if (url != null) {
+        results.add(url);
+      }
+    }
+    return results;
   }
 }

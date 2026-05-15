@@ -14,7 +14,6 @@ class CustomerHomePage extends ConsumerStatefulWidget {
 }
 
 class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
-  final String _searchQuery = '';
   String _selectedCategory = 'Semua';
 
   final List<String> _categories = [
@@ -182,7 +181,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
               child: Text(
-                _searchQuery.isEmpty && _selectedCategory == 'Semua' ? 'Rekomendasi Lapangan' : 'Hasil Pencarian',
+                _selectedCategory == 'Semua' ? 'Rekomendasi Lapangan' : 'Hasil Pencarian',
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
               ),
             ),
@@ -194,11 +193,9 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
             error: (e, _) => SliverFillRemaining(child: Center(child: Text('Terjadi kesalahan:\n$e', textAlign: TextAlign.center))),
             data: (fields) {
               final filtered = fields.where((f) {
-                final matchQuery = f.nama.toLowerCase().contains(_searchQuery.toLowerCase().trim()) ||
-                    f.alamat.toLowerCase().contains(_searchQuery.toLowerCase().trim());
                 final matchCat = _selectedCategory == 'Semua' ||
                     f.kategori.toLowerCase().trim() == _selectedCategory.toLowerCase().trim();
-                return matchQuery && matchCat;
+                return matchCat;
               }).toList();
 
               if (filtered.isEmpty) {
