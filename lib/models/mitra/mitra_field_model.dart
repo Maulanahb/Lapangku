@@ -15,6 +15,9 @@ class MitraFieldModel extends BaseFieldModel {
   final String jamTutup;
   final bool isActive;
   final DateTime? createdAt;
+  final double avgRating;
+  final int totalReviews;
+
 
   const MitraFieldModel({
     required this.id,
@@ -34,7 +37,10 @@ class MitraFieldModel extends BaseFieldModel {
     this.jamTutup = '22:00',
     this.isActive = true,
     this.createdAt,
+    this.avgRating = 0.0,
+    this.totalReviews = 0,
   }) : super(
+
           fieldId: id,
           mitraId: mitraId,
           namaVenue: namaVenue,
@@ -67,6 +73,8 @@ class MitraFieldModel extends BaseFieldModel {
     String? jamTutup,
     bool? isActive,
     DateTime? createdAt,
+    double? avgRating,
+    int? totalReviews,
   }) {
     return MitraFieldModel(
       id: id ?? this.id,
@@ -86,8 +94,11 @@ class MitraFieldModel extends BaseFieldModel {
       jamTutup: jamTutup ?? this.jamTutup,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
+      avgRating: avgRating ?? this.avgRating,
+      totalReviews: totalReviews ?? this.totalReviews,
     );
   }
+
 
   Map<String, dynamic> toMap() {
     return {
@@ -117,8 +128,11 @@ class MitraFieldModel extends BaseFieldModel {
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
+      'avg_rating': avgRating,
+      'total_ulasan': totalReviews,
     };
   }
+
 
   factory MitraFieldModel.fromMap(Map<String, dynamic> map, String id) {
     return MitraFieldModel(
@@ -148,8 +162,12 @@ class MitraFieldModel extends BaseFieldModel {
       jamTutup: map['jamTutup'] ?? '22:00',
       isActive: map['is_aktif'] ?? map['isActive'] ?? true,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
+      avgRating: (map['avg_rating'] ?? map['ratingAvg'] ?? 0.0).toDouble(),
+      totalReviews: (map['total_ulasan'] ?? map['totalUlasan'] ?? 0) as int,
     );
   }
+
+
 
   static double _extractLat(Map<String, dynamic> map) {
     if (map['location'] is GeoPoint) return (map['location'] as GeoPoint).latitude;
