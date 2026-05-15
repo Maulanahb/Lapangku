@@ -730,11 +730,19 @@ class _BookingCard extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(8)),
                 ),
                 child: isSubmitting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
+                    ? const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2)),
+                          SizedBox(width: 8),
+                          Text('Mengunggah...',
+                              style: TextStyle(color: Colors.white, fontSize: 13)),
+                        ],
+                      )
                     : const Text('Kirim',
                         style: TextStyle(color: Colors.white)),
               ),

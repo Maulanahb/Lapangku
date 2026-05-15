@@ -8,6 +8,7 @@ import 'package:lapangku/controllers/favorite/favorite_controller.dart';
 import 'package:lapangku/services/firebase/review_service.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
+import 'package:lapangku/standards/utils/facility_helper.dart';
 
 class CustomerFieldDetailPage extends ConsumerStatefulWidget {
   final FieldModel field;
@@ -22,7 +23,6 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   final Set<int> _selectedTimeIndices = {};
 
   bool _showFullDesc = false;
-  final bool _isBooking = false;
   late TabController _tabController;
   final List<Map<String, String>> _dates = [];
 
@@ -261,29 +261,13 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     ]),
   ]));
 
-  IconData _getFacilityIcon(String facility) {
-    final f = facility.toLowerCase();
-    if (f.contains('parkir')) return Icons.local_parking;
-    if (f.contains('toilet') || f.contains('kamar mandi') || f.contains('wc')) return Icons.wc;
-    if (f.contains('mushola') || f.contains('masjid') || f.contains('sholat')) return Icons.mosque;
-    if (f.contains('kantin') || f.contains('makan') || f.contains('cafe') || f.contains('minum')) return Icons.restaurant;
-    if (f.contains('wifi') || f.contains('internet')) return Icons.wifi;
-    if (f.contains('loker') || f.contains('locker')) return Icons.door_sliding;
-    if (f.contains('ruang ganti') || f.contains('ganti')) return Icons.checkroom;
-    if (f.contains('tribun') || f.contains('penonton') || f.contains('kursi')) return Icons.stadium;
-    if (f.contains('ac') || f.contains('pendingin')) return Icons.ac_unit;
-    if (f.contains('bola') || f.contains('sewa bola')) return Icons.stadium_outlined;
-    if (f.contains('p3k') || f.contains('medis') || f.contains('kesehatan')) return Icons.medical_services;
-    return Icons.check_circle_outline;
-  }
-
   Widget _fasilitasTab() {
     final fas = widget.field.fasilitas.isNotEmpty ? widget.field.fasilitas : ['Parkir Luas', 'Toilet Bersih', 'Mushola', 'Kantin'];
     return Padding(padding: const EdgeInsets.all(20), child: Wrap(spacing: 12, runSpacing: 12, children: fas.map((f) =>
       Container(width: (MediaQuery.of(context).size.width - 52) / 2, padding: const EdgeInsets.all(14),
         // REFAKTOR: sebelumnya Color(0xFFF0FDF4) dan Color(0xFFBBF7D0) dan Color(0xFF1B6B3A)
         decoration: BoxDecoration(color: AppColors.backgroundChipGreen, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.primaryBorder)),
-        child: Row(children: [Icon(_getFacilityIcon(f), color: AppColors.primary, size: 20), const SizedBox(width: 10),
+        child: Row(children: [Icon(FacilityHelper.getIcon(f), color: AppColors.primary, size: 20), const SizedBox(width: 10),
           Expanded(child: Text(f, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)))]),
       )).toList()));
   }
@@ -504,7 +488,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
         ])),
         const SizedBox(width: 16),
         ElevatedButton(
-          onPressed: hasSel && !_isBooking ? () => _handleBooking() : null,
+          onPressed: hasSel ? () => _handleBooking() : null,
           style: ElevatedButton.styleFrom(
             // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
             backgroundColor: AppColors.primary, disabledBackgroundColor: Colors.grey.shade300,
@@ -512,9 +496,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
-          child: _isBooking
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Text('Pesan Sekarang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          child: const Text('Pesan Sekarang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
         ),
       ]),
     );

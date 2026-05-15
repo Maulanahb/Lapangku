@@ -8,7 +8,10 @@ import 'package:lapangku/views/customer/payment_upload_page.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/models/booking_status.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
+import 'package:lapangku/views/customer/widgets/e_ticket_widget.dart';
 
 class BookingDetailPage extends ConsumerWidget {
   final String bookingId;
@@ -253,11 +256,6 @@ class BookingDetailPage extends ConsumerWidget {
   }
 
   Widget _buildETicketCard(BookingModel booking) {
-    final dateStr = DateFormat('EEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
-    final timeStr = booking.timeSlots.length > 1
-        ? '${booking.timeSlots.first.split(' - ')[0]} - ${booking.timeSlots.last.split(' - ')[1]}'
-        : booking.timeSlots.first;
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -266,175 +264,8 @@ class BookingDetailPage extends ConsumerWidget {
           BoxShadow(color: AppColors.primary.withValues(alpha: 0.12), blurRadius: 20, offset: const Offset(0, 8)),
         ],
       ),
-      child: Column(
-        children: [
-          // ── Header: E-Ticket + LUNAS badge ──
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.confirmation_number, color: Colors.white, size: 22),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('E-Ticket Anda',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
-                      Text('Tunjukkan ke petugas lapangan',
-                          style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD1FAE5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.check_circle, color: Color(0xFF0F5A3C), size: 14),
-                      SizedBox(width: 4),
-                      Text('LUNAS',
-                          style: TextStyle(
-                              color: Color(0xFF0F5A3C), fontWeight: FontWeight.w900, fontSize: 11)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Dashed divider ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: List.generate(
-                40,
-                (_) => Expanded(
-                  child: Container(
-                    height: 1,
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    color: Colors.grey.shade300,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // ── QR Code section ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-            child: Column(
-              children: [
-                // QR Code — PENTING: data = booking.id (doc ID, sama yang dipakai scanner Mitra)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200, width: 1.5),
-                  ),
-                  child: QrImageView(
-                    data: booking.id, // Doc ID — HARUS sama dengan yang di-scan oleh validateAndCompleteBooking
-                    version: QrVersions.auto,
-                    size: 200,
-                    eyeStyle: const QrEyeStyle(
-                      eyeShape: QrEyeShape.square,
-                      color: Color(0xFF0F5A3C),
-                    ),
-                    dataModuleStyle: const QrDataModuleStyle(
-                      dataModuleShape: QrDataModuleShape.square,
-                      color: Color(0xFF1A1A2E),
-                    ),
-                    errorCorrectionLevel: QrErrorCorrectLevel.M,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Booking ID
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundPage,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    booking.bookingId,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      letterSpacing: 1.2,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Info ringkasan
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFD1FAE5)),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(children: [
-                        const Icon(Icons.stadium_outlined, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(booking.fieldName,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                        ),
-                      ]),
-                      const SizedBox(height: 8),
-                      Row(children: [
-                        const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 8),
-                        Text(dateStr, style: const TextStyle(fontSize: 13)),
-                        const Text('  •  ', style: TextStyle(color: Colors.grey)),
-                        Text(timeStr, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                      ]),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Instruksi
-                Row(
-                  children: [
-                    Icon(Icons.info_outline, size: 16, color: Colors.grey.shade500),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Tunjukkan QR Code ini kepada petugas/Mitra lapangan saat Anda tiba.',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.3),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.all(20),
+      child: ETicketWidget(booking: booking),
     );
   }
 
@@ -467,9 +298,35 @@ class BookingDetailPage extends ConsumerWidget {
         const SizedBox(height: 12),
       ],
       OutlinedButton.icon(
-        onPressed: () {},
-        icon: const Icon(Icons.phone_outlined),
-        label: const Text('Hubungi Pemilik Lapangan'),
+        onPressed: () async {
+          try {
+            final doc = await FirebaseFirestore.instance.collection('users').doc(booking.mitraId).get();
+            final data = doc.data();
+            if (data != null && data['phone'] != null && data['phone'].toString().isNotEmpty) {
+              String phone = data['phone'].toString();
+              if (phone.startsWith('0')) {
+                phone = '62${phone.substring(1)}';
+              } else if (phone.startsWith('+62')) {
+                phone = '62${phone.substring(3)}';
+              }
+              final url = Uri.parse('https://wa.me/$phone');
+              final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+              if (!launched && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tidak dapat membuka WhatsApp.')));
+              }
+            } else {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nomor kontak pemilik lapangan belum tersedia.')));
+              }
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal mengambil data pemilik lapangan.')));
+            }
+          }
+        },
+        icon: const Icon(Icons.chat_outlined),
+        label: const Text('Chat Pemilik Lapangan'),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary, side: const BorderSide(color: AppColors.primary),
           padding: const EdgeInsets.symmetric(vertical: 14), minimumSize: const Size(double.infinity, 0),
@@ -486,11 +343,6 @@ class BookingDetailPage extends ConsumerWidget {
     ]);
   }
   void _showETicketSheet(BuildContext context, BookingModel booking) {
-    final dateStr = DateFormat('EEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
-    final timeStr = booking.timeSlots.length > 1
-        ? '${booking.timeSlots.first.split(' - ')[0]} - ${booking.timeSlots.last.split(' - ')[1]} WIB'
-        : '${booking.timeSlots.first} WIB';
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -510,123 +362,7 @@ class BookingDetailPage extends ConsumerWidget {
               decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
             ),
             const SizedBox(height: 20),
-
-            // Header
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.confirmation_number, color: AppColors.primary, size: 24),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('E-Ticket', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
-                      Text('Tunjukkan ke petugas lapangan', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD1FAE5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.check_circle, color: Color(0xFF0F5A3C), size: 14),
-                      SizedBox(width: 4),
-                      Text('LUNAS', style: TextStyle(color: Color(0xFF0F5A3C), fontWeight: FontWeight.w900, fontSize: 11)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // QR Code
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey.shade200, width: 1.5),
-              ),
-              child: QrImageView(
-                data: booking.id,
-                version: QrVersions.auto,
-                size: 220,
-                eyeStyle: const QrEyeStyle(
-                  eyeShape: QrEyeShape.square,
-                  color: Color(0xFF0F5A3C),
-                ),
-                dataModuleStyle: const QrDataModuleStyle(
-                  dataModuleShape: QrDataModuleShape.square,
-                  color: Color(0xFF1A1A2E),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Booking ID
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.backgroundPage,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(booking.bookingId,
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 1.5, color: AppColors.textDark)),
-            ),
-            const SizedBox(height: 20),
-
-            // Info
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0FDF4),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFD1FAE5)),
-              ),
-              child: Column(children: [
-                Row(children: [
-                  const Icon(Icons.stadium_outlined, size: 16, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(booking.fieldName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
-                ]),
-                const SizedBox(height: 8),
-                Row(children: [
-                  const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Text(dateStr, style: const TextStyle(fontSize: 13)),
-                ]),
-                const SizedBox(height: 8),
-                Row(children: [
-                  const Icon(Icons.access_time, size: 16, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Text(timeStr, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                ]),
-              ]),
-            ),
-            const SizedBox(height: 16),
-
-            // Instruksi
-            Row(children: [
-              Icon(Icons.info_outline, size: 16, color: Colors.grey.shade500),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text('Tunjukkan QR Code ini kepada petugas/Mitra lapangan saat Anda tiba.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-              ),
-            ]),
+            ETicketWidget(booking: booking),
           ],
         ),
       ),

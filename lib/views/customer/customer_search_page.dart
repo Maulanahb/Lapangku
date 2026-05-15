@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -21,6 +22,7 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
   String _sortBy = 'Terdekat';
   
   // Advanced Filter & Sorting state
+  Timer? _debounce;
   List<String> _selectedFacilities = [];
   Position? _currentPosition;
   bool _isLoadingLocation = false;
@@ -108,6 +110,7 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -149,6 +152,21 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                         selectedColor: AppColors.primary,
                         labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
                         onSelected: (val) {
+                          if (sort == 'Terdekat') {
+                            if (_isLoadingLocation) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Sedang mendeteksi lokasi, mohon tunggu...')),
+                              );
+                              return;
+                            }
+                            if (_currentPosition == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Akses GPS diperlukan untuk fitur ini.')),
+                              );
+                              _showLocationServiceDialog();
+                              return;
+                            }
+                          }
                           setModalState(() => _sortBy = sort);
                           setState(() => _sortBy = sort);
                         },
@@ -271,8 +289,11 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
               child: TextField(
                 controller: _searchController,
                 onChanged: (val) {
-                  setState(() {
-                    _searchQuery = val;
+                  if (_debounce?.isActive ?? false) _debounce!.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 500), () {
+                    setState(() {
+                      _searchQuery = val;
+                    });
                   });
                 },
                 decoration: InputDecoration(
@@ -400,6 +421,21 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
     bool isSelected = _sortBy == label;
     return GestureDetector(
       onTap: () {
+        if (label == 'Terdekat') {
+          if (_isLoadingLocation) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Sedang mendeteksi lokasi, mohon tunggu...')),
+            );
+            return;
+          }
+          if (_currentPosition == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Akses GPS diperlukan untuk fitur ini.')),
+            );
+            _showLocationServiceDialog();
+            return;
+          }
+        }
         setState(() {
           _sortBy = label;
         });
@@ -500,32 +536,6 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildInitialState() {
-    return Container(
-      color: Colors.white,
-      width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_rounded, size: 80, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          // REFAKTOR: sebelumnya Color(0xFF2D3748)
-          const Text(
-            'Temukan Lapangan',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
-          ),
-          const SizedBox(height: 8),
-          // REFAKTOR: sebelumnya Color(0xFF718096)
-          const Text(
-            'Ketik nama atau lokasi lapangan\nuntuk mulai mencari.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-          ),
-        ],
-      ),
     );
   }
 
