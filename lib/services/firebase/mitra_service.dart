@@ -333,21 +333,35 @@ class MitraService {
     );
   }
 
-  Future<List<MitraReviewModel>> getReviews() async {
-    await Future.delayed(const Duration(seconds: 1)); // Simulate API
-    return [
-      MitraReviewModel(
-          id: '1',
-          userName: 'Andi S.',
-          rating: 5,
-          comment: 'Lapangan bagus dan bersih.',
-          date: DateTime(2026, 10, 12)),
-      MitraReviewModel(
-          id: '2',
-          userName: 'Budi P.',
-          rating: 4,
-          comment: 'Oke lah buat main bareng.',
-          date: DateTime(2026, 10, 10)),
-    ];
+  Future<List<MitraReviewModel>> getReviews(String mitraId) async {
+    final querySnapshot = await _db
+        .collectionGroup('reviews')
+        .where('mitraId', isEqualTo: mitraId)
+        .get();
+
+    final reviews = querySnapshot.docs
+        .map((doc) => MitraReviewModel.fromFirestore(doc))
+        .toList();
+
+    // Sort locally descending by date
+    reviews.sort((a, b) => b.date.compareTo(a.date));
+
+    return reviews;
+  }
+
+  Future<void> replyReview({
+    required String fieldId,
+    required String reviewId,
+    required String replyText,
+  }) async {
+    await _db
+        .collection('lapangan')
+        .doc(fieldId)
+        .collection('reviews')
+        .doc(reviewId)
+        .update({
+      'replyText': replyText,
+      'replyDate': FieldValue.serverTimestamp(),
+    });
   }
 }

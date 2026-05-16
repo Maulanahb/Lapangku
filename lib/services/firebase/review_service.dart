@@ -22,7 +22,7 @@ class ReviewService {
     required String userName,
     required int rating,
     required String comment,
-    String? imageUrl,
+    String? userPhotoUrl,
   }) async {
     final reviewRef = _db.collection('lapangan').doc(fieldId).collection('reviews').doc();
     final bookingRef = _db.collection('bookings').doc(bookingId);
@@ -38,6 +38,7 @@ class ReviewService {
       final data = fieldSnap.data()!;
       final currentAvg = (data['avg_rating'] ?? data['ratingAvg'] ?? 0.0) as num;
       final currentTotal = (data['total_ulasan'] ?? data['totalUlasan'] ?? 0) as int;
+      final mitraId = data['mitraId'] ?? data['MitraId'] ?? data['id_pemilik'] ?? '';
 
       final newTotal = currentTotal + 1;
       final newAvg = ((currentAvg * currentTotal) + rating) / newTotal;
@@ -47,15 +48,15 @@ class ReviewService {
         'total_ulasan': newTotal,
       });
       
-      // Also update the review doc and booking doc within the same transaction to be safe?
-      // No, batch and transaction shouldn't mix directly. Let's just do everything in the transaction!
       transaction.set(reviewRef, {
         'bookingId': bookingId,
+        'fieldId': fieldId,
+        'mitraId': mitraId,
         'userId': userId,
         'userName': userName,
+        'userPhotoUrl': userPhotoUrl,
         'rating': rating,
         'comment': comment,
-        'reviewImageUrl': imageUrl,
         'createdAt': FieldValue.serverTimestamp(),
         'fieldName': data['nama_lapangan'] ?? data['nama'] ?? data['namaLapangan'] ?? '',
         'fieldImageUrl': data['foto_lapangan'] != null && (data['foto_lapangan'] as List).isNotEmpty 
@@ -95,24 +96,4 @@ class ReviewService {
 
     return docs;
   }
-
-  Future<List<Map<String, dynamic>>> getFieldReviews(String fieldId) async {
-    final querySnapshot = await _db
-        .collection('lapangan')
-        .doc(fieldId)
-        .collection('reviews')
-        .orderBy('createdAt', descending: true)
-        .get();
-
-    return querySnapshot.docs.map((doc) {
-      final data = doc.data();
-      data['id'] = doc.id;
-      return data;
-    }).toList();
-  }
 }
-
-final fieldReviewsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, fieldId) async {
-  final service = ref.watch(reviewServiceProvider);
-  return service.getFieldReviews(fieldId);
-});

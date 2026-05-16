@@ -21,6 +21,7 @@ import 'mitra_profile_document_page.dart';
 import 'mitra_revenue_page.dart';
 import 'mitra_reviews_page.dart';
 import 'mitra_schedule_page.dart';
+import 'statistik_booking_page.dart'; // FIX: Tambahkan import halaman statistik
 
 class MitraProfilePage extends ConsumerWidget {
   const MitraProfilePage({super.key});
@@ -134,7 +135,10 @@ class MitraProfilePage extends ConsumerWidget {
                     context,
                     icon: Icons.bar_chart,
                     title: "Statistik Booking",
-                    onTap: () {}, // Kosong dulu
+                    onTap: () => Navigator.push( // FIX: Navigasi ke StatistikBookingPage
+                      context,
+                      MaterialPageRoute(builder: (_) => const StatistikBookingPage()),
+                    ),
                   ),
                 ],
               ),
