@@ -95,20 +95,39 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                   data: (profile) => CircleAvatar(
                     key: ValueKey(profile.logoUrl),
                     radius: 20,
-                    backgroundImage: profile.logoUrl != null
-                        ? NetworkImage(profile.logoUrl!)
-                        : const NetworkImage(
-                            'https://i.pravatar.cc/150?img=12'),
+                    backgroundColor: _bgLightGreen,
+                    backgroundImage:
+                        profile.logoUrl != null && profile.logoUrl!.isNotEmpty
+                            ? NetworkImage(profile.logoUrl!)
+                            : null,
+                    child: profile.logoUrl == null || profile.logoUrl!.isEmpty
+                        ? Text(
+                            _getInitials(profile.businessName),
+                            style: TextStyle(
+                              color: _primaryGreen,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : null,
                   ),
-                  loading: () => const CircleAvatar(
+                  loading: () => CircleAvatar(
                     radius: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    backgroundColor: _bgLightGreen,
+                    child: const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Color(0xFF0F5A3C)),
+                    ),
                   ),
-                  error: (_, __) => const CircleAvatar(
+                  error: (_, __) => CircleAvatar(
                     radius: 20,
-                    child: Icon(Icons.person),
+                    backgroundColor: _bgLightGreen,
+                    child: Icon(Icons.person, color: _primaryGreen, size: 20),
                   ),
                 ),
+
             const SizedBox(width: 12),
             Text('LapangKu',
                 style: TextStyle(
@@ -235,13 +254,25 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: ref.watch(mitraProfileProvider).when(
-                  data: (profile) => _buildStatCard(
-                    label: 'Rating Rata-rata',
-                    value: profile.rating.toStringAsFixed(1),
-                    hasStar: true,
-                    footer: '(Berdasarkan ulasan)',
-                  ),
+            child: ref.watch(mitraFieldProvider).fields.when(
+                  data: (fields) {
+                    double totalRating = 0;
+                    int ratedFields = 0;
+                    for (var field in fields) {
+                      if (field.totalReviews > 0) {
+                        totalRating += field.avgRating;
+                        ratedFields++;
+                      }
+                    }
+                    double avg = ratedFields > 0 ? totalRating / ratedFields : 0.0;
+
+                    return _buildStatCard(
+                      label: 'Rating Rata-rata',
+                      value: avg.toStringAsFixed(1),
+                      hasStar: true,
+                      footer: '($ratedFields lapangan dinilai)',
+                    );
+                  },
                   loading: () => _buildStatCard(
                     label: 'Rating Rata-rata',
                     value: '...',
@@ -256,6 +287,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                   ),
                 ),
           ),
+
         ]),
       ),
     ]);
@@ -764,4 +796,17 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
       ),
     );
   }
+
+
+  String _getInitials(String name) {
+    if (name.isEmpty) return 'MT';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.length >= 3
+        ? name.substring(0, 3).toUpperCase()
+        : name.toUpperCase();
+  }
 }
+

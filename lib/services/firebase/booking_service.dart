@@ -320,6 +320,45 @@ class BookingService {
     await _db.collection('bookings').doc(bookingId).delete();
   }
 
+  /// [Customer] Mengajukan perubahan jadwal (Reschedule)
+  Future<void> requestReschedule(String bookingId, DateTime newDate, List<String> newTimeSlots, String reason) async {
+    final doc = await _db.collection('bookings').doc(bookingId).get();
+    if (!doc.exists) throw Exception('Booking tidak ditemukan');
+    
+    final booking = BookingModel.fromFirestore(doc);
+    
+    // Validasi 2 jam sebelum main
+    if (booking.timeSlots.isNotEmpty) {
+      final startTimeStr = booking.timeSlots.first.split(' - ')[0];
+      final parts = startTimeStr.split(':');
+      if (parts.length >= 2) {
+        final startHour = int.tryParse(parts[0]) ?? 0;
+        final startMinute = int.tryParse(parts[1]) ?? 0;
+        final startDateTime = DateTime(
+          booking.tanggal.year,
+          booking.tanggal.month,
+          booking.tanggal.day,
+          startHour,
+          startMinute,
+        );
+        
+        final diff = startDateTime.difference(DateTime.now());
+        if (diff.inHours < 2) {
+          throw Exception('Batas waktu pengajuan reschedule (Maksimal 2 jam sebelum jadwal bermain) telah terlewati.');
+        }
+      }
+    }
+    
+    await _db.collection('bookings').doc(bookingId).update({
+      'isRescheduleRequested': true,
+      'rescheduleDate': Timestamp.fromDate(newDate),
+      'rescheduleTimeSlots': newTimeSlots,
+      'rescheduleReason': reason,
+      'rescheduleStatus': 'pending',
+      'updatedAt': Timestamp.fromDate(DateTime.now()),
+    });
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // MITRA ACTIONS
   // ═══════════════════════════════════════════════════════════════════════════
@@ -443,11 +482,104 @@ class BookingService {
       );
     }
 
+    // Cek apakah e-ticket sudah hangus (melewati batas waktu main)
+    if (booking.isTicketExpired) {
+      throw Exception('Tiket ini sudah hangus (melewati waktu selesai bermain).');
+    }
+
     // Semua validasi lulus — ubah status jadi selesai
     await _updateStatus(bookingId, newStatus: BookingStatusHelper.selesai);
 
     // Return booking yang sudah diupdate untuk ditampilkan di UI
     return booking.copyWith(status: BookingStatusHelper.selesai);
+  }
+
+  /// [Mitra] Menyetujui pengajuan reschedule
+  Future<void> approveReschedule(String bookingId) async {
+    final doc = await _db.collection('bookings').doc(bookingId).get();
+    if (!doc.exists) throw Exception('Booking tidak ditemukan');
+    
+    final booking = BookingModel.fromFirestore(doc);
+    if (!booking.isRescheduleRequested || booking.rescheduleStatus != 'pending') {
+      throw Exception('Tidak ada pengajuan reschedule yang valid.');
+    }
+    
+    await _db.collection('bookings').doc(bookingId).update({
+      'tanggal': Timestamp.fromDate(booking.rescheduleDate!),
+      'timeSlots': booking.rescheduleTimeSlots,
+      'isRescheduleRequested': false,
+      'rescheduleStatus': 'approved',
+      'updatedAt': Timestamp.fromDate(DateTime.now()),
+    });
+  }
+
+  /// [Mitra] Menolak pengajuan reschedule
+  Future<void> rejectReschedule(String bookingId) async {
+    await _db.collection('bookings').doc(bookingId).update({
+      'isRescheduleRequested': false,
+      'rescheduleStatus': 'rejected',
+      'updatedAt': Timestamp.fromDate(DateTime.now()),
+    });
+  }
+
+  /// [Mitra] Buat booking offline/manual untuk memblokir slot.
+  ///
+  /// Digunakan ketika ada penyewa yang memesan langsung (via telepon/WA/datang).
+  /// Status langsung `dikonfirmasi` agar slot otomatis terblokir.
+  Future<BookingModel> createOfflineBooking({
+    required String fieldId,
+    required String mitraId,
+    required String fieldName,
+    required String fieldAddress,
+    required String fieldCategory,
+    required String fieldImageUrl,
+    required DateTime date,
+    required List<String> timeSlots,
+    required int hargaPerJam,
+    required String namaPenyewa,
+    String catatan = '',
+  }) async {
+    final docRef = _db.collection('bookings').doc();
+    final now = DateTime.now();
+    final int durasi = timeSlots.length;
+    final int totalBayar = hargaPerJam * durasi;
+
+    final booking = BookingModel(
+      id: docRef.id,
+      bookingId: _generateBookingId(),
+      fieldId: fieldId,
+      mitraId: mitraId,
+      fieldName: fieldName,
+      fieldAddress: fieldAddress,
+      fieldCategory: fieldCategory,
+      fieldImageUrl: fieldImageUrl,
+      userId: 'offline_$mitraId',
+      userName: namaPenyewa,
+      tanggal: DateTime(date.year, date.month, date.day),
+      timeSlots: timeSlots,
+      durasi: durasi,
+      hargaLapangan: totalBayar,
+      biayaLayanan: 0,
+      totalBayar: totalBayar,
+      metodePembayaran: 'offline',
+      status: BookingStatusHelper.dikonfirmasi,
+      statusTimeline: [
+        {
+          'status': BookingStatusHelper.dikonfirmasi,
+          'waktu': Timestamp.fromDate(now),
+        }
+      ],
+      batasWaktuBayar: now,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    final data = booking.toFirestore();
+    if (catatan.isNotEmpty) data['catatan'] = catatan;
+    data['isOfflineBooking'] = true;
+
+    await docRef.set(data);
+    return booking;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

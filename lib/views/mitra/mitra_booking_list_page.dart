@@ -8,6 +8,7 @@ import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/models/booking_status.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
+import 'package:lapangku/views/mitra/mitra_offline_booking_page.dart';
 
 class MitraBookingListPage extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -126,6 +127,16 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const MitraOfflineBookingPage()),
+        ),
+        backgroundColor: AppColors.primary,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('Booking Offline',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
     );
   }
 
@@ -143,8 +154,10 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
             ),
             child: TextField(
               controller: _searchController,
+              onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(
                 hintText: 'Cari nama atau ID pesanan...',
+
                 hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
                 border: InputBorder.none,
                 icon: Icon(Icons.search, color: Colors.grey),
@@ -190,21 +203,50 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
 
     return bookingsAsync.when(
       data: (bookings) {
-        if (bookings.isEmpty) {
-          return const EmptyStateWidget(
-            icon: Icons.receipt_long_outlined,
-            title: 'Belum ada pesanan',
-            subtitle: 'Pesanan akan muncul di sini',
+        // Apply Search Filter
+        final filteredBookings = bookings.where((b) {
+          final query = _searchController.text.toLowerCase();
+          return b.userName.toLowerCase().contains(query) ||
+              b.bookingId.toLowerCase().contains(query);
+        }).toList();
+
+        // Apply Sorting
+        switch (_selectedSort) {
+          case 'Terbaru':
+            filteredBookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            break;
+          case 'Terlama':
+            filteredBookings.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            break;
+          case 'Nilai Tertinggi':
+            filteredBookings
+                .sort((a, b) => b.totalBayar.compareTo(a.totalBayar));
+            break;
+        }
+
+        if (filteredBookings.isEmpty) {
+          return EmptyStateWidget(
+            icon: _searchController.text.isEmpty
+                ? Icons.receipt_long_outlined
+                : Icons.search_off_outlined,
+            title: _searchController.text.isEmpty
+                ? 'Belum ada pesanan'
+                : 'Tidak ditemukan',
+            subtitle: _searchController.text.isEmpty
+                ? 'Pesanan akan muncul di sini'
+                : 'Coba kata kunci atau filter lain',
             iconSize: 64,
           );
         }
+
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: bookings.length,
+          itemCount: filteredBookings.length,
           itemBuilder: (context, index) =>
-              _BookingCard(booking: bookings[index]),
+              _BookingCard(booking: filteredBookings[index]),
         );
       },
+
       loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary)),
       error: (e, st) => Center(child: Text('Error: $e')),
@@ -267,6 +309,21 @@ class _BookingCard extends ConsumerWidget {
                     Text(_getTimeAgo(booking.createdAt),
                         style:
                             const TextStyle(color: Colors.grey, fontSize: 12)),
+                    if (booking.metodePembayaran == 'offline') ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text('OFFLINE',
+                            style: TextStyle(
+                                color: Colors.purple.shade700,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ],
                   ]),
                 ]),
                 PopupMenuButton<String>(
@@ -375,7 +432,9 @@ class _BookingCard extends ConsumerWidget {
               ]),
             ]),
           ),
-          if (booking.status == BookingStatus.menungguKonfirmasi.firestoreValue)
+          if (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending')
+            _buildRescheduleRequestUI(context, ref, booking)
+          else if (booking.status == BookingStatus.menungguKonfirmasi.firestoreValue)
             Padding(
               padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
               child: Row(children: [
@@ -419,6 +478,108 @@ class _BookingCard extends ConsumerWidget {
                 ),
               ]),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRescheduleRequestUI(BuildContext context, WidgetRef ref, BookingModel booking) {
+    final isLoading = ref.watch(MitraBookingActionsProvider).contains(booking.id);
+    final newDateStr = booking.rescheduleDate != null 
+        ? DateFormat('EEEE, d MMM yyyy', 'id_ID').format(booking.rescheduleDate!) 
+        : '-';
+    final newTimeStr = booking.rescheduleTimeSlots?.join(', ') ?? '-';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.edit_calendar, color: Colors.orange.shade800, size: 20),
+              const SizedBox(width: 8),
+              Text('Pengajuan Reschedule', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade900, fontSize: 15)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Tanggal Baru:', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    Text(newDateStr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Jam Baru:', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    Text(newTimeStr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  ],
+                ),
+                const Divider(height: 20),
+                const Text('Alasan:', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 4),
+                Text(booking.rescheduleReason ?? '-', style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: isLoading ? null : () async {
+                    try {
+                      await ref.read(MitraBookingActionsProvider.notifier).rejectReschedule(booking.id);
+                      if (context.mounted) SnackbarHelper.showSuccess(context, 'Pengajuan reschedule ditolak');
+                    } catch (e) {
+                      if (context.mounted) SnackbarHelper.showError(context, 'Gagal: $e');
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.orange.shade800),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text('Tolak', style: TextStyle(color: Colors.orange.shade800, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : () async {
+                    try {
+                      await ref.read(MitraBookingActionsProvider.notifier).approveReschedule(booking.id);
+                      if (context.mounted) SnackbarHelper.showSuccess(context, 'Pengajuan reschedule disetujui');
+                    } catch (e) {
+                      if (context.mounted) SnackbarHelper.showError(context, 'Gagal: $e');
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.shade700,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: isLoading 
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Setujui', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

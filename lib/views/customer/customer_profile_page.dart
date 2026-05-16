@@ -202,7 +202,9 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
                     : null,
                 child: user.avatarUrl == null || user.avatarUrl!.isEmpty
                     ? Text(
-                        user.nama.trim().split(' ').map((l) => l[0]).take(2).join().toUpperCase(),
+                        user.nama.trim().isNotEmpty
+                            ? user.nama.trim().split(' ').where((l) => l.isNotEmpty).map((l) => l[0]).take(2).join().toUpperCase()
+                            : 'U',
                         style: const TextStyle(
                           color: AppColors.primary,
                           fontSize: 28,

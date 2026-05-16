@@ -224,15 +224,16 @@ class _ManageFieldsPageState extends ConsumerState<ManageFieldsPage> {
                   const Icon(Icons.star_rounded,
                       color: Color(0xFFFBBF24), size: 24),
                   const SizedBox(width: 4),
-                  const Text('4.8',
+                  Text(field.avgRating.toStringAsFixed(1),
                       style:
-                          TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
-                  Text(' (67 ulasan)',
+                          const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+                  Text(' (${field.totalReviews} ulasan)',
                       style: TextStyle(
                           color: _textGrey,
                           fontSize: 13,
                           fontWeight: FontWeight.w500)),
                 ]),
+
                 RichText(
                     text: TextSpan(children: [
                   TextSpan(
