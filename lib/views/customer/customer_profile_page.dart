@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart'; // NEW:
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/models/auth/user_model.dart';
-import 'package:lapangku/services/cloudinary_service.dart'; // NEW:
+import 'package:lapangku/services/firebase_storage_service.dart'; // NEW:
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 import 'package:lapangku/standards/widgets/loading_overlay.dart';
@@ -315,8 +315,8 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
         if (!mounted) return;
         LoadingOverlay.show(context, message: 'Mengunggah foto...');
 
-        // 1. Upload ke Cloudinary
-        final String? imageUrl = await CloudinaryService.uploadImage(File(image.path));
+        // 1. Upload ke Firebase Storage
+        final String? imageUrl = await FirebaseStorageService.uploadImage(File(image.path), folder: 'avatars');
 
         if (imageUrl != null) {
           // 2. Update di Firebase via AuthNotifier

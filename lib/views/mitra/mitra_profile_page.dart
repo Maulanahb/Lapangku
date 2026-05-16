@@ -7,7 +7,7 @@ import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_controller.dart'; // NEW: Import MitraController
 import 'package:lapangku/models/mitra/mitra_profile_model.dart';
-import 'package:lapangku/services/cloudinary_service.dart'; // NEW: Import CloudinaryService
+import 'package:lapangku/services/firebase_storage_service.dart'; // NEW: Import FirebaseStorageService
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
