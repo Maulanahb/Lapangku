@@ -8,7 +8,7 @@ import 'package:lapangku/models/mitra/mitra_schedule_model.dart';
 import 'package:lapangku/models/mitra/mitra_revenue_model.dart';
 import 'package:lapangku/models/mitra/mitra_review_model.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
-import 'package:lapangku/services/cloudinary_service.dart';
+import 'package:lapangku/services/firebase_storage_service.dart';
 import 'package:lapangku/standards/constants/app_constants.dart';
 
 class MitraService {
@@ -47,18 +47,18 @@ class MitraService {
     List<File> photos, {
     String suffix = '',
   }) async {
-    return await CloudinaryService.uploadMultipleImages(photos);
+    return await FirebaseStorageService.uploadMultipleImages(photos, folder: 'fields');
   }
 
   Future<String> uploadLogo(String uid, File imageFile) async {
     if (!await imageFile.exists()) throw Exception('File logo tidak ditemukan');
-    final url = await CloudinaryService.uploadImage(imageFile);
+    final url = await FirebaseStorageService.uploadImage(imageFile, folder: 'logos');
     return url!;
   }
 
   Future<String> uploadDocument(String uid, String docType, File file) async {
     if (!await file.exists()) throw Exception('File dokumen tidak ditemukan');
-    final url = await CloudinaryService.uploadImage(file);
+    final url = await FirebaseStorageService.uploadImage(file, folder: 'documents');
     return url!;
   }
 

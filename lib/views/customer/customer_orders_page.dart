@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
-import 'package:lapangku/services/cloudinary_service.dart';
+import 'package:lapangku/services/firebase_storage_service.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/views/customer/payment_upload_page.dart';
@@ -690,7 +690,7 @@ class _BookingCard extends ConsumerWidget {
                         try {
                           String? imageUrl;
                           if (imageFile != null) {
-                            imageUrl = await CloudinaryService.uploadImage(imageFile!);
+                            imageUrl = await FirebaseStorageService.uploadImage(imageFile!, folder: 'reviews');
                           }
                           
                           final service = ref.read(reviewServiceProvider);
