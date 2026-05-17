@@ -8,6 +8,7 @@ import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/widgets/loading_overlay.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 import 'package:lapangku/views/customer/change_password_page.dart';
+import 'package:lapangku/views/customer/widgets/otp_verification_sheet.dart';
 
 class SecurityPage extends ConsumerStatefulWidget {
   const SecurityPage({super.key});
@@ -101,6 +102,73 @@ class _SecurityPageState extends ConsumerState<SecurityPage> {
         );
       }
     }
+  }
+
+  void _showOTPVerificationSheet(UserModel user, String verificationId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => OTPVerificationSheet(
+        phoneNumber: user.phone!,
+        onVerify: (otpCode) async {
+          Navigator.pop(context); // Tutup sheet
+          LoadingOverlay.show(context, message: 'Memverifikasi OTP...');
+          try {
+            await ref.read(authProvider.notifier).verifyPhoneOTP(verificationId, otpCode);
+            if (mounted) {
+              LoadingOverlay.dismiss(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Nomor HP berhasil diverifikasi!')),
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              LoadingOverlay.dismiss(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Verifikasi gagal: $e')),
+              );
+            }
+          }
+        },
+        onResend: () {
+          _handlePhoneVerification(user, resend: true);
+        },
+      ),
+    );
+  }
+
+  Future<void> _handlePhoneVerification(UserModel user, {bool resend = false}) async {
+    if (user.phone == null || user.phone!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nomor HP belum diatur. Harap perbarui Profil Anda.')),
+      );
+      return;
+    }
+
+    if (!resend) LoadingOverlay.show(context, message: 'Mengirim OTP...');
+    
+    await ref.read(authProvider.notifier).sendPhoneVerificationOTP(
+      phoneNumber: user.phone!,
+      onCodeSent: (verificationId) {
+        if (!resend && mounted) LoadingOverlay.dismiss(context);
+        if (mounted) {
+          if (resend) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('OTP dikirim ulang')));
+          } else {
+            _showOTPVerificationSheet(user, verificationId);
+          }
+        }
+      },
+      onError: (e) {
+        if (!resend && mounted) LoadingOverlay.dismiss(context);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal mengirim OTP: $e')),
+          );
+        }
+      },
+    );
   }
 
   @override
@@ -255,9 +323,7 @@ class _SecurityPageState extends ConsumerState<SecurityPage> {
                   label: 'Nomor HP',
                   value: user.phone ?? '-',
                   isVerified: user.phoneVerified,
-                  onAction: user.phoneVerified ? null : () {
-                    // TODO: Implement phone verification flow (OTP)
-                  },
+                  onAction: user.phoneVerified ? null : () => _handlePhoneVerification(user),
                   actionText: 'Verifikasi',
                 ),
               ],
