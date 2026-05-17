@@ -15,6 +15,8 @@ import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 import 'package:lapangku/standards/widgets/loading_overlay.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
+import 'package:lapangku/standards/widgets/shimmer_loading.dart';
 
 class CustomerOrdersPage extends ConsumerStatefulWidget {
   const CustomerOrdersPage({super.key});
@@ -154,9 +156,11 @@ class _State extends ConsumerState<CustomerOrdersPage> {
           _buildFilterChips(),
           Expanded(
             child: bookingsAsync.when(
-              loading: () => const Center(
-                  child:
-                      CircularProgressIndicator(color: AppColors.primary)),
+              loading: () => ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: 4,
+                itemBuilder: (_, __) => ShimmerLoading.listTile(),
+              ),
               error: (e, _) => Center(
                   child: Text('Gagal memuat pesanan:\n$e',
                       textAlign: TextAlign.center)),
@@ -438,23 +442,22 @@ class _BookingCard extends ConsumerWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
+                  CachedImageWidget(
+                    imageUrl: booking.fieldImageUrl,
                     width: 64,
                     height: 64,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(12),
-                      image: booking.fieldImageUrl.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(booking.fieldImageUrl),
-                              fit: BoxFit.cover)
-                          : null,
+                    borderRadius: 12,
+                    errorWidget: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.stadium_outlined, size: 28, color: AppColors.primary),
+                      ),
                     ),
-                    child: booking.fieldImageUrl.isEmpty
-                        ? const Center(
-                            child: Icon(Icons.stadium_outlined,
-                                size: 28, color: AppColors.primary))
-                        : null,
                   ),
                   const SizedBox(width: 12),
                   Expanded(

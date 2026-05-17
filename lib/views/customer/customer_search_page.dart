@@ -7,6 +7,9 @@ import 'package:lapangku/controllers/field/field_controller.dart';
 // REFAKTOR: import shared constants & formatter
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
+import 'package:lapangku/standards/widgets/shimmer_loading.dart';
+import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 
 class CustomerSearchPage extends ConsumerStatefulWidget {
   const CustomerSearchPage({super.key});
@@ -462,8 +465,11 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
 
   Widget _buildResults(AsyncValue<List<FieldModel>> fieldsAsync) {
     return fieldsAsync.when(
-      // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
-      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      loading: () => ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: 5,
+        itemBuilder: (_, __) => ShimmerLoading.listTile(),
+      ),
       error: (e, _) => Center(child: Text('Terjadi kesalahan:\n$e')),
       data: (fields) {
         final filtered = fields.where((f) {
@@ -540,69 +546,29 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
   }
 
   Widget _buildEmptyState() {
-    return Container(
-      color: Colors.white,
-      width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: const BoxDecoration(
-              // REFAKTOR: sebelumnya Color(0xFFF4F6F9)
-              color: AppColors.backgroundPage,
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Stack(
-                children: [
-                  // REFAKTOR: sebelumnya Color(0xFF718096)
-                  Icon(Icons.search, size: 50, color: AppColors.textSecondary),
-                  Positioned(
-                    bottom: 4,
-                    right: 4,
-                    child: Icon(Icons.close, size: 20, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
+    return EmptyStateWidget(
+      icon: Icons.search_off_rounded,
+      title: 'Lapangan tidak ditemukan',
+      subtitle: 'Coba ubah filter atau gunakan kata kunci\nlain untuk hasil yang lebih luas.',
+      actionButton: SizedBox(
+        width: 200,
+        height: 45,
+        child: OutlinedButton(
+          onPressed: () {
+            _searchController.clear();
+            setState(() {
+              _searchQuery = '';
+              _selectedCategory = 'Semua';
+              _sortBy = 'Terdekat';
+              _selectedFacilities.clear();
+            });
+          },
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: AppColors.primary, width: 1.5),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          const SizedBox(height: 24),
-          // REFAKTOR: sebelumnya Color(0xFF2D3748)
-          const Text(
-            'Lapangan tidak ditemukan',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
-          ),
-          const SizedBox(height: 8),
-          // REFAKTOR: sebelumnya Color(0xFF718096)
-          const Text(
-            'Coba ubah filter atau gunakan kata kunci\nlain untuk hasil yang lebih luas.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: 200,
-            height: 45,
-            child: OutlinedButton(
-              onPressed: () {
-                _searchController.clear();
-                setState(() {
-                  _searchQuery = '';
-                  _selectedCategory = 'Semua';
-                  _sortBy = 'Terdekat';
-                });
-              },
-              style: OutlinedButton.styleFrom(
-                // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
-                side: const BorderSide(color: AppColors.primary, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('Reset Filter', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-            ),
-          ),
-        ],
+          child: const Text('Reset Filter', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+        ),
       ),
     );
   }
@@ -639,17 +605,12 @@ class _HorizontalFieldCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Thumbnail Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: field.fotoUtama.isNotEmpty
-                  ? Image.network(
-                      field.fotoUtama,
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
-                    )
-                  : _buildImagePlaceholder(),
+            CachedImageWidget(
+              imageUrl: field.fotoUtama,
+              width: 100,
+              height: 100,
+              borderRadius: 12,
+              errorWidget: _buildImagePlaceholder(),
             ),
             const SizedBox(width: 12),
             // Details

@@ -11,6 +11,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 import 'package:lapangku/views/customer/widgets/e_ticket_widget.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
+import 'package:lapangku/standards/widgets/shimmer_loading.dart';
 
 class BookingDetailPage extends ConsumerWidget {
   final String bookingId;
@@ -32,7 +34,14 @@ class BookingDetailPage extends ConsumerWidget {
         actions: [IconButton(icon: const Icon(Icons.share_outlined), onPressed: () {})],
       ),
       body: bookingStream.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        loading: () => ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            ShimmerLoading.card(height: 120),
+            ShimmerLoading.card(height: 200),
+            ShimmerLoading.card(height: 100),
+          ],
+        ),
         error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: AppColors.error))),
         data: (booking) {
           if (booking == null) return const Center(child: Text('Booking tidak ditemukan'));
@@ -120,10 +129,12 @@ class BookingDetailPage extends ConsumerWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          child: booking.fieldImageUrl.isNotEmpty
-              ? Image.network(booking.fieldImageUrl, height: 140, width: double.infinity, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _placeholderImage())
-              : _placeholderImage(),
+          child: CachedImageWidget(
+            imageUrl: booking.fieldImageUrl,
+            height: 140,
+            width: double.infinity,
+            errorWidget: _placeholderImage(),
+          ),
         ),
         Padding(
           padding: const EdgeInsets.all(16),
@@ -477,15 +488,10 @@ class BookingDetailPage extends ConsumerWidget {
             InteractiveViewer(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  url,
+                child: CachedImageWidget(
+                  imageUrl: url,
                   fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-                  },
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Center(child: Icon(Icons.broken_image, size: 64, color: Colors.white)),
+                  errorWidget: const Center(child: Icon(Icons.broken_image, size: 64, color: Colors.white)),
                 ),
               ),
             ),

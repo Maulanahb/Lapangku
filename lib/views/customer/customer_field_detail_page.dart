@@ -9,6 +9,8 @@ import 'package:lapangku/controllers/favorite/favorite_controller.dart';
 import 'package:lapangku/services/firebase/review_service.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
+import 'package:lapangku/standards/widgets/shimmer_loading.dart';
 import 'package:lapangku/standards/utils/facility_helper.dart';
 
 class CustomerFieldDetailPage extends ConsumerStatefulWidget {
@@ -110,7 +112,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(fit: StackFit.expand, children: [
           imgs.isNotEmpty
-              ? Image.network(imgs.first, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _ph())
+              ? CachedImageWidget(imageUrl: imgs.first, fit: BoxFit.cover, errorWidget: _ph())
               : _ph(),
           const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
             begin: Alignment.topCenter, end: Alignment.bottomCenter,
@@ -302,7 +304,15 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       reviewsAsync.when(
         loading: () => Column(children: [
           _buildSummaryBox(f, 0, 0, 0, 0, 0),
-          const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator(color: AppColors.primary))),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: 3,
+              itemBuilder: (_, __) => ShimmerLoading.listTile(),
+            ),
+          ),
         ]),
         error: (e, _) => Column(children: [
           _buildSummaryBox(f, 0, 0, 0, 0, 0),
@@ -390,12 +400,11 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
         const SizedBox(height: 12),
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: Image.network(
-            reviewImageUrl,
+          child: CachedImageWidget(
+            imageUrl: reviewImageUrl,
             width: double.infinity,
             height: 140,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(height: 140, color: Colors.grey.shade200, child: const Center(child: Icon(Icons.broken_image, color: Colors.grey))),
+            errorWidget: Container(height: 140, color: Colors.grey.shade200, child: const Center(child: Icon(Icons.broken_image, color: Colors.grey))),
           ),
         ),
       ],
@@ -430,18 +439,10 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
                 ? Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        mapImageUrl,
+                      CachedImageWidget(
+                        imageUrl: mapImageUrl,
                         fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.primary, strokeWidth: 2,
-                            ),
-                          );
-                        },
-                        errorBuilder: (_, __, ___) => const Center(
+                        errorWidget: const Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
