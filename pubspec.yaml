@@ -51,6 +51,7 @@ dependencies:
 
   path: any
   shimmer: ^3.0.0
+  gal: ^2.3.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
