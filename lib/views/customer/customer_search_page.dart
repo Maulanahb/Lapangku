@@ -23,7 +23,7 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
   
   // Advanced Filter & Sorting state
   Timer? _debounce;
-  List<String> _selectedFacilities = [];
+  final List<String> _selectedFacilities = [];
   Position? _currentPosition;
   bool _isLoadingLocation = false;
 

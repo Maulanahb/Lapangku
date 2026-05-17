@@ -49,6 +49,8 @@ dependencies:
   mobile_scanner: ^5.0.0
   qr_flutter: ^4.1.0
 
+  path: any
+  shimmer: ^3.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

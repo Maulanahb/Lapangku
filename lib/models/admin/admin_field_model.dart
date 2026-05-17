@@ -9,22 +9,18 @@ class AdminFieldModel extends BaseFieldModel {
   final DateTime? createdAt;
 
   const AdminFieldModel({
-    required String fieldId,
-    required String mitraId,
-    required String namaLapangan,
+    required super.fieldId,
+    required super.mitraId,
+    required super.namaLapangan,
     required this.namaMitra,
     required this.emailPemilik,
     required this.lokasi,
-    required int hargaPerJam,
+    required super.hargaPerJam,
     required this.jenis,
     required this.statusVerifikasi,
     this.createdAt,
   }) : super(
-          fieldId: fieldId,
-          mitraId: mitraId,
           namaVenue: '',
-          namaLapangan: namaLapangan,
-          hargaPerJam: hargaPerJam,
         );
 
   /// Backward-compat getter: tetap bisa akses .mitraUid

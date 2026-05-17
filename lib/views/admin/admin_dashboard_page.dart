@@ -771,5 +771,5 @@ class _StatData {
   final String? subtext;
   final bool isGreen;
   const _StatData(this.label, this.value, this.icon, this.color,
-      {this.subtext, this.isGreen = false});
+      {this.isGreen = false});
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/views/customer/payment_upload_page.dart';
@@ -116,7 +115,7 @@ class BookingDetailPage extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 4))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         ClipRRect(
@@ -504,14 +503,50 @@ class BookingDetailPage extends ConsumerWidget {
     );
   }
 
-  void _showRescheduleSheet(BuildContext context, WidgetRef ref, BookingModel booking) {
+  void _showRescheduleSheet(BuildContext context, WidgetRef ref, BookingModel booking) async {
+    // Tampilkan loading saat fetch data lapangan
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+    );
+
+    List<String> times = [];
+    try {
+      final doc = await FirebaseFirestore.instance.collection('fields').doc(booking.fieldId).get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        final jamBuka = data['jamBuka'] ?? '08:00';
+        final jamTutup = data['jamTutup'] ?? '22:00';
+        
+        int startHour = 8;
+        int endHour = 22;
+        try {
+          startHour = int.parse(jamBuka.toString().split(':')[0]);
+          endHour = int.parse(jamTutup.toString().split(':')[0]);
+        } catch (_) {}
+
+        if (endHour <= startHour) endHour += 24;
+        
+        times = List.generate(endHour - startHour + 1, (i) {
+          final h = startHour + i;
+          return '${(h % 24).toString().padLeft(2, '0')}:00';
+        });
+      }
+    } catch (_) {}
+
+    if (!context.mounted) return;
+    Navigator.pop(context); // Tutup loading
+
+    if (times.isEmpty) {
+      // Fallback statis jika gagal
+      times = List.generate(17, (i) => '${(i + 6).toString().padLeft(2, '0')}:00');
+    }
+
     DateTime? selectedDate;
     String? selectedStartTime;
     String? selectedEndTime;
     final reasonCtrl = TextEditingController();
-
-    // Helper for simple time slots
-    final times = List.generate(17, (i) => '${(i + 6).toString().padLeft(2, '0')}:00');
 
     showModalBottomSheet(
       context: context,

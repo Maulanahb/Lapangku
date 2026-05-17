@@ -424,7 +424,7 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.primaryLight,
               shape: BoxShape.circle,
             ),

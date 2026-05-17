@@ -3,12 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_stats_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_booking_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
-import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/views/mitra/mitra_qr_scanner_page.dart';
 import 'package:lapangku/views/mitra/mitra_booking_list_page.dart';
 import 'package:intl/intl.dart';
@@ -706,8 +704,9 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                   : weeklyData.map((data) {
                       double maxRevenue = 0;
                       for (var d in weeklyData) {
-                        if (d['revenue'] > maxRevenue)
+                        if (d['revenue'] > maxRevenue) {
                           maxRevenue = d['revenue'].toDouble();
+                        }
                       }
                       double factor =
                           maxRevenue > 0 ? (data['revenue'] / maxRevenue) : 0.1;

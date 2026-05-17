@@ -284,7 +284,7 @@ class _SecurityPageState extends ConsumerState<SecurityPage> {
                     ),
                     Switch(
                       value: user.twoFactorEnabled,
-                      activeColor: AppColors.primary,
+                      activeThumbColor: AppColors.primary,
                       onChanged: (value) => _handleToggleTwoFactor(user, value),
                     ),
                   ],

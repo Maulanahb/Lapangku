@@ -4,7 +4,6 @@ import 'package:lapangku/controllers/favorite/favorite_controller.dart';
 import 'package:lapangku/controllers/field/field_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/models/field/field_model.dart';
-import 'package:lapangku/services/firebase/favorite_service.dart';
 // REFAKTOR: import shared components
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';

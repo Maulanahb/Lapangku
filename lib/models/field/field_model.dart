@@ -15,15 +15,17 @@ class FieldModel extends BaseFieldModel {
   final List<String> fotoGaleri;
   final List<String> fasilitas;
   final String? statusVerifikasi;
+  final String jamBuka;
+  final String jamTutup;
 
   const FieldModel({
     required this.id,
     String fieldId = '',
-    String mitraId = '',
-    String namaVenue = '',
+    super.mitraId = '',
+    super.namaVenue,
     required String nama,
     required this.kategori,
-    required int hargaPerJam,
+    required super.hargaPerJam,
     required this.alamat,
     required this.latitude,
     required this.longitude,
@@ -35,12 +37,11 @@ class FieldModel extends BaseFieldModel {
     required this.fotoGaleri,
     required this.fasilitas,
     this.statusVerifikasi,
+    this.jamBuka = '08:00',
+    this.jamTutup = '22:00',
   }) : super(
           fieldId: fieldId == '' ? id : fieldId,
-          mitraId: mitraId,
-          namaVenue: namaVenue,
           namaLapangan: nama,
-          hargaPerJam: hargaPerJam,
         );
 
   /// Backward-compat getter: tetap bisa akses .nama
@@ -84,6 +85,8 @@ class FieldModel extends BaseFieldModel {
       fotoGaleri: fotoLapangan,
       fasilitas: List<String>.from(data['fasilitas'] ?? []),
       statusVerifikasi: data['status_verifikasi'],
+      jamBuka: data['jamBuka'] ?? '08:00',
+      jamTutup: data['jamTutup'] ?? '22:00',
     );
   }
 
@@ -106,6 +109,8 @@ class FieldModel extends BaseFieldModel {
       'foto_lapangan': fotoGaleri,
       'fasilitas': fasilitas,
       'status_verifikasi': statusVerifikasi,
+      'jamBuka': jamBuka,
+      'jamTutup': jamTutup,
     };
   }
 }

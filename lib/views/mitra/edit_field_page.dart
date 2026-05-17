@@ -315,8 +315,11 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
             return GestureDetector(
               onTap: () {
                 setState(() {
-                  if (isSelected) _selectedFacilities.remove(facility['name']);
-                  else _selectedFacilities.add(facility['name'] as String);
+                  if (isSelected) {
+                    _selectedFacilities.remove(facility['name']);
+                  } else {
+                    _selectedFacilities.add(facility['name'] as String);
+                  }
                 });
               },
               child: AnimatedContainer(
@@ -391,8 +394,11 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
                       ),
                       FieldFormWidgets.buildPositionDetector(onTap: () {
                         setState(() {
-                          if (allItems[0]['type'] == 'url') _existingPhotoUrls.removeAt(0);
-                          else _photoFiles.removeAt(0);
+                          if (allItems[0]['type'] == 'url') {
+                            _existingPhotoUrls.removeAt(0);
+                          } else {
+                            _photoFiles.removeAt(0);
+                          }
                         });
                       }),
                     ],
@@ -429,8 +435,11 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
                         ),
                         FieldFormWidgets.buildPositionDetector(onTap: () {
                           setState(() {
-                            if (allItems[itemIndex]['type'] == 'url') _existingPhotoUrls.remove(allItems[itemIndex]['value']);
-                            else _photoFiles.remove(allItems[itemIndex]['value']);
+                            if (allItems[itemIndex]['type'] == 'url') {
+                              _existingPhotoUrls.remove(allItems[itemIndex]['value']);
+                            } else {
+                              _photoFiles.remove(allItems[itemIndex]['value']);
+                            }
                           });
                         }),
                       ],

@@ -499,7 +499,9 @@ class BookingLifecycleService {
       // Skip terminal states (tidak memblokir slot)
       if (status == BookingStatusHelper.dibatalkan ||
           status == BookingStatusHelper.expired ||
-          status == BookingStatusHelper.ditolak) continue;
+          status == BookingStatusHelper.ditolak) {
+        continue;
+      }
 
       // Auto-expire: jika menunggu_bayar tapi sudah lewat batas waktu
       if (status == BookingStatusHelper.menungguBayar) {

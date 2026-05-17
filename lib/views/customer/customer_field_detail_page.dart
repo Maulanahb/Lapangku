@@ -26,18 +26,39 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   bool _showFullDesc = false;
   late TabController _tabController;
   final List<Map<String, String>> _dates = [];
+  List<String> _allSlots = [];
 
-  // Generate time labels 06:00 - 22:00
-  final List<String> _allSlots = List.generate(16, (i) {
-    final h = i + 6;
-    return '${h.toString().padLeft(2, '0')}:00 - ${(h + 1).toString().padLeft(2, '0')}:00';
-  });
+  void _generateDynamicSlots() {
+    int startHour = 8;
+    int endHour = 22;
+
+    try {
+      startHour = int.parse(widget.field.jamBuka.split(':')[0]);
+      endHour = int.parse(widget.field.jamTutup.split(':')[0]);
+    } catch (_) {}
+
+    if (endHour <= startHour) {
+      endHour += 24;
+    }
+
+    final int totalSlots = endHour - startHour;
+    _allSlots = List.generate(totalSlots, (i) {
+      final h = startHour + i;
+      final nextH = h + 1;
+      
+      final hStr = (h % 24).toString().padLeft(2, '0');
+      final nextHStr = (nextH % 24).toString().padLeft(2, '0');
+      
+      return '$hStr:00 - $nextHStr:00';
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _generateDates();
+    _generateDynamicSlots();
   }
 
   @override
@@ -200,10 +221,10 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
             decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(12)),
-            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.circle, size: 8, color: AppColors.primary),
-              SizedBox(width: 4),
-              Text('Buka • 06:00-22:00', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.circle, size: 8, color: AppColors.primary),
+              const SizedBox(width: 4),
+              Text('Buka • ${f.jamBuka}-${f.jamTutup}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
             ]),
           ),
         ]),
@@ -247,7 +268,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       const SizedBox(height: 16),
       // REFAKTOR: sebelumnya _fmt() — sekarang pakai CurrencyFormatter
       _iRow(Icons.attach_money, 'Harga Sewa', '${CurrencyFormatter.format(widget.field.hargaPerJam)} / jam'),
-      _iRow(Icons.access_time_rounded, 'Jam Operasional', '06:00 - 22:00 WIB'),
+      _iRow(Icons.access_time_rounded, 'Jam Operasional', '${widget.field.jamBuka} - ${widget.field.jamTutup} WIB'),
     ]));
   }
 
@@ -291,8 +312,9 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
           int c5 = 0, c4 = 0, c3 = 0, c2 = 0, c1 = 0;
           for (var r in reviews) {
             int rating = r['rating'] ?? 5;
-            if (rating == 5) c5++;
-            else if (rating == 4) c4++;
+            if (rating == 5) {
+              c5++;
+            } else if (rating == 4) c4++;
             else if (rating == 3) c3++;
             else if (rating == 2) c2++;
             else if (rating == 1) c1++;
@@ -317,8 +339,11 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
                     final reviewImageUrl = review['reviewImageUrl'] ?? '';
                     DateTime date = DateTime.now();
                     if (review['createdAt'] != null) {
-                      if (review['createdAt'] is DateTime) date = review['createdAt'] as DateTime;
-                      else date = review['createdAt'].toDate();
+                      if (review['createdAt'] is DateTime) {
+                        date = review['createdAt'] as DateTime;
+                      } else {
+                        date = review['createdAt'].toDate();
+                      }
                     }
                     final time = DateFormat('dd MMM yyyy').format(date);
                     return _rc(n, s, t, time, reviewImageUrl);

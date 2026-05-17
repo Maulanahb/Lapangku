@@ -21,11 +21,11 @@ class MitraFieldModel extends BaseFieldModel {
 
   const MitraFieldModel({
     required this.id,
-    required String mitraId,
-    String namaVenue = '',
-    required String namaLapangan,
+    required super.mitraId,
+    super.namaVenue,
+    required super.namaLapangan,
     required this.jenisLapangan,
-    required int hargaPerJam,
+    required super.hargaPerJam,
     this.deskripsi = '',
     this.alamat = '',
     this.latitude = 0.0,
@@ -42,10 +42,6 @@ class MitraFieldModel extends BaseFieldModel {
   }) : super(
 
           fieldId: id,
-          mitraId: mitraId,
-          namaVenue: namaVenue,
-          namaLapangan: namaLapangan,
-          hargaPerJam: hargaPerJam,
         );
 
   // Backward-compat getters

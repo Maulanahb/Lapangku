@@ -542,11 +542,11 @@ class _BookingCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const Icon(Icons.edit_calendar_rounded, color: Color(0xFFC2410C), size: 20),
-              const SizedBox(width: 8),
-              Text('Pengajuan Reschedule', style: TextStyle(fontWeight: FontWeight.w900, color: const Color(0xFF9A3412), fontSize: 15)),
+              Icon(Icons.edit_calendar_rounded, color: Color(0xFFC2410C), size: 20),
+              SizedBox(width: 8),
+              Text('Pengajuan Reschedule', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF9A3412), fontSize: 15)),
             ],
           ),
           const SizedBox(height: 16),

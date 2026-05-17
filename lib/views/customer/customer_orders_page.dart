@@ -228,10 +228,12 @@ class _State extends ConsumerState<CustomerOrdersPage> {
             final status = b.status.toLowerCase();
             final filterKey = _filter.toLowerCase();
             if (filterKey == 'menunggu bayar') return status == 'menunggu_bayar';
-            if (filterKey == 'aktif')
+            if (filterKey == 'aktif') {
               return status == 'dikonfirmasi' || status == 'aktif';
-            if (filterKey == 'menunggu')
+            }
+            if (filterKey == 'menunggu') {
               return status == 'menunggu_konfirmasi';
+            }
             return status == filterKey;
           }).toList();
 
@@ -373,11 +375,11 @@ class _BookingCard extends ConsumerWidget {
           border: isSelected
               ? Border.all(color: AppColors.primary, width: 2)
               : null,
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
                 color: AppColors.shadow,
                 blurRadius: 12,
-                offset: const Offset(0, 4))
+                offset: Offset(0, 4))
           ],
         ),
         child: Column(
