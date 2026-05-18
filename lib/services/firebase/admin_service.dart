@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/admin/admin_field_model.dart';
@@ -124,11 +126,45 @@ class AdminService {
   }
 
   Future<void> addUser(Map<String, dynamic> data) async {
-    final docRef = _firestore.collection('users').doc();
-    data['uid'] = docRef.id;
-    data['createdAt'] = FieldValue.serverTimestamp();
-    data['isVerified'] = data['role'] == 'mitra' ? false : true;
-    await docRef.set(data);
+    final password = data['password'] as String?;
+    data.remove('password'); // jangan simpan password ke Firestore
+
+    if (password != null && password.isNotEmpty) {
+      // Gunakan secondary Firebase App agar sesi super admin tidak terganggu
+      FirebaseApp? secondaryApp;
+      try {
+        secondaryApp = await Firebase.initializeApp(
+          name: 'secondaryApp',
+          options: Firebase.app().options,
+        );
+      } catch (_) {
+        // Sudah ada secondary app (misal dari sebelumnya), gunakan yang ada
+        secondaryApp = Firebase.app('secondaryApp');
+      }
+
+      try {
+        final secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+        final credential = await secondaryAuth.createUserWithEmailAndPassword(
+          email: data['email'] as String,
+          password: password,
+        );
+        final uid = credential.user!.uid;
+        // Sign out dari secondary agar bersih
+        await secondaryAuth.signOut();
+
+        data['uid'] = uid;
+        data['createdAt'] = FieldValue.serverTimestamp();
+        await _firestore.collection('users').doc(uid).set(data);
+      } finally {
+        await secondaryApp.delete();
+      }
+    } else {
+      // Fallback: hanya simpan ke Firestore (tanpa Auth)
+      final docRef = _firestore.collection('users').doc();
+      data['uid'] = docRef.id;
+      data['createdAt'] = FieldValue.serverTimestamp();
+      await docRef.set(data);
+    }
   }
 
   Future<void> updateUserData(String uid, Map<String, dynamic> data) async {

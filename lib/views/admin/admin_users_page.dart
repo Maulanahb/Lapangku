@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/admin/admin_controller.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 
 class AdminUsersPage extends ConsumerStatefulWidget {
   const AdminUsersPage({super.key});
@@ -43,6 +44,10 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
   }
 
   Widget _buildHeader() {
+    final authState = ref.watch(authProvider);
+    const superAdminEmail = 'adminlapangku@gmail.com';
+    final isSuperAdmin = (authState.user?.email ?? '').toLowerCase() == superAdminEmail;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
       color: Colors.white,
@@ -70,6 +75,21 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
           ),
           Row(
             children: [
+              if (isSuperAdmin) ...[
+                ElevatedButton.icon(
+                  onPressed: () => _showAddAdminDialog(),
+                  icon: const Icon(Icons.admin_panel_settings_rounded, size: 18),
+                  label: const Text('Tambah Admin', style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
               ElevatedButton.icon(
                 onPressed: () => ref.read(allUsersProvider.notifier).load(),
                 icon: const Icon(Icons.refresh_rounded, size: 18),
@@ -78,9 +98,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                   backgroundColor: Colors.grey.shade100,
                   foregroundColor: _primary,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
               ),
@@ -198,6 +216,8 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
         : '?';
 
     final roleColor = _roleColor(role);
+    const superAdminEmail = 'adminlapangku@gmail.com';
+    final isSuperAdminAccount = email.toLowerCase() == superAdminEmail;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
@@ -288,7 +308,34 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                         ),
                       ),
                     ),
-                    if (statusVerifikasi.isNotEmpty) ...[
+                    if (isSuperAdminAccount) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.shade200),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.shield_rounded, size: 10, color: Colors.amber.shade700),
+                            const SizedBox(width: 4),
+                            Text(
+                              'SUPER ADMIN',
+                              style: TextStyle(
+                                color: Colors.amber.shade800,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (statusVerifikasi.isNotEmpty && !isSuperAdminAccount) ...[
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -353,37 +400,58 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
             ),
           ),
           // Action
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (role.toLowerCase() == 'mitra' && statusVerifikasi == 'menunggu') ...[
-                _actionBtn(Icons.check_circle_rounded, Colors.green, 'Setujui', () {
-                  _updateVerifikasi(uid, name, 'aktif');
-                }),
-                const SizedBox(width: 8),
-                _actionBtn(Icons.cancel_rounded, Colors.red, 'Tolak', () {
-                  _updateVerifikasi(uid, name, 'ditolak');
-                }),
-                const SizedBox(width: 8),
-              ],
-              _actionBtn(Icons.edit_note_rounded, Colors.blue, 'Edit', () {
-                _showUserForm(user);
-              }),
-              const SizedBox(width: 8),
-              _actionBtn(
-                (user['isActive'] ?? true) ? Icons.block_flipped : Icons.check_circle_outline,
-                (user['isActive'] ?? true) ? Colors.orange : Colors.green,
-                (user['isActive'] ?? true) ? 'Nonaktifkan' : 'Aktifkan',
-                () {
-                  _toggleActiveUser(uid, name, user['isActive'] ?? true);
-                },
+          if (isSuperAdminAccount)
+            Tooltip(
+              message: 'Akun Super Admin tidak dapat diubah',
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.lock_rounded, size: 14, color: Colors.amber.shade700),
+                    const SizedBox(width: 6),
+                    Text('Terlindungi', style: TextStyle(fontSize: 11, color: Colors.amber.shade800, fontWeight: FontWeight.w700)),
+                  ],
+                ),
               ),
-              const SizedBox(width: 8),
-              _actionBtn(Icons.delete_sweep_rounded, Colors.redAccent, 'Hapus', () {
-                _deleteUser(uid, name);
-              }),
-            ],
-          ),
+            )
+          else
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (role.toLowerCase() == 'mitra' && statusVerifikasi == 'menunggu') ...[
+                  _actionBtn(Icons.check_circle_rounded, Colors.green, 'Setujui', () {
+                    _updateVerifikasi(uid, name, 'aktif');
+                  }),
+                  const SizedBox(width: 8),
+                  _actionBtn(Icons.cancel_rounded, Colors.red, 'Tolak', () {
+                    _updateVerifikasi(uid, name, 'ditolak');
+                  }),
+                  const SizedBox(width: 8),
+                ],
+                _actionBtn(Icons.edit_note_rounded, Colors.blue, 'Edit', () {
+                  _showUserForm(user);
+                }),
+                const SizedBox(width: 8),
+                _actionBtn(
+                  (user['isActive'] ?? true) ? Icons.block_flipped : Icons.check_circle_outline,
+                  (user['isActive'] ?? true) ? Colors.orange : Colors.green,
+                  (user['isActive'] ?? true) ? 'Nonaktifkan' : 'Aktifkan',
+                  () {
+                    _toggleActiveUser(uid, name, user['isActive'] ?? true);
+                  },
+                ),
+                const SizedBox(width: 8),
+                _actionBtn(Icons.delete_sweep_rounded, Colors.redAccent, 'Hapus', () {
+                  _deleteUser(uid, name);
+                }),
+              ],
+            ),
         ],
       ),
     );
@@ -489,6 +557,183 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
         );
       }
     }
+  }
+
+  void _showAddAdminDialog() {
+    final nameCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final passwordCtrl = TextEditingController();
+    final jabatanCtrl = TextEditingController();
+    bool isLoading = false;
+    bool obscurePassword = true;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            width: 420,
+            padding: const EdgeInsets.all(28),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Tambah Admin Baru',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E)),
+                          ),
+                          const SizedBox(height: 2),
+                          Text('Hanya dapat dilakukan Super Admin', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _primary.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _primary.withOpacity(0.15)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded, color: _primary, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Admin baru akan memiliki akses ke panel admin. Pastikan data yang dimasukkan benar.',
+                            style: TextStyle(fontSize: 11, color: _primary.withOpacity(0.8)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildTextField('Nama Lengkap', nameCtrl, Icons.person_outline),
+                  const SizedBox(height: 14),
+                  _buildTextField('Email', emailCtrl, Icons.email_outlined),
+                  const SizedBox(height: 14),
+                  _buildTextField('Jabatan (Opsional)', jabatanCtrl, Icons.badge_outlined),
+                  const SizedBox(height: 14),
+                  // Password field
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Password', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Color(0xFF4A5568))),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: passwordCtrl,
+                        obscureText: obscurePassword,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFFADB5BD)),
+                          suffixIcon: IconButton(
+                            icon: Icon(obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey, size: 20),
+                            onPressed: () => setModal(() => obscurePassword = !obscurePassword),
+                          ),
+                          hintText: 'Min. 6 karakter',
+                          hintStyle: const TextStyle(color: Color(0xFFADB5BD), fontSize: 13),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              final name = nameCtrl.text.trim();
+                              final email = emailCtrl.text.trim();
+                              final password = passwordCtrl.text.trim();
+                              final jabatan = jabatanCtrl.text.trim();
+
+                              if (name.isEmpty || email.isEmpty || password.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Nama, Email, dan Password harus diisi'), backgroundColor: Colors.red),
+                                );
+                                return;
+                              }
+                              if (password.length < 6) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Password minimal 6 karakter'), backgroundColor: Colors.red),
+                                );
+                                return;
+                              }
+
+                              setModal(() => isLoading = true);
+                              try {
+                                await ref.read(allUsersProvider.notifier).addUser({
+                                  'nama': name,
+                                  'email': email,
+                                  'password': password,
+                                  'role': 'admin',
+                                  'jabatan': jabatan.isEmpty ? 'Admin' : jabatan,
+                                  'isVerified': true,
+                                  'statusVerifikasi': 'aktif',
+                                });
+                                if (ctx.mounted) Navigator.pop(ctx);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Admin baru berhasil ditambahkan'),
+                                      backgroundColor: _primary,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                setModal(() => isLoading = false);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Gagal: $e'), backgroundColor: Colors.red),
+                                  );
+                                }
+                              }
+                            },
+                      icon: isLoading
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.admin_panel_settings_rounded, size: 18),
+                      label: Text(isLoading ? 'Menyimpan...' : 'Buat Akun Admin',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _toggleActiveUser(String uid, String name, bool currentActive) async {
