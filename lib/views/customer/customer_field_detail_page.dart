@@ -571,23 +571,46 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
               children: List.generate(_allSlots.length, (i) {
                 final slot = _allSlots[i];
                 final isBooked = bookedSlots.contains(slot);
+                
+                // Tambahkan validasi untuk mendisable waktu yang sudah lewat (khusus hari ini)
+                bool isPassed = false;
+                if (_selectedDateIndex == 0) {
+                  final startTimeStr = slot.split(' - ')[0]; // misal "06:00"
+                  final parts = startTimeStr.split(':');
+                  if (parts.length >= 2) {
+                    final hour = int.tryParse(parts[0]) ?? 0;
+                    final minute = int.tryParse(parts[1]) ?? 0;
+                    final now = DateTime.now();
+                    final startDateTime = DateTime(
+                      _selectedDate.year,
+                      _selectedDate.month,
+                      _selectedDate.day,
+                      hour,
+                      minute,
+                    );
+                    if (now.isAfter(startDateTime)) {
+                      isPassed = true;
+                    }
+                  }
+                }
+                
+                final isUnavailable = isBooked || isPassed;
                 final isSel = _selectedTimeIndices.contains(i);
 
                 Color bg, border, txt;
                 String sub = '';
                 if (isBooked) {
-                  // REFAKTOR: sebelumnya Color(0xFFF4F6F9)
                   bg = AppColors.backgroundPage; border = Colors.grey.shade200; txt = Colors.grey.shade400; sub = 'TERPESAN';
+                } else if (isPassed) {
+                  bg = AppColors.backgroundPage; border = Colors.grey.shade200; txt = Colors.grey.shade400; sub = 'LEWAT';
                 } else if (isSel) {
-                  // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
                   bg = AppColors.primary; border = AppColors.primary; txt = Colors.white; sub = 'TERPILIH';
                 } else {
-                  // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
                   bg = Colors.white; border = AppColors.primary; txt = AppColors.primary;
                 }
 
                 return GestureDetector(
-                  onTap: isBooked ? null : () => setState(() { isSel ? _selectedTimeIndices.remove(i) : _selectedTimeIndices.add(i); }),
+                  onTap: isUnavailable ? null : () => setState(() { isSel ? _selectedTimeIndices.remove(i) : _selectedTimeIndices.add(i); }),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: (MediaQuery.of(context).size.width - 50) / 2,

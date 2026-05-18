@@ -168,13 +168,19 @@ class BookingModel {
       if (parts.length >= 2) {
         final endHour = int.tryParse(parts[0]) ?? 0;
         final endMinute = int.tryParse(parts[1]) ?? 0;
-        final endDateTime = DateTime(
+        DateTime endDateTime = DateTime(
           tanggal.year,
           tanggal.month,
           tanggal.day,
           endHour,
           endMinute,
         );
+        
+        // Jika endHour adalah 0 (misal 00:00), maka itu berarti pergantian hari (besoknya)
+        if (endHour == 0 && endMinute == 0) {
+          endDateTime = endDateTime.add(const Duration(days: 1));
+        }
+        
         return DateTime.now().isAfter(endDateTime);
       }
     } catch (_) {}
