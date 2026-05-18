@@ -7,6 +7,7 @@ import 'package:lapangku/models/mitra/mitra_profile_model.dart';
 import 'package:lapangku/models/mitra/mitra_schedule_model.dart';
 import 'package:lapangku/models/mitra/mitra_revenue_model.dart';
 import 'package:lapangku/models/mitra/mitra_review_model.dart';
+import 'package:lapangku/models/mitra/mitra_payout_model.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/services/cloudinary_service.dart';
 import 'package:lapangku/standards/constants/app_constants.dart';
@@ -294,20 +295,21 @@ class MitraService {
 
     for (var b in validBookings) {
       if (b.status == 'selesai') {
-        totalRevenue += b.totalBayar;
+        // Mitra's revenue is hargaLapangan (totalBayar - biayaLayanan)
+        totalRevenue += b.hargaLapangan;
         
         // Cek jika transaksi hari ini
         if (b.tanggal.year == today.year && 
             b.tanggal.month == today.month && 
             b.tanggal.day == today.day) {
-          todayRevenue += b.totalBayar;
+          todayRevenue += b.hargaLapangan;
         }
 
         transactions.add(MitraTransactionModel(
           id: b.id,
           customerName: b.userName,
           fieldName: b.fieldName,
-          amount: b.totalBayar,
+          amount: b.hargaLapangan,
           date: b.tanggal,
         ));
       } else if (b.status == 'dikonfirmasi') {
@@ -317,9 +319,26 @@ class MitraService {
 
     transactions.sort((a, b) => b.date.compareTo(a.date));
 
-    // Simulasi Payout (15% tertunda, 85% cair)
-    final pendingPayout = (totalRevenue * 0.15).round();
-    final disbursedRevenue = totalRevenue - pendingPayout;
+    // Fetch Payouts untuk menghitung balance sesungguhnya
+    int pendingPayout = 0;
+    int disbursedRevenue = 0;
+
+    final payoutsSnap = await _db
+        .collection('payouts')
+        .where('mitraId', isEqualTo: MitraId)
+        .get();
+
+    for (var doc in payoutsSnap.docs) {
+      final payout = MitraPayoutModel.fromFirestore(doc);
+      if (payout.status == 'pending' || payout.status == 'processing') {
+        pendingPayout += payout.amount;
+      } else if (payout.status == 'completed') {
+        disbursedRevenue += payout.amount;
+      }
+    }
+
+    // Saldo Aktif = Total Pendapatan Selesai - Pendapatan Cair - Pendapatan Sedang Proses
+    final availableBalance = totalRevenue - disbursedRevenue - pendingPayout;
 
     return MitraRevenueModel(
       totalRevenue: totalRevenue,
@@ -328,8 +347,9 @@ class MitraService {
       todayRevenue: todayRevenue,
       pendingPayout: pendingPayout,
       disbursedRevenue: disbursedRevenue,
+      availableBalance: availableBalance > 0 ? availableBalance : 0,
       activeBookings: activeBookings,
-      payoutSuccessRate: 0.92,
+      payoutSuccessRate: payoutsSnap.docs.isEmpty ? 1.0 : (payoutsSnap.docs.where((d) => d.data()['status'] == 'completed').length / payoutsSnap.docs.length),
     );
   }
 
@@ -349,5 +369,25 @@ class MitraService {
           comment: 'Oke lah buat main bareng.',
           date: DateTime(2026, 10, 10)),
     ];
+  }
+
+  // ————————————————————————————————————————————————————————————————————————————————
+  // PAYOUTS
+  // ————————————————————————————————————————————————————————————————————————————————
+
+  Future<void> requestPayout(MitraPayoutModel payout) async {
+    final docRef = _db.collection('payouts').doc();
+    final newPayout = payout.copyWith(id: docRef.id);
+    await docRef.set(newPayout.toFirestore());
+  }
+
+  Stream<List<MitraPayoutModel>> streamMitraPayouts(String mitraId) {
+    return _db
+        .collection('payouts')
+        .where('mitraId', isEqualTo: mitraId)
+        .orderBy('requestedAt', descending: true)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => MitraPayoutModel.fromFirestore(d)).toList());
   }
 }

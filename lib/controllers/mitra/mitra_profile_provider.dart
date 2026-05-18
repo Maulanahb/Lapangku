@@ -51,11 +51,12 @@ class MitraProfileNotifier
     }
   }
 
-  Future<void> updateBankInfo(String bankName, String bankAccount) async {
+  Future<void> updateBankInfo(String bankName, String bankAccount, String bankAccountName) async {
     if (state is! AsyncData) return;
     final updated = state.value!.copyWith(
       bankName: bankName,
       bankAccount: bankAccount,
+      bankAccountName: bankAccountName,
     );
     try {
       await _service.updateProfile(updated);

@@ -17,6 +17,7 @@ class MitraProfileModel {
   final bool notificationPromo;
   final String bankName;
   final String bankAccount;
+  final String bankAccountName;
 
   const MitraProfileModel({
     required this.id,
@@ -37,6 +38,7 @@ class MitraProfileModel {
     required this.notificationPromo,
     required this.bankName,
     required this.bankAccount,
+    required this.bankAccountName,
   });
 
   MitraProfileModel copyWith({
@@ -58,6 +60,7 @@ class MitraProfileModel {
     bool? notificationPromo,
     String? bankName,
     String? bankAccount,
+    String? bankAccountName,
   }) {
     return MitraProfileModel(
       id: id ?? this.id,
@@ -78,6 +81,7 @@ class MitraProfileModel {
       notificationPromo: notificationPromo ?? this.notificationPromo,
       bankName: bankName ?? this.bankName,
       bankAccount: bankAccount ?? this.bankAccount,
+      bankAccountName: bankAccountName ?? this.bankAccountName,
     );
   }
 
@@ -105,6 +109,7 @@ class MitraProfileModel {
       'notificationPromo': notificationPromo,
       'bankName': bankName,
       'bankAccount': bankAccount,
+      'bankAccountName': bankAccountName,
     };
   }
 
@@ -128,6 +133,7 @@ class MitraProfileModel {
       notificationPromo: map['notificationPromo'] ?? false,
       bankName: map['bankName'] ?? '',
       bankAccount: map['bankAccount'] ?? '',
+      bankAccountName: map['bankAccountName'] ?? '',
     );
   }
 
@@ -147,6 +153,7 @@ class MitraProfileModel {
       notificationPromo: false,
       bankName: '',
       bankAccount: '',
+      bankAccountName: '',
     );
   }
 
@@ -172,7 +179,8 @@ class MitraProfileModel {
           notificationOrder == other.notificationOrder &&
           notificationPromo == other.notificationPromo &&
           bankName == other.bankName &&
-          bankAccount == other.bankAccount;
+          bankAccount == other.bankAccount &&
+          bankAccountName == other.bankAccountName;
 
   @override
   int get hashCode =>
@@ -193,5 +201,7 @@ class MitraProfileModel {
       notificationOrder.hashCode ^
       notificationPromo.hashCode ^
       bankName.hashCode ^
-      bankAccount.hashCode;
+      bankAccount.hashCode ^
+      bankAccountName.hashCode;
 }
+

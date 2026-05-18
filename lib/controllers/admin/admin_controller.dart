@@ -282,3 +282,8 @@ final adminDashboardStatsProvider = Provider<AdminDashboardStats>((ref) {
     totalLapangan: totalLapangan,
   );
 });
+
+final adminPayoutsProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final service = ref.watch(adminServiceProvider);
+  return service.streamAllPayouts();
+});

@@ -8,6 +8,7 @@ import 'package:lapangku/views/admin/admin_fields_page.dart';
 import 'package:lapangku/views/admin/admin_bookings_page.dart';
 import 'package:lapangku/views/admin/admin_users_page.dart';
 import 'package:lapangku/views/admin/admin_reports_page.dart';
+import 'package:lapangku/views/admin/admin_payouts_page.dart';
 
 class AdminDashboardPage extends ConsumerStatefulWidget {
   const AdminDashboardPage({super.key});
@@ -29,6 +30,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
       const AdminFieldsPage(),
       const AdminBookingsPage(),
       const AdminReportsPage(),
+      const AdminPayoutsPage(),
     ];
 
     if (isDesktop) {
@@ -133,6 +135,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                 _sidebarItem(2, Icons.domain_verification_rounded, Icons.domain_verification_rounded, 'Verifikasi Mitra'),
                 _sidebarItem(3, Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Daftar Pesanan'),
                 _sidebarItem(4, Icons.analytics_outlined, Icons.analytics_rounded, 'Laporan Analistik'),
+                _sidebarItem(5, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded, 'Pencairan Dana'),
               ],
             ),
           ),
