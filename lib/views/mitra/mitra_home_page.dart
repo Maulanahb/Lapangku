@@ -23,6 +23,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
   final Color _bgLightGreen = const Color(0xFFE8F5EF);
   final Color _bgLightRed = const Color(0xFFFEE8E7);
   final Color _textRed = const Color(0xFFE04443);
+  String? _selectedBarDay;
 
   final _currencyFormat = NumberFormat.currency(
     locale: 'id',
@@ -732,66 +733,101 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                   fontSize: 24,
                   fontWeight: FontWeight.w900)),
           const SizedBox(height: 40),
-          Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: weeklyData.isEmpty
-                  ? List.generate(7, (index) => _buildMiniBar('-', 0.1))
-                  : weeklyData.map((data) {
-                      double maxRevenue = 0;
-                      for (var d in weeklyData) {
-                        if (d['revenue'] > maxRevenue) {
-                          maxRevenue = d['revenue'].toDouble();
+          StatefulBuilder(
+            builder: (context, setBarState) {
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: weeklyData.isEmpty
+                    ? List.generate(7, (index) => _buildMiniBar('-', 0.1, revenue: 0, selectedDay: _selectedBarDay, onTap: (d) => setBarState(() => _selectedBarDay = _selectedBarDay == d ? null : d)))
+                    : weeklyData.map((data) {
+                        double maxRevenue = 0;
+                        for (var d in weeklyData) {
+                          if (d['revenue'] > maxRevenue) {
+                            maxRevenue = d['revenue'].toDouble();
+                          }
                         }
-                      }
-                      double factor =
-                          maxRevenue > 0 ? (data['revenue'] / maxRevenue) : 0.1;
-                      if (factor < 0.1) factor = 0.1;
+                        double factor =
+                            maxRevenue > 0 ? (data['revenue'] / maxRevenue) : 0.1;
+                        if (factor < 0.1) factor = 0.1;
 
-                      return _buildMiniBar(
-                        data['day'],
-                        factor,
-                        isToday: data['isToday'],
-                      );
-                    }).toList()),
+                        return _buildMiniBar(
+                          data['day'],
+                          factor,
+                          isToday: data['isToday'],
+                          revenue: data['revenue'] as int,
+                          selectedDay: _selectedBarDay,
+                          onTap: (day) => setBarState(() => _selectedBarDay = _selectedBarDay == day ? null : day),
+                        );
+                      }).toList(),
+              );
+            },
+          ),
         ]),
       ),
     ]);
   }
 
   Widget _buildMiniBar(String day, double heightFactor,
-      {bool isToday = false}) {
-    return Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-      if (isToday)
-        Container(
-          margin: const EdgeInsets.only(bottom: 6),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      {bool isToday = false, int revenue = 0, String? selectedDay, Function(String)? onTap}) {
+    final bool isSelected = selectedDay == day;
+    final bool showTooltip = isSelected || (isToday && selectedDay == null);
+    
+    String revenueText;
+    if (revenue >= 1000000) {
+      revenueText = '${(revenue / 1000000).toStringAsFixed(1)}M';
+    } else if (revenue >= 1000) {
+      revenueText = '${(revenue / 1000).toStringAsFixed(0)}K';
+    } else {
+      revenueText = _currencyFormat.format(revenue);
+    }
+
+    return GestureDetector(
+      onTap: () => onTap?.call(day),
+      child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+        // Tooltip / label
+        AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: showTooltip ? 1.0 : 0.0,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            decoration: BoxDecoration(
+              color: isSelected ? _primaryGreen : (isToday ? const Color(0xFFD1FAE5) : _primaryGreen),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+                isToday && !isSelected ? 'Today' : revenueText,
+                style: TextStyle(
+                    color: isSelected ? Colors.white : (isToday ? Colors.black : Colors.white),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 9)),
+          ),
+        ),
+        // Bar
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          width: isSelected ? 18 : 12,
+          height: 80 * heightFactor,
           decoration: BoxDecoration(
-            color: const Color(0xFFD1FAE5),
+            color: isSelected
+                ? _primaryGreen
+                : isToday
+                    ? _primaryGreen
+                    : Colors.grey[300],
             borderRadius: BorderRadius.circular(6),
           ),
-          child: const Text('Today',
-              style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10)),
         ),
-      Container(
-        width: 12,
-        height: 80 * heightFactor,
-        decoration: BoxDecoration(
-          color: isToday ? _primaryGreen : Colors.grey[300],
-          borderRadius: BorderRadius.circular(6),
-        ),
-      ),
-      const SizedBox(height: 8),
-      Text(day,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-            color: isToday ? _primaryGreen : Colors.grey[500],
-          )),
-    ]);
+        const SizedBox(height: 8),
+        Text(day,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: (isToday || isSelected) ? FontWeight.w700 : FontWeight.w500,
+              color: (isToday || isSelected) ? _primaryGreen : Colors.grey[500],
+            )),
+      ]),
+    );
   }
 
   void _showBuktiTransferDialog(BuildContext context, String url) {
