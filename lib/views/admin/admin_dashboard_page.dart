@@ -221,13 +221,18 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
   }
 }
 
-class _DashboardBody extends ConsumerWidget {
+class _DashboardBody extends ConsumerStatefulWidget {
   const _DashboardBody();
 
+  @override
+  ConsumerState<_DashboardBody> createState() => _DashboardBodyState();
+}
+
+class _DashboardBodyState extends ConsumerState<_DashboardBody> {
   static const _primary = Color(0xFF1B6B3A);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 800;
     final bookingsAsync = ref.watch(adminAllBookingsProvider);
     final fieldsAsync = ref.watch(adminAllFieldsProvider);
@@ -252,7 +257,7 @@ class _DashboardBody extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(context, ref, authState.user?.nama ?? 'Admin'),
+              _buildHeader(context, authState.user?.nama ?? 'Admin'),
               const SizedBox(height: 32),
               
               if (bookingsAsync.isLoading || fieldsAsync.isLoading)
@@ -291,64 +296,67 @@ class _DashboardBody extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, WidgetRef ref, String adminName) {
+  Widget _buildHeader(BuildContext context, String adminName) {
     final isDesktop = MediaQuery.of(context).size.width >= 800;
     final formatter = DateFormat('EEEE, d MMMM yyyy');
     final dateStr = formatter.format(DateTime.now());
+    final mitrasAsync = ref.watch(adminAllMitrasProvider);
+    final pendingCount = mitrasAsync.when(
+      data: (list) => list.where((m) => m.statusVerifikasi == 'menunggu').length,
+      loading: () => 0,
+      error: (_, __) => 0,
+    );
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        if (isDesktop)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Dashboard', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E))),
-              const SizedBox(height: 4),
-              Text(dateStr, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-            ],
-          )
-        else
-          const SizedBox.shrink(),
-        
-        Row(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (isDesktop) ...[
-              Container(
-                width: 250,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade200),
+            if (isDesktop)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Dashboard',
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF1A1A2E), letterSpacing: -0.3)),
+                  const SizedBox(height: 2),
+                  Text(dateStr, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                ],
+              )
+            else
+              const SizedBox.shrink(),
+
+            Row(
+              children: [
+                // Notification Bell
+                _NotificationBell(
+                  pendingCount: pendingCount,
+                  onTap: () {},
                 ),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search data, fields, or users...',
-                    hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                    prefixIcon: Icon(Icons.search, color: Colors.grey.shade400, size: 20),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
+                const SizedBox(width: 4),
+                // Divider
+                Container(
+                  width: 1,
+                  height: 28,
+                  color: Colors.grey.shade200,
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
                 ),
-              ),
-              const SizedBox(width: 16),
-            ],
-            Stack(children: [
-              IconButton(icon: const Icon(Icons.notifications_none, color: Colors.grey), onPressed: () {}),
-              Positioned(right: 12, top: 12, child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle))),
-            ]),
-            IconButton(icon: const Icon(Icons.help_outline, color: Colors.grey), onPressed: () {}),
-            const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: _primary.withOpacity(0.15),
-              child: const Icon(Icons.person, color: _primary, size: 20),
+                // Profile Avatar with popup
+                _ProfileMenu(adminName: adminName),
+              ],
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 
@@ -359,19 +367,46 @@ class _DashboardBody extends ConsumerWidget {
       return 'Rp $n';
     }
 
+    final formatNumber = NumberFormat('#,##0', 'en_US');
+
     final cards = [
-      _StatData('TOTAL LAPANGAN', stats.totalLapangan.toString(), Icons.stadium, const Color(0xFF1B6B3A), isGreen: false),
-      _StatData('TRANSAKSI BERHASIL', stats.totalBookingSelesai.toString(), Icons.receipt_long, const Color(0xFF4285F4), isGreen: false),
-      _StatData('PENDAPATAN PLATFORM', fmt(stats.totalPendapatan), Icons.payments, Colors.white, isGreen: true),
+      _StatData(
+        'TOTAL PENGGUNA',
+        formatNumber.format(stats.totalPengguna),
+        Icons.people_alt_outlined,
+        const Color(0xFF1B6B3A),
+        isGreen: false,
+      ),
+      _StatData(
+        'TOTAL PEMILIK LAPANGAN',
+        formatNumber.format(stats.totalMitra),
+        Icons.stadium_outlined,
+        const Color(0xFF4285F4),
+        isGreen: false,
+      ),
+      _StatData(
+        'TOTAL BOOKING HARI INI',
+        formatNumber.format(stats.totalBookingHariIni),
+        Icons.receipt_long_outlined,
+        const Color(0xFFFF9800),
+        isGreen: false,
+      ),
+      _StatData(
+        'PENGHASILAN PLATFORM',
+        fmt(stats.totalPendapatan),
+        Icons.payments_outlined,
+        Colors.white,
+        isGreen: true,
+      ),
     ];
 
     return GridView.count(
-      crossAxisCount: isDesktop ? 3 : 1,
+      crossAxisCount: isDesktop ? 4 : 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      childAspectRatio: isDesktop ? 2.5 : 2.5,
+      childAspectRatio: isDesktop ? 2.2 : 1.8,
       children: cards.map((c) => _buildStatCard(c)).toList(),
     );
   }
@@ -390,27 +425,13 @@ class _DashboardBody extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: data.isGreen ? Colors.white.withOpacity(0.2) : data.color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(data.icon, color: data.isGreen ? Colors.white : data.color, size: 20),
-              ),
-              if (data.subtext != null)
-                Text(
-                  data.subtext!,
-                  style: TextStyle(
-                    color: data.isGreen ? Colors.white70 : (data.subtext!.contains('+') ? Colors.green : Colors.grey),
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-            ],
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: data.isGreen ? Colors.white.withOpacity(0.2) : data.color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(data.icon, color: data.isGreen ? Colors.white : data.color, size: 22),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -419,8 +440,8 @@ class _DashboardBody extends ConsumerWidget {
                 data.label,
                 style: TextStyle(
                   fontSize: 10,
-                  color: data.isGreen ? Colors.white70 : Colors.grey.shade600,
-                  fontWeight: FontWeight.bold,
+                  color: data.isGreen ? Colors.white70 : Colors.grey.shade500,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -428,8 +449,8 @@ class _DashboardBody extends ConsumerWidget {
               Text(
                 data.value,
                 style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
                   color: data.isGreen ? Colors.white : const Color(0xFF1A1A2E),
                 ),
               ),
@@ -442,13 +463,13 @@ class _DashboardBody extends ConsumerWidget {
 
   Widget _buildStatsShimmer(bool isDesktop) {
     return GridView.count(
-      crossAxisCount: isDesktop ? 3 : 1,
+      crossAxisCount: isDesktop ? 4 : 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      childAspectRatio: isDesktop ? 2.5 : 2.5,
-      children: List.generate(3, (_) => Container(decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12)))),
+      childAspectRatio: isDesktop ? 2.2 : 1.8,
+      children: List.generate(4, (_) => Container(decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12)))),
     );
   }
 
@@ -466,7 +487,7 @@ class _DashboardBody extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Pesanan per Tahun', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              const Text('Pesanan per Minggu', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               Row(
                 children: [
                   _chartLegend(const Color(0xFF1B6B3A), 'Past 6 Days'),
@@ -559,16 +580,14 @@ class _DashboardBody extends ConsumerWidget {
 
   Widget _buildDonutCard(bookings) {
     final list = bookings as List;
-    final berhasil = list.where((b) => b.status == 'selesai').length;
-    final menunggu = list.where((b) => b.status == 'menunggu').length;
+    final selesai   = list.where((b) => b.status == 'selesai').length;
+    final menungguBayar = list.where((b) => b.status == 'menunggu_bayar').length;
+    final menungguKonfirmasi = list.where((b) => b.status == 'menunggu_konfirmasi').length;
     final dikonfirmasi = list.where((b) => b.status == 'dikonfirmasi').length;
-    final dibatalkan = list.where((b) => b.status == 'dibatalkan').length;
+    final dibatalkan = list.where((b) => b.status == 'dibatalkan' || b.status == 'ditolak' || b.status == 'expired').length;
     final total = list.length;
 
-    final pb = total == 0 ? 0 : (berhasil / total * 100).round();
-    final pdk = total == 0 ? 0 : (dikonfirmasi / total * 100).round();
-    final pm = total == 0 ? 0 : (menunggu / total * 100).round();
-    final pdb = total == 0 ? 0 : (dibatalkan / total * 100).round();
+    double pct(int n) => total == 0 ? 0 : (n / total * 100);
 
     return Container(
       decoration: BoxDecoration(
@@ -581,65 +600,66 @@ class _DashboardBody extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Status Pesanan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           Center(
             child: SizedBox(
-              height: 180,
-              width: 180,
+              height: 170,
+              width: 170,
               child: Stack(alignment: Alignment.center, children: [
                 PieChart(PieChartData(
-                  sectionsSpace: 4,
-                  centerSpaceRadius: 65,
+                  sectionsSpace: 3,
+                  centerSpaceRadius: 60,
                   startDegreeOffset: -90,
-                  sections: total == 0 
-                  ? [PieChartSectionData(value: 100, color: Colors.grey.shade300, radius: 20, showTitle: false)]
-                  : [
-                    if (pb > 0) PieChartSectionData(value: pb.toDouble(), color: _primary, radius: 20, showTitle: false),
-                    if (pdk > 0) PieChartSectionData(value: pdk.toDouble(), color: const Color(0xFF4285F4), radius: 20, showTitle: false),
-                    if (pdb > 0) PieChartSectionData(value: pdb.toDouble(), color: Colors.red, radius: 20, showTitle: false),
-                    if (pm > 0) PieChartSectionData(value: pm.toDouble(), color: const Color(0xFFFF9800), radius: 20, showTitle: false),
-                  ],
+                  sections: total == 0
+                    ? [PieChartSectionData(value: 100, color: Colors.grey.shade200, radius: 22, showTitle: false)]
+                    : [
+                      if (selesai > 0)         PieChartSectionData(value: pct(selesai), color: _primary, radius: 22, showTitle: false),
+                      if (dikonfirmasi > 0)    PieChartSectionData(value: pct(dikonfirmasi), color: const Color(0xFF4285F4), radius: 22, showTitle: false),
+                      if (menungguKonfirmasi > 0) PieChartSectionData(value: pct(menungguKonfirmasi), color: const Color(0xFF9C27B0), radius: 22, showTitle: false),
+                      if (menungguBayar > 0)   PieChartSectionData(value: pct(menungguBayar), color: const Color(0xFFFF9800), radius: 22, showTitle: false),
+                      if (dibatalkan > 0)      PieChartSectionData(value: pct(dibatalkan), color: Colors.red.shade400, radius: 22, showTitle: false),
+                    ],
                 )),
                 Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text(total.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 28, color: Color(0xFF1A1A2E))),
-                  const Text('TOTAL', style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  Text('$total', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 26, color: Color(0xFF1A1A2E))),
+                  const Text('TOTAL', style: TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1)),
                 ]),
               ]),
             ),
           ),
-          const SizedBox(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _legendItemPie(_primary, 'Completed ($pb%)'),
-                  const SizedBox(height: 12),
-                  _legendItemPie(const Color(0xFFFF9800), 'Pending ($pm%)'),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _legendItemPie(const Color(0xFF4285F4), 'Ongoing ($pdk%)'),
-                  const SizedBox(height: 12),
-                  _legendItemPie(Colors.red, 'Cancelled ($pdb%)'),
-                ],
-              ),
-            ],
-          ),
+          const SizedBox(height: 20),
+          _legendItemPie(_primary,                  'Selesai', selesai, total),
+          const SizedBox(height: 8),
+          _legendItemPie(const Color(0xFF4285F4),   'Dikonfirmasi', dikonfirmasi, total),
+          const SizedBox(height: 8),
+          _legendItemPie(const Color(0xFF9C27B0),   'Menunggu Konfirmasi', menungguKonfirmasi, total),
+          const SizedBox(height: 8),
+          _legendItemPie(const Color(0xFFFF9800),   'Menunggu Bayar', menungguBayar, total),
+          const SizedBox(height: 8),
+          _legendItemPie(Colors.red.shade400,       'Dibatalkan/Ditolak', dibatalkan, total),
         ],
       ),
     );
   }
 
-  Widget _legendItemPie(Color color, String label) {
+  Widget _legendItemPie(Color color, String label, int count, int total) {
+    final pct = total == 0 ? 0 : (count / total * 100).round();
     return Row(
       children: [
         Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 8),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+        Expanded(
+          child: Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+        ),
+        Text(
+          '$pct%',
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          '($count)',
+          style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+        ),
       ],
     );
   }
@@ -650,36 +670,68 @@ class _DashboardBody extends ConsumerWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Aktivitas Terkini', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              Text('Lihat Semua Aktivitas', style: TextStyle(color: _primary, fontWeight: FontWeight.bold, fontSize: 13)),
+              const Text('Aktivitas Terkini', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              GestureDetector(
+                onTap: () => _showAllActivities(context, activities),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: _primary.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _primary.withOpacity(0.2)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.list_alt_rounded, size: 14, color: _primary),
+                      SizedBox(width: 6),
+                      Text('Lihat Semua', style: TextStyle(color: _primary, fontWeight: FontWeight.w700, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           if (list.isEmpty)
-            const Center(child: Text('Belum ada aktivitas'))
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    Icon(Icons.inbox_outlined, size: 48, color: Colors.grey.shade300),
+                    const SizedBox(height: 12),
+                    Text('Belum ada aktivitas', style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
+                  ],
+                ),
+              ),
+            )
           else
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: ConstrainedBox(
-                constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 100 > 800 ? MediaQuery.of(context).size.width - 400 : 800),
+                constraints: BoxConstraints(
+                  minWidth: MediaQuery.of(context).size.width - 100 > 800
+                      ? MediaQuery.of(context).size.width - 400
+                      : 800,
+                ),
                 child: DataTable(
                   horizontalMargin: 0,
-                  columnSpacing: 32,
+                  columnSpacing: 28,
                   headingRowColor: WidgetStateProperty.all(const Color(0xFFF8F9FA)),
                   columns: const [
-                    DataColumn(label: Text('TIME', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('USER', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('ACTION', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('TANGGAL', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('PENGGUNA', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('AKSI', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
                     DataColumn(label: Text('DETAIL', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
                     DataColumn(label: Text('STATUS', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
                   ],
@@ -693,67 +745,142 @@ class _DashboardBody extends ConsumerWidget {
   }
 
   DataRow _buildDataRow(Map<String, dynamic> activity) {
-    final String nama = activity['user'] as String;
+    final String nama = activity['user'] as String? ?? '-';
     final inisial = nama.isNotEmpty ? nama.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase() : '?';
-    final statusColor = _statusColor(activity['status'] as String);
-    final DateTime time = activity['time'] as DateTime;
-    final String jam = DateFormat('HH:mm').format(time);
-    final isRegistration = activity['type'] == 'registration';
-    
+    final String status = activity['status'] as String? ?? 'menunggu';
+    final statusColor = _statusColor(status);
+    final DateTime time = activity['time'] as DateTime? ?? DateTime.now();
+    final String tanggal = DateFormat('dd MMM yyyy').format(time);
+    final bool isRegistration = activity['type'] == 'registration';
+
     return DataRow(
       cells: [
-        DataCell(Text(jam, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+        DataCell(Text(
+          tanggal,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        )),
         DataCell(Row(
           children: [
-            CircleAvatar(radius: 14, backgroundColor: const Color(0xFFE8F5E9), child: Text(inisial, style: const TextStyle(fontSize: 10, color: _primary, fontWeight: FontWeight.bold))),
-            const SizedBox(width: 12),
+            CircleAvatar(
+              radius: 15,
+              backgroundColor: isRegistration ? Colors.blue.shade50 : const Color(0xFFE8F5E9),
+              child: Text(inisial, style: TextStyle(fontSize: 10, color: isRegistration ? Colors.blue.shade700 : _primary, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 10),
             Text(nama, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
           ],
         )),
         DataCell(Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: isRegistration ? Colors.blue.shade50 : Colors.transparent,
-            borderRadius: BorderRadius.circular(4),
+            color: isRegistration ? Colors.blue.shade50 : _primary.withOpacity(0.07),
+            borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
-            activity['action'] as String,
+            activity['action'] as String? ?? '-',
             style: TextStyle(
-              color: isRegistration ? Colors.blue.shade700 : Colors.grey.shade700,
-              fontSize: 13,
-              fontWeight: isRegistration ? FontWeight.bold : FontWeight.normal,
+              color: isRegistration ? Colors.blue.shade700 : _primary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
         )),
-        DataCell(Text(activity['detail'] as String, style: TextStyle(color: Colors.grey.shade700, fontSize: 13))),
+        DataCell(Text(
+          activity['detail'] as String? ?? '-',
+          style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        )),
         DataCell(Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(color: statusColor, borderRadius: BorderRadius.circular(12)),
-          child: Text(_statusLabel(activity['status'] as String).toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(color: statusColor.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
+          child: Text(
+            _statusLabel(status),
+            style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w700),
+          ),
         )),
       ],
     );
   }
 
+  void _showAllActivities(BuildContext context, List<Map<String, dynamic>> activities) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        insetPadding: const EdgeInsets.all(24),
+        child: Container(
+          width: 780,
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Semua Aktivitas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1A1A2E))),
+                  IconButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    icon: Icon(Icons.close_rounded, color: Colors.grey.shade500),
+                    style: IconButton.styleFrom(backgroundColor: Colors.grey.shade100),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text('${activities.length} aktivitas terbaru', style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+              const SizedBox(height: 16),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: DataTable(
+                    horizontalMargin: 0,
+                    columnSpacing: 24,
+                    headingRowColor: WidgetStateProperty.all(const Color(0xFFF8F9FA)),
+                    columns: const [
+                      DataColumn(label: Text('TANGGAL', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('PENGGUNA', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('AKSI', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('DETAIL', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('STATUS', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+                    ],
+                    rows: activities.map((a) => _buildDataRow(a)).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+
   Color _statusColor(String status) {
     switch (status) {
-      case 'selesai':
-      case 'aktif': return const Color(0xFF1B6B3A);
+      case 'selesai': return const Color(0xFF1B6B3A);
+      case 'aktif':   return const Color(0xFF1B6B3A);
       case 'dikonfirmasi': return const Color(0xFF4285F4);
-      case 'dibatalkan':
-      case 'ditolak': return Colors.red;
-      default: return const Color(0xFFFF9800);
+      case 'menunggu_konfirmasi': return const Color(0xFF9C27B0);
+      case 'menunggu_bayar': return const Color(0xFFFF9800);
+      case 'dibatalkan': return Colors.red.shade400;
+      case 'ditolak':    return Colors.red.shade400;
+      case 'expired':    return Colors.red.shade300;
+      default: return Colors.grey;
     }
   }
 
   String _statusLabel(String status) {
     switch (status) {
-      case 'selesai': return 'Completed';
-      case 'aktif': return 'Verified';
-      case 'dibatalkan': return 'Cancelled';
-      case 'ditolak': return 'Rejected';
-      case 'dikonfirmasi': return 'Confirmed';
-      case 'menunggu': return 'Pending';
+      case 'selesai':              return 'Selesai';
+      case 'aktif':               return 'Aktif';
+      case 'dikonfirmasi':        return 'Dikonfirmasi';
+      case 'menunggu_konfirmasi': return 'Menunggu Konfirmasi';
+      case 'menunggu_bayar':      return 'Menunggu Bayar';
+      case 'dibatalkan':          return 'Dibatalkan';
+      case 'ditolak':             return 'Ditolak';
+      case 'expired':             return 'Expired';
+      case 'menunggu':            return 'Menunggu';
       default: return status;
     }
   }
@@ -771,8 +898,164 @@ class _StatData {
   final String label, value;
   final IconData icon;
   final Color color;
-  final String? subtext;
   final bool isGreen;
-  const _StatData(this.label, this.value, this.icon, this.color,
-      {this.subtext, this.isGreen = false});
+  const _StatData(this.label, this.value, this.icon, this.color, {this.isGreen = false});
+}
+
+// ─── Notification Bell Widget ────────────────────────────────────────────────
+class _NotificationBell extends StatelessWidget {
+  final int pendingCount;
+  final VoidCallback onTap;
+  const _NotificationBell({required this.pendingCount, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(Icons.notifications_outlined, color: Colors.grey.shade600, size: 22),
+            if (pendingCount > 0)
+              Positioned(
+                top: -4,
+                right: -4,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    color: Colors.redAccent,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                  child: Text(
+                    pendingCount > 9 ? '9+' : '$pendingCount',
+                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Profile Menu Widget ─────────────────────────────────────────────────────
+class _ProfileMenu extends ConsumerWidget {
+  final String adminName;
+  const _ProfileMenu({required this.adminName});
+
+  static const _primary = Color(0xFF1B6B3A);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final inisial = adminName.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase();
+
+    return PopupMenuButton<String>(
+      offset: const Offset(0, 50),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 8,
+      shadowColor: Colors.black.withOpacity(0.12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: _primary.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _primary.withOpacity(0.15)),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: _primary,
+              child: Text(
+                inisial,
+                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(adminName,
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF1A1A2E))),
+                Text('Administrator',
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+              ],
+            ),
+            const SizedBox(width: 6),
+            Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Colors.grey.shade500),
+          ],
+        ),
+      ),
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          enabled: false,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: _primary,
+                    child: Text(inisial,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(adminName,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF1A1A2E))),
+                      Text('admin@lapangku.id',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Divider(color: Colors.grey.shade200, height: 1),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'logout',
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.logout_rounded, color: Colors.red.shade600, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Text('Keluar',
+                  style: TextStyle(color: Colors.red.shade600, fontWeight: FontWeight.w600, fontSize: 14)),
+            ],
+          ),
+        ),
+      ],
+      onSelected: (value) {
+        if (value == 'logout') {
+          ref.read(authProvider.notifier).logout();
+          Navigator.pushReplacementNamed(context, '/admin-login');
+        }
+      },
+    );
+  }
 }
