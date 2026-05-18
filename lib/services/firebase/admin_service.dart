@@ -263,5 +263,35 @@ class AdminService {
       return [];
     }
   }
+
+  // ————————————————————————————————————————————————————————————————————————————————
+  // PAYOUTS
+  // ————————————————————————————————————————————————————————————————————————————————
+
+  Stream<List<Map<String, dynamic>>> streamAllPayouts() {
+    return _firestore
+        .collection('payouts')
+        .orderBy('requestedAt', descending: true)
+        .snapshots()
+        .map((snap) {
+      return snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+    });
+  }
+
+  Future<void> updatePayoutStatus({
+    required String payoutId,
+    required String status,
+    String? proofUrl,
+    String? notes,
+  }) async {
+    final Map<String, dynamic> data = {
+      'status': status,
+      'processedAt': FieldValue.serverTimestamp(),
+    };
+    if (proofUrl != null) data['proofUrl'] = proofUrl;
+    if (notes != null) data['notes'] = notes;
+
+    await _firestore.collection('payouts').doc(payoutId).update(data);
+  }
 }
 

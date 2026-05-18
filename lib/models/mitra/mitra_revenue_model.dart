@@ -21,6 +21,7 @@ class MitraRevenueModel {
   final int todayRevenue;
   final int pendingPayout;
   final int disbursedRevenue;
+  final int availableBalance;
   final int activeBookings;
   final double payoutSuccessRate;
 
@@ -31,6 +32,7 @@ class MitraRevenueModel {
     this.todayRevenue = 0,
     this.pendingPayout = 0,
     this.disbursedRevenue = 0,
+    this.availableBalance = 0,
     this.activeBookings = 0,
     this.payoutSuccessRate = 0.92,
   });
