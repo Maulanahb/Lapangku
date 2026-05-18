@@ -3,6 +3,7 @@ import 'mitra_home_page.dart';
 import 'manage_fields_page.dart';
 import 'mitra_profile_page.dart';
 import 'mitra_booking_list_page.dart';
+import 'mitra_qr_scanner_page.dart';
 
 class MitraMainPage extends StatefulWidget {
   const MitraMainPage({super.key});
@@ -43,18 +44,62 @@ class _MitraMainPageState extends State<MitraMainPage> {
 
   Widget _buildBottomNav() {
     return Container(
-      padding: const EdgeInsets.only(bottom: 20, left: 10, right: 10, top: 10),
-      decoration: const BoxDecoration(
+      padding: const EdgeInsets.only(bottom: 20, left: 6, right: 6, top: 10),
+      decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFF3F4F6))),
+        border: const Border(top: BorderSide(color: Color(0xFFF3F4F6))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildNavItem(Icons.grid_view_rounded, 'DASHBOARD', 0),
           _buildNavItem(Icons.stadium_rounded, 'FIELDS', 1),
+          _buildScanButton(),
           _buildNavItem(Icons.assignment_outlined, 'ORDERS', 2),
           _buildNavItem(Icons.person_outline_rounded, 'PROFILE', 3),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScanButton() {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MitraQrScannerPage()),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: _primaryGreen,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: _primaryGreen.withValues(alpha: 0.35),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 26),
+          ),
+          const SizedBox(height: 4),
+          Text('SCAN', style: TextStyle(
+            color: _primaryGreen,
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+          )),
         ],
       ),
     );
@@ -65,10 +110,10 @@ class _MitraMainPageState extends State<MitraMainPage> {
     return GestureDetector(
       onTap: () => _onNavTapped(index),
       child: Container(
-        width: 85,
+        width: 70,
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFD1FAE5).withOpacity(0.5) : Colors.transparent,
+          color: isActive ? const Color(0xFFD1FAE5).withValues(alpha: 0.5) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(

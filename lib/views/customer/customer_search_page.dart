@@ -22,6 +22,7 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedCategory = 'Semua';
+  String _selectedTipe = 'Semua'; // Semua / Indoor / Outdoor
   String _sortBy = 'Terdekat';
   
   // Advanced Filter & Sorting state
@@ -31,7 +32,7 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
   bool _isLoadingLocation = false;
 
   final List<String> _availableFacilities = [
-    'Indoor', 'Outdoor', 'Shower', 'Toilet', 
+    'Shower', 'Toilet', 
     'Area Parkir', 'Kantin', 'Mushola', 'Gratis Bola'
   ];
 
@@ -198,6 +199,39 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                     }).toList(),
                   ),
                   const SizedBox(height: 24),
+                  const Text('Tipe Lapangan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: ['Semua', 'Indoor', 'Outdoor'].map((tipe) {
+                      final isSelected = _selectedTipe == tipe;
+                      return ChoiceChip(
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (tipe != 'Semua') ...[
+                              Icon(
+                                tipe == 'Indoor' ? Icons.roofing : Icons.wb_sunny_outlined,
+                                size: 14,
+                                color: isSelected ? Colors.white : Colors.black87,
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                            Text(tipe),
+                          ],
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppColors.primary,
+                        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
+                        onSelected: (val) {
+                          setModalState(() => _selectedTipe = tipe);
+                          setState(() => _selectedTipe = tipe);
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
                   const Text('Fasilitas', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Wrap(
@@ -330,7 +364,7 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
               children: [
                 // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
                 const Icon(Icons.tune, color: AppColors.primary),
-                if (_selectedCategory != 'Semua' || _sortBy != 'Terdekat')
+                if (_selectedCategory != 'Semua' || _selectedTipe != 'Semua' || _sortBy != 'Terdekat' || _selectedFacilities.isNotEmpty)
                   Positioned(
                     top: 0,
                     right: -2,
@@ -480,11 +514,14 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
           final matchCategory = _selectedCategory == 'Semua' ||
               f.kategori.toLowerCase() == _selectedCategory.toLowerCase();
 
+          final matchTipe = _selectedTipe == 'Semua' ||
+              f.tipeLapangan.toLowerCase() == _selectedTipe.toLowerCase();
+
           final matchFacilities = _selectedFacilities.isEmpty ||
               _selectedFacilities.every((facility) => 
                   f.fasilitas.any((fItem) => fItem.toLowerCase() == facility.toLowerCase()));
 
-          return matchQuery && matchCategory && matchFacilities;
+          return matchQuery && matchCategory && matchTipe && matchFacilities;
         }).toList();
 
         if (_sortBy == 'Termurah') {
@@ -559,6 +596,7 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
             setState(() {
               _searchQuery = '';
               _selectedCategory = 'Semua';
+              _selectedTipe = 'Semua';
               _sortBy = 'Terdekat';
               _selectedFacilities.clear();
             });
@@ -640,17 +678,55 @@ class _HorizontalFieldCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
-                          color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          field.kategori.toUpperCase(),
-                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary),
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
+                              color: AppColors.primaryLight,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              field.kategori.toUpperCase(),
+                              style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: field.tipeLapangan == 'Indoor'
+                                  ? const Color(0xFFEEF2FF)
+                                  : const Color(0xFFFFF7ED),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  field.tipeLapangan == 'Indoor' ? Icons.roofing : Icons.wb_sunny_outlined,
+                                  size: 8,
+                                  color: field.tipeLapangan == 'Indoor'
+                                      ? const Color(0xFF4338CA)
+                                      : const Color(0xFFEA580C),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  field.tipeLapangan.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                    color: field.tipeLapangan == 'Indoor'
+                                        ? const Color(0xFF4338CA)
+                                        : const Color(0xFFEA580C),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

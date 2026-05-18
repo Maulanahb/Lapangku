@@ -934,71 +934,70 @@ class BookingDetailPage extends ConsumerWidget {
     );
   }
 }
-c l a s s   _ P a y m e n t C o u n t d o w n T e x t   e x t e n d s   S t a t e f u l W i d g e t   { 
-     f i n a l   D a t e T i m e   b a t a s W a k t u B a y a r ; 
-     c o n s t   _ P a y m e n t C o u n t d o w n T e x t ( { K e y ?   k e y ,   r e q u i r e d   t h i s . b a t a s W a k t u B a y a r } )   :   s u p e r ( k e y :   k e y ) ; 
- 
-     @ o v e r r i d e 
-     S t a t e < _ P a y m e n t C o u n t d o w n T e x t >   c r e a t e S t a t e ( )   = >   _ P a y m e n t C o u n t d o w n T e x t S t a t e ( ) ; 
- } 
- 
- c l a s s   _ P a y m e n t C o u n t d o w n T e x t S t a t e   e x t e n d s   S t a t e < _ P a y m e n t C o u n t d o w n T e x t >   { 
-     T i m e r ?   _ t i m e r ; 
-     D u r a t i o n   _ t i m e L e f t   =   D u r a t i o n . z e r o ; 
- 
-     @ o v e r r i d e 
-     v o i d   i n i t S t a t e ( )   { 
-         s u p e r . i n i t S t a t e ( ) ; 
-         _ u p d a t e T i m e ( ) ; 
-         _ t i m e r   =   T i m e r . p e r i o d i c ( c o n s t   D u r a t i o n ( s e c o n d s :   1 ) ,   ( t i m e r )   { 
-             i f   ( m o u n t e d )   _ u p d a t e T i m e ( ) ; 
-         } ) ; 
-     } 
- 
-     v o i d   _ u p d a t e T i m e ( )   { 
-         f i n a l   n o w   =   D a t e T i m e . n o w ( ) ; 
-         i f   ( w i d g e t . b a t a s W a k t u B a y a r . i s A f t e r ( n o w ) )   { 
-             s e t S t a t e ( ( )   { 
-                 _ t i m e L e f t   =   w i d g e t . b a t a s W a k t u B a y a r . d i f f e r e n c e ( n o w ) ; 
-             } ) ; 
-         }   e l s e   { 
-             _ t i m e r ? . c a n c e l ( ) ; 
-             s e t S t a t e ( ( )   { 
-                 _ t i m e L e f t   =   D u r a t i o n . z e r o ; 
-             } ) ; 
-         } 
-     } 
- 
-     @ o v e r r i d e 
-     v o i d   d i s p o s e ( )   { 
-         _ t i m e r ? . c a n c e l ( ) ; 
-         s u p e r . d i s p o s e ( ) ; 
-     } 
- 
-     @ o v e r r i d e 
-     W i d g e t   b u i l d ( B u i l d C o n t e x t   c o n t e x t )   { 
-         i f   ( _ t i m e L e f t   = =   D u r a t i o n . z e r o )   r e t u r n   c o n s t   S i z e d B o x . s h r i n k ( ) ; 
-         
-         f i n a l   h o u r s   =   _ t i m e L e f t . i n H o u r s . t o S t r i n g ( ) . p a d L e f t ( 2 ,   " 0 " ) ; 
-         f i n a l   m i n u t e s   =   ( _ t i m e L e f t . i n M i n u t e s   %   6 0 ) . t o S t r i n g ( ) . p a d L e f t ( 2 ,   " 0 " ) ; 
-         f i n a l   s e c o n d s   =   ( _ t i m e L e f t . i n S e c o n d s   %   6 0 ) . t o S t r i n g ( ) . p a d L e f t ( 2 ,   " 0 " ) ; 
-         
-         r e t u r n   C o n t a i n e r ( 
-             m a r g i n :   c o n s t   E d g e I n s e t s . o n l y ( t o p :   1 2 ) , 
-             p a d d i n g :   c o n s t   E d g e I n s e t s . s y m m e t r i c ( h o r i z o n t a l :   1 2 ,   v e r t i c a l :   8 ) , 
-             d e c o r a t i o n :   B o x D e c o r a t i o n ( 
-                 c o l o r :   C o l o r s . w h i t e . w i t h O p a c i t y ( 0 . 2 ) , 
-                 b o r d e r R a d i u s :   B o r d e r R a d i u s . c i r c u l a r ( 8 ) , 
-             ) , 
-             c h i l d :   R o w ( 
-                 m a i n A x i s S i z e :   M a i n A x i s S i z e . m i n , 
-                 c h i l d r e n :   [ 
-                     c o n s t   I c o n ( I c o n s . t i m e r _ o u t l i n e d ,   c o l o r :   C o l o r s . w h i t e ,   s i z e :   1 6 ) , 
-                     c o n s t   S i z e d B o x ( w i d t h :   8 ) , 
-                     T e x t ( " S i s a   w a k t u :   $ h o u r s : $ m i n u t e s : $ s e c o n d s " ,   s t y l e :   c o n s t   T e x t S t y l e ( c o l o r :   C o l o r s . w h i t e ,   f o n t W e i g h t :   F o n t W e i g h t . b o l d ,   f o n t S i z e :   1 3 ) ) , 
-                 ] , 
-             ) , 
-         ) ; 
-     } 
- }  
- 
+class _PaymentCountdownText extends StatefulWidget {
+  final DateTime batasWaktuBayar;
+  const _PaymentCountdownText({Key? key, required this.batasWaktuBayar}) : super(key: key);
+
+  @override
+  State<_PaymentCountdownText> createState() => _PaymentCountdownTextState();
+}
+
+class _PaymentCountdownTextState extends State<_PaymentCountdownText> {
+  Timer? _timer;
+  Duration _timeLeft = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateTime();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) _updateTime();
+    });
+  }
+
+  void _updateTime() {
+    final now = DateTime.now();
+    if (widget.batasWaktuBayar.isAfter(now)) {
+      setState(() {
+        _timeLeft = widget.batasWaktuBayar.difference(now);
+      });
+    } else {
+      _timer?.cancel();
+      setState(() {
+        _timeLeft = Duration.zero;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_timeLeft == Duration.zero) return const SizedBox.shrink();
+
+    final hours = _timeLeft.inHours.toString().padLeft(2, "0");
+    final minutes = (_timeLeft.inMinutes % 60).toString().padLeft(2, "0");
+    final seconds = (_timeLeft.inSeconds % 60).toString().padLeft(2, "0");
+
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.timer_outlined, color: Colors.white, size: 16),
+          const SizedBox(width: 8),
+          Text("Sisa waktu: $hours:$minutes:$seconds", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+        ],
+      ),
+    );
+  }
+}

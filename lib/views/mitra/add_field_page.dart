@@ -26,6 +26,7 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
   final _priceController = TextEditingController();
   final _descriptionController = TextEditingController();
   String _selectedSport = 'Futsal';
+  String _selectedTipe = 'Indoor';
   final List<String> _selectedFacilities = [];
   TimeOfDay _openingTime = const TimeOfDay(hour: 8, minute: 0);
   TimeOfDay _closingTime = const TimeOfDay(hour: 22, minute: 0);
@@ -110,6 +111,7 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
         namaVenue: _venueController.text,
         namaLapangan: _nameController.text,
         jenisLapangan: _selectedSport,
+        tipeLapangan: _selectedTipe,
         hargaPerJam: int.parse(_priceController.text),
         hargaWeekend: _useWeekendPrice
             ? int.tryParse(_weekendPriceController.text)
@@ -215,6 +217,9 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
         const SizedBox(height: 20),
         FieldFormWidgets.buildLabel('Jenis Olahraga'),
         _buildSportChips(),
+        const SizedBox(height: 20),
+        FieldFormWidgets.buildLabel('Tipe Lapangan'),
+        _buildTipeChips(),
         const SizedBox(height: 24),
         FieldFormWidgets.buildLabel('Lokasi Peta'),
         _buildLocationPicker(),
@@ -444,7 +449,10 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
                                 () => _photoFiles.removeAt(fileIndex))),
                       ],
                     )
-                  : const Icon(Icons.add, color: Color(0xFF9CA3AF)),
+                  : GestureDetector(
+                      onTap: _pickImage,
+                      child: const Center(child: Icon(Icons.add, color: Color(0xFF9CA3AF))),
+                    ),
             );
           }),
         ),
@@ -473,6 +481,44 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
                     color: isSelected ? Colors.white : const Color(0xFF1E40AF),
                     fontWeight: FontWeight.bold,
                     fontSize: 13)),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTipeChips() {
+    final types = ['Indoor', 'Outdoor'];
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: types.map((tipe) {
+        bool isSelected = _selectedTipe == tipe;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedTipe = tipe),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFF0F5A3C)
+                    : const Color(0xFFF0F4FF),
+                borderRadius: BorderRadius.circular(30)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  tipe == 'Indoor' ? Icons.roofing : Icons.wb_sunny_outlined,
+                  size: 16,
+                  color: isSelected ? Colors.white : const Color(0xFF1E40AF),
+                ),
+                const SizedBox(width: 6),
+                Text(tipe,
+                    style: TextStyle(
+                        color: isSelected ? Colors.white : const Color(0xFF1E40AF),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13)),
+              ],
+            ),
           ),
         );
       }).toList(),

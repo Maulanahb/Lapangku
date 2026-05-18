@@ -4,6 +4,7 @@ import 'package:lapangku/models/field/base_field_model.dart';
 class MitraFieldModel extends BaseFieldModel {
   final String id; // alias dari fieldId untuk backward-compat
   final String jenisLapangan; // futsal, badminton, basket, tenis, voli
+  final String tipeLapangan; // Indoor / Outdoor
   final String deskripsi;
   final String alamat;
   final double latitude;
@@ -25,6 +26,7 @@ class MitraFieldModel extends BaseFieldModel {
     super.namaVenue,
     required super.namaLapangan,
     required this.jenisLapangan,
+    this.tipeLapangan = 'Indoor',
     required super.hargaPerJam,
     this.deskripsi = '',
     this.alamat = '',
@@ -57,6 +59,7 @@ class MitraFieldModel extends BaseFieldModel {
     String? namaVenue,
     String? namaLapangan,
     String? jenisLapangan,
+    String? tipeLapangan,
     int? hargaPerJam,
     String? deskripsi,
     String? alamat,
@@ -78,6 +81,7 @@ class MitraFieldModel extends BaseFieldModel {
       namaVenue: namaVenue ?? this.namaVenue,
       namaLapangan: namaLapangan ?? this.namaLapangan,
       jenisLapangan: jenisLapangan ?? this.jenisLapangan,
+      tipeLapangan: tipeLapangan ?? this.tipeLapangan,
       hargaPerJam: hargaPerJam ?? this.hargaPerJam,
       deskripsi: deskripsi ?? this.deskripsi,
       alamat: alamat ?? this.alamat,
@@ -105,6 +109,7 @@ class MitraFieldModel extends BaseFieldModel {
       'nama_lapangan': namaLapangan,
       'jenisLapangan': jenisLapangan,
       'kategori_lapangan': jenisLapangan, // backward-compat key untuk Customer
+      'tipe_lapangan': tipeLapangan,
       'hargaPerJam': hargaPerJam,
       'harga_sewa_jam': hargaPerJam, // backward-compat key untuk Customer
       'deskripsi': deskripsi,
@@ -141,6 +146,7 @@ class MitraFieldModel extends BaseFieldModel {
           map['name'] ??
           '',
       jenisLapangan: map['jenisLapangan'] ?? 'Futsal',
+      tipeLapangan: map['tipe_lapangan'] ?? map['tipeLapangan'] ?? 'Indoor',
       hargaPerJam: (map['hargaPerJam'] ?? map['pricePerHour'] ?? 0) as int,
       deskripsi: map['deskripsi'] ?? '',
       alamat: map['alamat'] ?? map['alamat_lengkap'] ?? '',

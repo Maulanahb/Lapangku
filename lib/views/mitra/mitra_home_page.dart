@@ -7,7 +7,7 @@ import 'package:lapangku/controllers/mitra/mitra_stats_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_booking_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
-import 'package:lapangku/views/mitra/mitra_qr_scanner_page.dart';
+
 import 'package:lapangku/views/mitra/mitra_booking_list_page.dart';
 import 'package:intl/intl.dart';
 
@@ -63,20 +63,6 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
               ),
             ),
           ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const MitraQrScannerPage()),
-        ),
-        backgroundColor: _primaryGreen,
-        foregroundColor: Colors.white,
-        elevation: 6,
-        icon: const Icon(Icons.qr_code_scanner, size: 22),
-        label: const Text(
-          'Scan Tiket',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
         ),
       ),
     );
@@ -203,89 +189,97 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
 
   Widget _buildStatsGrid() {
     final todayStats = ref.watch(mitraTodayStatsProvider(_uid));
+    final monthlyStats = ref.watch(mitraMonthlyStatsProvider(_uid));
+    final fieldsAsync = ref.watch(mitraFieldProvider).fields;
+    final waitingBookings = ref.watch(mitraWaitingBookingsProvider(_uid));
+
+    // Pre-compute field stats
+    int activeCount = 0;
+    int totalCount = 0;
+    double avgRating = 0.0;
+    int ratedFields = 0;
+    int totalReviewCount = 0;
+
+    fieldsAsync.whenData((fields) {
+      activeCount = fields.where((f) => f.isActive).length;
+      totalCount = fields.length;
+      double totalRating = 0;
+      for (var field in fields) {
+        if (field.totalReviews > 0) {
+          totalRating += field.avgRating;
+          ratedFields++;
+        }
+        totalReviewCount += field.totalReviews;
+      }
+      avgRating = ratedFields > 0 ? totalRating / ratedFields : 0.0;
+    });
 
     return Column(children: [
+      // ── Row 1: Pesanan & Pendapatan Hari Ini ──
       IntrinsicHeight(
         child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Expanded(
             child: _buildStatCard(
+              icon: Icons.assignment_outlined,
+              iconBgColor: const Color(0xFFEEF2FF),
+              iconColor: const Color(0xFF6366F1),
               label: 'Pesanan Hari Ini',
               value: '${todayStats['count']}',
-              trend: todayStats['count'] > 0 ? '↑${todayStats['count']}' : null,
-              trendColor: Colors.green,
-              footer: 'hari ini',
+              footer: '${todayStats['confirmedCount'] ?? 0} dikonfirmasi',
+              badge: waitingBookings.isNotEmpty
+                  ? '${waitingBookings.length} menunggu'
+                  : null,
+              badgeColor: const Color(0xFFFEF3C7),
+              badgeTextColor: const Color(0xFFD97706),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
+              icon: Icons.account_balance_wallet_outlined,
+              iconBgColor: _bgLightGreen,
+              iconColor: _primaryGreen,
               label: 'Pendapatan Hari Ini',
               value: todayStats['revenue'] >= 1000000
                   ? 'Rp ${(todayStats['revenue'] / 1000000).toStringAsFixed(1)}M'
                   : _currencyFormat.format(todayStats['revenue']),
               valueColor: _primaryGreen,
-              trend: todayStats['revenue'] > 0 ? '↑' : null,
-              trendColor: Colors.green,
-              footer: 'total bruto',
+              footer: 'Bulan ini: ${monthlyStats['revenue'] >= 1000000 ? '${(monthlyStats['revenue'] / 1000000).toStringAsFixed(1)}M' : _currencyFormat.format(monthlyStats['revenue'])}',
             ),
           ),
         ]),
       ),
       const SizedBox(height: 12),
+      // ── Row 2: Lapangan Aktif & Rating ──
       IntrinsicHeight(
         child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Expanded(
-            child: ref.watch(mitraFieldProvider).fields.when(
-                  data: (fields) => _buildStatCard(
-                      label: 'Lapangan Aktif',
-                      value: '${fields.where((f) => f.isActive).length}',
-                      footer: 'dari ${fields.length} lapangan'),
-                  loading: () => _buildStatCard(
-                      label: 'Lapangan Aktif',
-                      value: '...',
-                      footer: 'Memuat data...'),
-                  error: (error, stack) => _buildStatCard(
-                      label: 'Lapangan Aktif',
-                      value: '-',
-                      footer: 'Gagal memuat'),
-                ),
+            child: _buildStatCard(
+              icon: Icons.stadium_rounded,
+              iconBgColor: const Color(0xFFFFF7ED),
+              iconColor: const Color(0xFFEA580C),
+              label: 'Lapangan Aktif',
+              value: fieldsAsync.isLoading ? '...' : '$activeCount / $totalCount',
+              footer: fieldsAsync.isLoading
+                  ? 'Memuat...'
+                  : '${monthlyStats['totalBookings']} booking bulan ini',
+              progressValue: totalCount > 0 ? activeCount / totalCount : 0,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: ref.watch(mitraFieldProvider).fields.when(
-                  data: (fields) {
-                    double totalRating = 0;
-                    int ratedFields = 0;
-                    for (var field in fields) {
-                      if (field.totalReviews > 0) {
-                        totalRating += field.avgRating;
-                        ratedFields++;
-                      }
-                    }
-                    double avg = ratedFields > 0 ? totalRating / ratedFields : 0.0;
-
-                    return _buildStatCard(
-                      label: 'Rating Rata-rata',
-                      value: avg.toStringAsFixed(1),
-                      hasStar: true,
-                      footer: '($ratedFields lapangan dinilai)',
-                    );
-                  },
-                  loading: () => _buildStatCard(
-                    label: 'Rating Rata-rata',
-                    value: '...',
-                    hasStar: true,
-                    footer: 'Memuat...',
-                  ),
-                  error: (_, __) => _buildStatCard(
-                    label: 'Rating Rata-rata',
-                    value: '0.0',
-                    hasStar: true,
-                    footer: 'Error',
-                  ),
-                ),
+            child: _buildStatCard(
+              icon: Icons.star_rounded,
+              iconBgColor: const Color(0xFFFFFBEB),
+              iconColor: const Color(0xFFD97706),
+              label: 'Rating Rata-rata',
+              value: fieldsAsync.isLoading ? '...' : avgRating.toStringAsFixed(1),
+              hasStar: true,
+              footer: fieldsAsync.isLoading
+                  ? 'Memuat...'
+                  : '$totalReviewCount ulasan · $ratedFields lapangan',
+            ),
           ),
-
         ]),
       ),
     ]);
@@ -294,11 +288,16 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
   Widget _buildStatCard(
       {required String label,
       required String value,
-      String? trend,
-      Color? trendColor,
       required String footer,
+      IconData? icon,
+      Color? iconBgColor,
+      Color? iconColor,
       Color? valueColor,
-      bool hasStar = false}) {
+      bool hasStar = false,
+      String? badge,
+      Color? badgeColor,
+      Color? badgeTextColor,
+      double? progressValue}) {
     bool isPressed = false;
     return StatefulBuilder(
       builder: (context, setLocalState) {
@@ -310,7 +309,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeInOut,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: isPressed ? const Color(0xFFF6FBF8) : Colors.white,
               borderRadius: BorderRadius.circular(16),
@@ -332,39 +331,76 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
             ),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[700])),
-              const SizedBox(height: 12),
+              Row(children: [
+                if (icon != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: iconBgColor ?? _bgLightGreen,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, size: 15, color: iconColor ?? _primaryGreen),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: Text(label,
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[600])),
+                ),
+              ]),
+              const SizedBox(height: 10),
               Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(value,
-                        style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            color: valueColor ?? Colors.black)),
+                    Flexible(
+                      child: Text(value,
+                          style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: valueColor ?? Colors.black),
+                          overflow: TextOverflow.ellipsis),
+                    ),
                     if (hasStar) ...[
                       const SizedBox(width: 4),
-                      const Icon(Icons.star, color: Color(0xFFFFB800), size: 18)
-                    ],
-                    if (trend != null) ...[
-                      const Spacer(),
-                      Text(trend,
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: trendColor))
+                      const Icon(Icons.star, color: Color(0xFFFFB800), size: 16)
                     ],
                   ]),
-              if (footer.isNotEmpty) ...[
+              if (progressValue != null) ...[
                 const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progressValue.clamp(0.0, 1.0),
+                    backgroundColor: Colors.grey[200],
+                    color: _primaryGreen,
+                    minHeight: 4,
+                  ),
+                ),
+              ],
+              if (badge != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: badgeColor ?? const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(badge,
+                      style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: badgeTextColor ?? const Color(0xFFD97706))),
+                ),
+              ],
+              if (footer.isNotEmpty) ...[
+                const SizedBox(height: 6),
                 Text(footer,
                     style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         color: Colors.grey[500],
                         fontWeight: FontWeight.w500))
               ],

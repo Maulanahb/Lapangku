@@ -97,6 +97,8 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     );
   }
 
+  int _currentImageIndex = 0;
+
   // ── HERO ──
   Widget _heroAppBar() {
     final imgs = widget.field.fotoGaleri;
@@ -111,13 +113,38 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(fit: StackFit.expand, children: [
-          imgs.isNotEmpty
-              ? CachedImageWidget(imageUrl: imgs.first, fit: BoxFit.cover, errorWidget: _ph())
-              : _ph(),
+          if (imgs.isNotEmpty)
+            PageView.builder(
+              itemCount: imgs.length,
+              onPageChanged: (i) => setState(() => _currentImageIndex = i),
+              itemBuilder: (_, i) => CachedImageWidget(imageUrl: imgs[i], fit: BoxFit.cover, errorWidget: _ph()),
+            )
+          else
+            _ph(),
           const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
             begin: Alignment.topCenter, end: Alignment.bottomCenter,
             colors: [Colors.black38, Colors.transparent, Colors.black26],
           ))),
+          // Dot indicators
+          if (imgs.length > 1)
+            Positioned(
+              bottom: 32,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(imgs.length, (i) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: _currentImageIndex == i ? 20 : 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: _currentImageIndex == i ? Colors.white : Colors.white54,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                )),
+              ),
+            ),
           Positioned(
             bottom: -1, left: 0, right: 0,
             child: Container(

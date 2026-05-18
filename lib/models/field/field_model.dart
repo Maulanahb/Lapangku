@@ -17,6 +17,7 @@ class FieldModel extends BaseFieldModel {
   final String? statusVerifikasi;
   final String jamBuka;
   final String jamTutup;
+  final String tipeLapangan; // Indoor / Outdoor
 
   const FieldModel({
     required this.id,
@@ -39,6 +40,7 @@ class FieldModel extends BaseFieldModel {
     this.statusVerifikasi,
     this.jamBuka = '08:00',
     this.jamTutup = '22:00',
+    this.tipeLapangan = 'Indoor',
   }) : super(
           fieldId: fieldId == '' ? id : fieldId,
           namaLapangan: nama,
@@ -87,6 +89,7 @@ class FieldModel extends BaseFieldModel {
       statusVerifikasi: data['status_verifikasi'],
       jamBuka: data['jamBuka'] ?? '08:00',
       jamTutup: data['jamTutup'] ?? '22:00',
+      tipeLapangan: data['tipe_lapangan'] ?? data['tipeLapangan'] ?? 'Indoor',
     );
   }
 
@@ -111,6 +114,7 @@ class FieldModel extends BaseFieldModel {
       'status_verifikasi': statusVerifikasi,
       'jamBuka': jamBuka,
       'jamTutup': jamTutup,
+      'tipe_lapangan': tipeLapangan,
     };
   }
 }
