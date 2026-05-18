@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/services/firebase/booking_service.dart';
-import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 import 'package:intl/intl.dart';
 
 final bookingServiceProvider = Provider<BookingService>((ref) {

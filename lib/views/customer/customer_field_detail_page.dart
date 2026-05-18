@@ -9,6 +9,9 @@ import 'package:lapangku/controllers/favorite/favorite_controller.dart';
 import 'package:lapangku/services/firebase/review_service.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
+import 'package:lapangku/standards/widgets/shimmer_loading.dart';
+import 'package:lapangku/standards/utils/facility_helper.dart';
 
 class CustomerFieldDetailPage extends ConsumerStatefulWidget {
   final FieldModel field;
@@ -23,21 +26,41 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   final Set<int> _selectedTimeIndices = {};
 
   bool _showFullDesc = false;
-  final bool _isBooking = false;
   late TabController _tabController;
   final List<Map<String, String>> _dates = [];
+  List<String> _allSlots = [];
 
-  // Generate time labels 06:00 - 22:00
-  final List<String> _allSlots = List.generate(16, (i) {
-    final h = i + 6;
-    return '${h.toString().padLeft(2, '0')}:00 - ${(h + 1).toString().padLeft(2, '0')}:00';
-  });
+  void _generateDynamicSlots() {
+    int startHour = 8;
+    int endHour = 22;
+
+    try {
+      startHour = int.parse(widget.field.jamBuka.split(':')[0]);
+      endHour = int.parse(widget.field.jamTutup.split(':')[0]);
+    } catch (_) {}
+
+    if (endHour <= startHour) {
+      endHour += 24;
+    }
+
+    final int totalSlots = endHour - startHour;
+    _allSlots = List.generate(totalSlots, (i) {
+      final h = startHour + i;
+      final nextH = h + 1;
+      
+      final hStr = (h % 24).toString().padLeft(2, '0');
+      final nextHStr = (nextH % 24).toString().padLeft(2, '0');
+      
+      return '$hStr:00 - $nextHStr:00';
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _generateDates();
+    _generateDynamicSlots();
   }
 
   @override
@@ -89,7 +112,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(fit: StackFit.expand, children: [
           imgs.isNotEmpty
-              ? Image.network(imgs.first, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _ph())
+              ? CachedImageWidget(imageUrl: imgs.first, fit: BoxFit.cover, errorWidget: _ph())
               : _ph(),
           const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
             begin: Alignment.topCenter, end: Alignment.bottomCenter,
@@ -200,10 +223,10 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
             decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(12)),
-            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.circle, size: 8, color: AppColors.primary),
-              SizedBox(width: 4),
-              Text('Buka • 06:00-22:00', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.circle, size: 8, color: AppColors.primary),
+              const SizedBox(width: 4),
+              Text('Buka • ${f.jamBuka}-${f.jamTutup}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
             ]),
           ),
         ]),
@@ -247,7 +270,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       const SizedBox(height: 16),
       // REFAKTOR: sebelumnya _fmt() — sekarang pakai CurrencyFormatter
       _iRow(Icons.attach_money, 'Harga Sewa', '${CurrencyFormatter.format(widget.field.hargaPerJam)} / jam'),
-      _iRow(Icons.access_time_rounded, 'Jam Operasional', '06:00 - 22:00 WIB'),
+      _iRow(Icons.access_time_rounded, 'Jam Operasional', '${widget.field.jamBuka} - ${widget.field.jamTutup} WIB'),
     ]));
   }
 
@@ -262,29 +285,13 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     ]),
   ]));
 
-  IconData _getFacilityIcon(String facility) {
-    final f = facility.toLowerCase();
-    if (f.contains('parkir')) return Icons.local_parking;
-    if (f.contains('toilet') || f.contains('kamar mandi') || f.contains('wc')) return Icons.wc;
-    if (f.contains('mushola') || f.contains('masjid') || f.contains('sholat')) return Icons.mosque;
-    if (f.contains('kantin') || f.contains('makan') || f.contains('cafe') || f.contains('minum')) return Icons.restaurant;
-    if (f.contains('wifi') || f.contains('internet')) return Icons.wifi;
-    if (f.contains('loker') || f.contains('locker')) return Icons.door_sliding;
-    if (f.contains('ruang ganti') || f.contains('ganti')) return Icons.checkroom;
-    if (f.contains('tribun') || f.contains('penonton') || f.contains('kursi')) return Icons.stadium;
-    if (f.contains('ac') || f.contains('pendingin')) return Icons.ac_unit;
-    if (f.contains('bola') || f.contains('sewa bola')) return Icons.stadium_outlined;
-    if (f.contains('p3k') || f.contains('medis') || f.contains('kesehatan')) return Icons.medical_services;
-    return Icons.check_circle_outline;
-  }
-
   Widget _fasilitasTab() {
     final fas = widget.field.fasilitas.isNotEmpty ? widget.field.fasilitas : ['Parkir Luas', 'Toilet Bersih', 'Mushola', 'Kantin'];
     return Padding(padding: const EdgeInsets.all(20), child: Wrap(spacing: 12, runSpacing: 12, children: fas.map((f) =>
       Container(width: (MediaQuery.of(context).size.width - 52) / 2, padding: const EdgeInsets.all(14),
         // REFAKTOR: sebelumnya Color(0xFFF0FDF4) dan Color(0xFFBBF7D0) dan Color(0xFF1B6B3A)
         decoration: BoxDecoration(color: AppColors.backgroundChipGreen, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.primaryBorder)),
-        child: Row(children: [Icon(_getFacilityIcon(f), color: AppColors.primary, size: 20), const SizedBox(width: 10),
+        child: Row(children: [Icon(FacilityHelper.getIcon(f), color: AppColors.primary, size: 20), const SizedBox(width: 10),
           Expanded(child: Text(f, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)))]),
       )).toList()));
   }
@@ -297,7 +304,15 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       reviewsAsync.when(
         loading: () => Column(children: [
           _buildSummaryBox(f, 0, 0, 0, 0, 0),
-          const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator(color: AppColors.primary))),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: 3,
+              itemBuilder: (_, __) => ShimmerLoading.listTile(),
+            ),
+          ),
         ]),
         error: (e, _) => Column(children: [
           _buildSummaryBox(f, 0, 0, 0, 0, 0),
@@ -307,8 +322,9 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
           int c5 = 0, c4 = 0, c3 = 0, c2 = 0, c1 = 0;
           for (var r in reviews) {
             int rating = r['rating'] ?? 5;
-            if (rating == 5) c5++;
-            else if (rating == 4) c4++;
+            if (rating == 5) {
+              c5++;
+            } else if (rating == 4) c4++;
             else if (rating == 3) c3++;
             else if (rating == 2) c2++;
             else if (rating == 1) c1++;
@@ -333,8 +349,11 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
                     final reviewImageUrl = review['reviewImageUrl'] ?? '';
                     DateTime date = DateTime.now();
                     if (review['createdAt'] != null) {
-                      if (review['createdAt'] is DateTime) date = review['createdAt'] as DateTime;
-                      else date = review['createdAt'].toDate();
+                      if (review['createdAt'] is DateTime) {
+                        date = review['createdAt'] as DateTime;
+                      } else {
+                        date = review['createdAt'].toDate();
+                      }
                     }
                     final time = DateFormat('dd MMM yyyy').format(date);
                     return _rc(n, s, t, time, reviewImageUrl);
@@ -381,12 +400,11 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
         const SizedBox(height: 12),
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: Image.network(
-            reviewImageUrl,
+          child: CachedImageWidget(
+            imageUrl: reviewImageUrl,
             width: double.infinity,
             height: 140,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(height: 140, color: Colors.grey.shade200, child: const Center(child: Icon(Icons.broken_image, color: Colors.grey))),
+            errorWidget: Container(height: 140, color: Colors.grey.shade200, child: const Center(child: Icon(Icons.broken_image, color: Colors.grey))),
           ),
         ),
       ],
@@ -421,18 +439,10 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
                 ? Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        mapImageUrl,
+                      CachedImageWidget(
+                        imageUrl: mapImageUrl,
                         fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.primary, strokeWidth: 2,
-                            ),
-                          );
-                        },
-                        errorBuilder: (_, __, ___) => const Center(
+                        errorWidget: const Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -648,7 +658,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
         ])),
         const SizedBox(width: 16),
         ElevatedButton(
-          onPressed: hasSel && !_isBooking ? () => _handleBooking() : null,
+          onPressed: hasSel ? () => _handleBooking() : null,
           style: ElevatedButton.styleFrom(
             // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
             backgroundColor: AppColors.primary, disabledBackgroundColor: Colors.grey.shade300,
@@ -656,9 +666,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
-          child: _isBooking
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Text('Pesan Sekarang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          child: const Text('Pesan Sekarang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
         ),
       ]),
     );

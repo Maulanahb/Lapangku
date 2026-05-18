@@ -7,6 +7,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
+import 'package:lapangku/models/app/payment_settings_model.dart';
+import 'package:lapangku/controllers/app/payment_settings_provider.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:gal/gal.dart';
 
 class PaymentUploadPage extends ConsumerStatefulWidget {
   final BookingModel booking;
@@ -20,13 +26,7 @@ class _State extends ConsumerState<PaymentUploadPage> {
   Timer? _timer;
   Duration _timeLeft = const Duration();
   File? _imageFile;
-  bool _isDummyImage = false;
   bool _isUploading = false;
-  
-  // Dummy bank details (Ideally from Firestore settings)
-  final String _bankName = 'BCA';
-  final String _accountNumber = '123-456-789-0';
-  final String _accountName = 'LapangKu Indonesia';
 
   @override
   void initState() {
@@ -72,11 +72,37 @@ class _State extends ConsumerState<PaymentUploadPage> {
     }
   }
 
+  Future<void> _saveQrToGallery(String url) async {
+    if (url.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('URL QRIS tidak valid')));
+      return;
+    }
+    
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final directory = await getTemporaryDirectory();
+        final imagePath = '${directory.path}/qris_lapangku.png';
+        final file = File(imagePath);
+        await file.writeAsBytes(response.bodyBytes);
+        
+        await Gal.putImage(imagePath);
+        
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('QRIS berhasil disimpan ke Galeri!')));
+      } else {
+        throw Exception('Gagal mengunduh gambar');
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan QRIS: $e')));
+    }
+  }
+
   String _fmt(int h) => NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(h);
 
   @override
   Widget build(BuildContext context) {
     final isQris = widget.booking.metodePembayaran.toLowerCase() == 'qris';
+    final paymentSettingsAsync = ref.watch(paymentSettingsProvider);
     
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
@@ -87,19 +113,28 @@ class _State extends ConsumerState<PaymentUploadPage> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Color(0xFF1B6B3A)),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildTimerCard(),
-            const SizedBox(height: 16),
-            if (isQris) _buildQrisSection() else _buildTransferSection(),
-            const SizedBox(height: 24),
-            _buildHelpButton(),
-          ],
+      body: paymentSettingsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF1B6B3A))),
+        error: (err, stack) => Center(child: Text('Gagal memuat pengaturan: $err')),
+        data: (settings) => SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _buildTimerCard(),
+              const SizedBox(height: 16),
+              if (isQris) _buildQrisSection(settings) else _buildTransferSection(settings),
+              const SizedBox(height: 24),
+              _buildHelpButton(),
+            ],
+          ),
         ),
       ),
-      bottomSheet: isQris ? _buildQrisBottomBar() : _buildTransferBottomBar(),
+      bottomSheet: isQris
+          ? paymentSettingsAsync.maybeWhen(
+              data: (settings) => _buildQrisBottomBar(settings),
+              orElse: () => const SizedBox.shrink(),
+            )
+          : _buildTransferBottomBar(),
     );
   }
 
@@ -150,7 +185,7 @@ class _State extends ConsumerState<PaymentUploadPage> {
     );
   }
 
-  Widget _buildTransferSection() {
+  Widget _buildTransferSection(PaymentSettingsModel settings) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -162,11 +197,11 @@ class _State extends ConsumerState<PaymentUploadPage> {
             children: [
               const Text('Detail Transfer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 16),
-              _buildDetailRow('Bank', _bankName),
+              _buildDetailRow('Bank', settings.bankName),
               const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider(height: 1)),
-              _buildDetailRow('No. Rekening', _accountNumber, isCopyable: true),
+              _buildDetailRow('No. Rekening', settings.accountNumber, isCopyable: true),
               const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider(height: 1)),
-              _buildDetailRow('Atas Nama', _accountName),
+              _buildDetailRow('Atas Nama', settings.accountName),
               const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider(height: 1)),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -191,6 +226,16 @@ class _State extends ConsumerState<PaymentUploadPage> {
           ),
         ),
         const SizedBox(height: 20),
+        _buildImagePicker(),
+        const SizedBox(height: 100), // padding for bottom bar
+      ],
+    );
+  }
+
+  Widget _buildImagePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         const Text('Foto Bukti Transfer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 12),
         GestureDetector(
@@ -203,57 +248,30 @@ class _State extends ConsumerState<PaymentUploadPage> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
             ),
-            child: _isDummyImage
-                ? Column(
+            child: _imageFile != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.file(_imageFile!, fit: BoxFit.cover),
+                        Container(color: Colors.black.withOpacity(0.3)),
+                        const Center(child: Icon(Icons.check_circle, color: Colors.white, size: 48)),
+                      ],
+                    ),
+                  )
+                : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.check_circle, color: Color(0xFF1B6B3A), size: 48),
+                      Icon(Icons.cloud_upload_outlined, size: 48, color: Colors.grey.shade400),
                       const SizedBox(height: 8),
-                      const Text('Foto Dummy Dipilih', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
+                      Text('Ketuk untuk ambil/pilih foto', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
                       const SizedBox(height: 4),
-                      Text('Siap untuk diupload', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                      Text('Format JPG, PNG (Max 5MB)', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
                     ],
-                  )
-                : _imageFile != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.file(_imageFile!, fit: BoxFit.cover),
-                            Container(color: Colors.black.withOpacity(0.3)),
-                            const Center(child: Icon(Icons.check_circle, color: Colors.white, size: 48)),
-                          ],
-                        ),
-                      )
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.cloud_upload_outlined, size: 48, color: Colors.grey.shade400),
-                          const SizedBox(height: 8),
-                          Text('Ketuk untuk ambil/pilih foto', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
-                          const SizedBox(height: 4),
-                          Text('Format JPG, PNG (Max 5MB)', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
-                        ],
-                      ),
+                  ),
           ),
         ),
-        const SizedBox(height: 12),
-        // TOMBOL DUMMY UNTUK TESTING
-        Center(
-          child: TextButton.icon(
-            onPressed: () {
-              setState(() {
-                _isDummyImage = true;
-                _imageFile = null;
-              });
-            },
-            icon: const Icon(Icons.bug_report, size: 16),
-            label: const Text('Gunakan Foto Dummy (Testing)'),
-            style: TextButton.styleFrom(foregroundColor: Colors.orange.shade800),
-          ),
-        ),
-        const SizedBox(height: 100), // padding for bottom bar
       ],
     );
   }
@@ -282,14 +300,14 @@ class _State extends ConsumerState<PaymentUploadPage> {
     );
   }
 
-  Widget _buildQrisSection() {
+  Widget _buildQrisSection(PaymentSettingsModel settings) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
       child: Column(
         children: [
-          const Text('LapangKu Indonesia', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text(settings.accountName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           const SizedBox(height: 24),
           // QRIS Image Placeholder
           Container(
@@ -301,7 +319,11 @@ class _State extends ConsumerState<PaymentUploadPage> {
             ),
             child: Stack(
               children: [
-                Center(child: Icon(Icons.qr_code_2, size: 150, color: Colors.grey.shade800)),
+                Center(
+                  child: settings.qrisUrl.isNotEmpty
+                      ? CachedImageWidget(imageUrl: settings.qrisUrl, width: 200, height: 200)
+                      : Icon(Icons.qr_code_2, size: 150, color: Colors.grey.shade800),
+                ),
                 Positioned(
                   top: 0, left: 0, right: 0,
                   child: Container(
@@ -329,6 +351,8 @@ class _State extends ConsumerState<PaymentUploadPage> {
               Text(_fmt(widget.booking.totalBayar), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1B6B3A))),
             ],
           ),
+          const SizedBox(height: 24),
+          _buildImagePicker(),
           const SizedBox(height: 80), // padding for bottom bar
         ],
       ),
@@ -355,7 +379,7 @@ class _State extends ConsumerState<PaymentUploadPage> {
       padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(context).padding.bottom + 14),
       decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -4))]),
       child: ElevatedButton(
-        onPressed: (_imageFile == null && !_isDummyImage) || _isUploading ? null : _handleUpload,
+        onPressed: _imageFile == null || _isUploading ? null : _handleUpload,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1B6B3A),
           disabledBackgroundColor: Colors.grey.shade300,
@@ -372,7 +396,7 @@ class _State extends ConsumerState<PaymentUploadPage> {
     );
   }
 
-  Widget _buildQrisBottomBar() {
+  Widget _buildQrisBottomBar(PaymentSettingsModel settings) {
     return Container(
       padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(context).padding.bottom + 14),
       decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -4))]),
@@ -380,7 +404,7 @@ class _State extends ConsumerState<PaymentUploadPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           ElevatedButton.icon(
-            onPressed: () {}, // Save QR functionality
+            onPressed: () => _saveQrToGallery(settings.qrisUrl),
             icon: const Icon(Icons.download),
             label: const Text('Simpan QR ke Galeri', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             style: ElevatedButton.styleFrom(
@@ -395,7 +419,7 @@ class _State extends ConsumerState<PaymentUploadPage> {
           ),
           const SizedBox(height: 12),
           ElevatedButton(
-            onPressed: _isUploading ? null : _handleQrisPayment,
+            onPressed: _imageFile == null || _isUploading ? null : _handleUpload,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1B6B3A),
               disabledBackgroundColor: Colors.grey.shade300,
@@ -407,7 +431,7 @@ class _State extends ConsumerState<PaymentUploadPage> {
             ),
             child: _isUploading
                 ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Selesai Bayar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                : const Text('Upload & Konfirmasi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ),
         ],
       ),
@@ -415,17 +439,13 @@ class _State extends ConsumerState<PaymentUploadPage> {
   }
 
   Future<void> _handleUpload() async {
-    if (_imageFile == null && !_isDummyImage) return;
+    if (_imageFile == null) return;
 
     setState(() => _isUploading = true);
     try {
       final service = ref.read(bookingServiceProvider);
       
-      if (_isDummyImage) {
-        await service.uploadDummyPaymentProof(widget.booking.id);
-      } else {
-        await service.uploadPaymentProof(widget.booking.id, _imageFile!);
-      }
+      await service.uploadPaymentProof(widget.booking.id, _imageFile!);
 
       if (mounted) {
         setState(() => _isUploading = false);
@@ -435,27 +455,6 @@ class _State extends ConsumerState<PaymentUploadPage> {
       if (mounted) {
         setState(() => _isUploading = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal upload: $e'), backgroundColor: Colors.red));
-      }
-    }
-  }
-
-  /// Handle QRIS payment — update status ke menunggu_konfirmasi
-  Future<void> _handleQrisPayment() async {
-    setState(() => _isUploading = true);
-    try {
-      final service = ref.read(bookingServiceProvider);
-      await service.confirmQrisPayment(widget.booking.id);
-
-      if (mounted) {
-        setState(() => _isUploading = false);
-        _finishPayment();
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isUploading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal konfirmasi pembayaran: $e'), backgroundColor: Colors.red),
-        );
       }
     }
   }

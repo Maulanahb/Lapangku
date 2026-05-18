@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/mitra/mitra_location_controller.dart';
+import 'package:lapangku/views/mitra/mitra_map_picker_page.dart';
 import 'widgets/map_placeholder.dart';
+
 
 class Step5Location extends ConsumerStatefulWidget {
   final TextEditingController addressController;
@@ -68,23 +70,98 @@ class _Step5LocationState extends ConsumerState<Step5Location> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Map Area
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    height: 220,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF9FAFB),
-                      borderRadius: BorderRadius.circular(20),
+              GestureDetector(
+                onTap: () async {
+                  final result = await Navigator.push<MapPickerResult>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MitraMapPickerPage(
+                        initialLat: locationState.latitude,
+                        initialLng: locationState.longitude,
+                      ),
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: const MapPlaceholder(),
+                  );
+                  if (result != null) {
+                    ref.read(mitraLocationProvider.notifier).updateLocation(
+                          result.latitude,
+                          result.longitude,
+                        );
+                    widget.addressController.text = result.address;
+                  }
+                },
+                child: Container(
+                  height: 220,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F4FF),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: locationState.latitude != null
+                          ? const Color(0xFF1B6B3A)
+                          : const Color(0xFFE2E8F0),
+                      width: locationState.latitude != null ? 2 : 1,
                     ),
                   ),
-                ],
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: const MapPlaceholder(),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.12),
+                              blurRadius: 12,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.map_outlined,
+                                color: Color(0xFF1B6B3A), size: 20),
+                            const SizedBox(width: 10),
+                            Text(
+                              locationState.latitude != null
+                                  ? 'Ubah Lokasi di Peta'
+                                  : 'Pilih Lokasi di Peta',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w900, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (locationState.latitude != null)
+                        Positioned(
+                          bottom: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${locationState.latitude!.toStringAsFixed(5)}, ${locationState.longitude!.toStringAsFixed(5)}',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
+
               const SizedBox(height: 20),
 
               // Use My Location Button

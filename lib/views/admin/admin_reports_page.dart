@@ -532,7 +532,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text('Laporan ${_selectedReportType} Lapangku', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+              pw.Text('Laporan $_selectedReportType Lapangku', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
               if (_selectedDateRange != null)
                 pw.Text('Periode: ${DateFormat('dd MMM yyyy').format(_selectedDateRange!.start)} - ${DateFormat('dd MMM yyyy').format(_selectedDateRange!.end)}'),
               pw.SizedBox(height: 20),
@@ -557,7 +557,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
     );
 
     final bytes = await pdf.save();
-    await _saveAndDownloadFile(bytes, 'Laporan_${_selectedReportType}.pdf', 'application/pdf');
+    await _saveAndDownloadFile(bytes, 'Laporan_$_selectedReportType.pdf', 'application/pdf');
   }
 
   Future<void> _exportToExcel(List<BookingModel> bookings) async {
@@ -583,7 +583,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
     }
 
     final bytes = excelDoc.encode()!;
-    await _saveAndDownloadFile(bytes, 'Laporan_${_selectedReportType}.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    await _saveAndDownloadFile(bytes, 'Laporan_$_selectedReportType.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   }
 
   Future<void> _saveAndDownloadFile(List<int> bytes, String filename, String mimeType) async {

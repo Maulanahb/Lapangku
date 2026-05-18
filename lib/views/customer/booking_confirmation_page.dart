@@ -218,9 +218,9 @@ class _State extends ConsumerState<BookingConfirmationPage> {
   Widget _buildBottomBar() {
     return Container(
       padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(context).padding.bottom + 14),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
           color: Colors.white,
-          boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 12, offset: const Offset(0, -4))]),
+          boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 12, offset: Offset(0, -4))]),
       child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Total Pembayaran',

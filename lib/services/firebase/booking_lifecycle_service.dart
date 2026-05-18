@@ -7,7 +7,7 @@ import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/models/auth/user_model.dart';
 import 'package:lapangku/standards/constants/app_constants.dart';
-import 'package:lapangku/services/cloudinary_service.dart';
+import 'package:lapangku/services/firebase_storage_service.dart';
 
 /// Service layer utama untuk seluruh siklus hidup booking (Booking Lifecycle).
 ///
@@ -162,8 +162,8 @@ class BookingLifecycleService {
           'Batas waktu pembayaran telah terlewat. Booking otomatis expired.');
     }
 
-    // Upload ke Cloudinary
-    final imageUrl = await CloudinaryService.uploadImage(imageFile);
+    // Upload ke Firebase Storage
+    final imageUrl = await FirebaseStorageService.uploadImage(imageFile, folder: 'payments');
     
     if (imageUrl == null) {
       throw Exception('Gagal mengupload bukti pembayaran. Silakan coba lagi.');
@@ -499,7 +499,9 @@ class BookingLifecycleService {
       // Skip terminal states (tidak memblokir slot)
       if (status == BookingStatusHelper.dibatalkan ||
           status == BookingStatusHelper.expired ||
-          status == BookingStatusHelper.ditolak) continue;
+          status == BookingStatusHelper.ditolak) {
+        continue;
+      }
 
       // Auto-expire: jika menunggu_bayar tapi sudah lewat batas waktu
       if (status == BookingStatusHelper.menungguBayar) {

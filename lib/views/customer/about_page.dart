@@ -358,17 +358,17 @@ class AboutPage extends StatelessWidget {
   }
 
   Widget _buildFooter() {
-    return Column(
+    return const Column(
       children: [
-        const Text(
+        Text(
           '© 2026 LapangKu Indonesia',
           style: TextStyle(
             fontSize: 12,
             color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(height: 4),
-        const Row(
+        SizedBox(height: 4),
+        Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(

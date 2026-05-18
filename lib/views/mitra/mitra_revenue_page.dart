@@ -395,7 +395,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
             ],
           ),
           const SizedBox(height: 20),
-          Container(
+          SizedBox(
             height: 120,
             width: double.infinity,
             child: CustomPaint(

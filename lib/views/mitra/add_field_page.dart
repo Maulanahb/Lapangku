@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_location_controller.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lapangku/views/mitra/widgets/field_form_widgets.dart';
 import 'package:lapangku/views/mitra/mitra_map_picker_page.dart';
 
@@ -27,7 +26,7 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
   final _priceController = TextEditingController();
   final _descriptionController = TextEditingController();
   String _selectedSport = 'Futsal';
-  List<String> _selectedFacilities = [];
+  final List<String> _selectedFacilities = [];
   TimeOfDay _openingTime = const TimeOfDay(hour: 8, minute: 0);
   TimeOfDay _closingTime = const TimeOfDay(hour: 22, minute: 0);
 
@@ -71,16 +70,20 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
 
   void _nextStep() {
     if (_currentStep == 1) {
-      if (_venueController.text.isEmpty)
+      if (_venueController.text.isEmpty) {
         return SnackbarHelper.showError(
             context, 'Nama Venue/Tempat wajib diisi');
-      if (_nameController.text.isEmpty)
+      }
+      if (_nameController.text.isEmpty) {
         return SnackbarHelper.showError(context, 'Nama lapangan wajib diisi');
-      if (_addressController.text.isEmpty)
+      }
+      if (_addressController.text.isEmpty) {
         return SnackbarHelper.showError(context, 'Alamat wajib diisi');
+      }
     } else if (_currentStep == 2) {
-      if (_priceController.text.isEmpty)
+      if (_priceController.text.isEmpty) {
         return SnackbarHelper.showError(context, 'Harga wajib diisi');
+      }
     }
 
     if (_currentStep < _totalSteps) {
@@ -302,10 +305,11 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
             return GestureDetector(
               onTap: () {
                 setState(() {
-                  if (isSelected)
+                  if (isSelected) {
                     _selectedFacilities.remove(facility['name']);
-                  else
+                  } else {
                     _selectedFacilities.add(facility['name'] as String);
+                  }
                 });
               },
               child: AnimatedContainer(
@@ -532,9 +536,9 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
                   ],
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(
+                  const Icon(
                     Icons.location_on,
-                    color: const Color(0xFF1B6B3A),
+                    color: Color(0xFF1B6B3A),
                     size: 18,
                   ),
                   const SizedBox(width: 8),

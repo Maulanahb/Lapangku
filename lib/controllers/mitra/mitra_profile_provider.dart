@@ -106,19 +106,33 @@ class MitraProfileNotifier
     try {
       final url = await _service.uploadLogo(current.id, image);
       final updated = current.copyWith(logoUrl: url);
-      
+
       // Update Firestore first
       await _service.updateProfile(updated);
-      
+
       // Update local state immediately
       state = AsyncData(updated);
-      
-      // Silent reload from server to ensure consistency
-      await loadProfile(current.id, silent: true);
     } catch (e) {
       rethrow;
     }
   }
+
+  Future<void> deleteLogo() async {
+    if (state is! AsyncData) return;
+    final current = state.value!;
+    try {
+      final updated = current.copyWith(logoUrl: '');
+
+      // Update Firestore
+      await _service.updateProfile(updated);
+
+      // Update local state immediately
+      state = AsyncData(updated);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
 
   Future<void> uploadDocument(String docType, File file) async {
     if (state is! AsyncData) return;

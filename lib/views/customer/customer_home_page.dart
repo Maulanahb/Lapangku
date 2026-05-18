@@ -5,6 +5,8 @@ import 'package:lapangku/controllers/field/field_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
+import 'package:lapangku/standards/widgets/shimmer_loading.dart';
 
 class CustomerHomePage extends ConsumerStatefulWidget {
   const CustomerHomePage({super.key});
@@ -14,7 +16,6 @@ class CustomerHomePage extends ConsumerStatefulWidget {
 }
 
 class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
-  final String _searchQuery = '';
   String _selectedCategory = 'Semua';
 
   final List<String> _categories = [
@@ -182,7 +183,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
               child: Text(
-                _searchQuery.isEmpty && _selectedCategory == 'Semua' ? 'Rekomendasi Lapangan' : 'Hasil Pencarian',
+                _selectedCategory == 'Semua' ? 'Rekomendasi Lapangan' : 'Hasil Pencarian',
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
               ),
             ),
@@ -190,15 +191,21 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
 
           // List Lapangan
           fieldsAsync.when(
-            loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: AppColors.primary))),
+            loading: () => SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => ShimmerLoading.card(height: 280),
+                  childCount: 3,
+                ),
+              ),
+            ),
             error: (e, _) => SliverFillRemaining(child: Center(child: Text('Terjadi kesalahan:\n$e', textAlign: TextAlign.center))),
             data: (fields) {
               final filtered = fields.where((f) {
-                final matchQuery = f.nama.toLowerCase().contains(_searchQuery.toLowerCase().trim()) ||
-                    f.alamat.toLowerCase().contains(_searchQuery.toLowerCase().trim());
                 final matchCat = _selectedCategory == 'Semua' ||
                     f.kategori.toLowerCase().trim() == _selectedCategory.toLowerCase().trim();
-                return matchQuery && matchCat;
+                return matchCat;
               }).toList();
 
               if (filtered.isEmpty) {
@@ -254,12 +261,16 @@ class _FieldCard extends StatelessWidget {
             children: [
               Stack(
                 children: [
-                  field.fotoUtama.isNotEmpty
-                      ? Image.network(field.fotoUtama, height: 180, width: double.infinity, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(height: 180, color: AppColors.primaryLight,
-                            child: const Center(child: Icon(Icons.stadium_outlined, size: 56, color: AppColors.primary))))
-                      : Container(height: 180, color: AppColors.primaryLight,
-                          child: const Center(child: Icon(Icons.image_not_supported, size: 56, color: AppColors.primary))),
+                  CachedImageWidget(
+                    imageUrl: field.fotoUtama,
+                    height: 180,
+                    width: double.infinity,
+                    errorWidget: Container(
+                      height: 180,
+                      color: AppColors.primaryLight,
+                      child: const Center(child: Icon(Icons.stadium_outlined, size: 56, color: AppColors.primary)),
+                    ),
+                  ),
                   Positioned(
                     top: 12, right: 12,
                     child: Container(

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
-import 'package:lapangku/services/cloudinary_service.dart';
+import 'package:lapangku/services/firebase_storage_service.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/views/customer/payment_upload_page.dart';
@@ -15,6 +15,8 @@ import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 import 'package:lapangku/standards/widgets/loading_overlay.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
+import 'package:lapangku/standards/widgets/shimmer_loading.dart';
 
 class CustomerOrdersPage extends ConsumerStatefulWidget {
   const CustomerOrdersPage({super.key});
@@ -154,9 +156,11 @@ class _State extends ConsumerState<CustomerOrdersPage> {
           _buildFilterChips(),
           Expanded(
             child: bookingsAsync.when(
-              loading: () => const Center(
-                  child:
-                      CircularProgressIndicator(color: AppColors.primary)),
+              loading: () => ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: 4,
+                itemBuilder: (_, __) => ShimmerLoading.listTile(),
+              ),
               error: (e, _) => Center(
                   child: Text('Gagal memuat pesanan:\n$e',
                       textAlign: TextAlign.center)),
@@ -228,10 +232,12 @@ class _State extends ConsumerState<CustomerOrdersPage> {
             final status = b.status.toLowerCase();
             final filterKey = _filter.toLowerCase();
             if (filterKey == 'menunggu bayar') return status == 'menunggu_bayar';
-            if (filterKey == 'aktif')
+            if (filterKey == 'aktif') {
               return status == 'dikonfirmasi' || status == 'aktif';
-            if (filterKey == 'menunggu')
+            }
+            if (filterKey == 'menunggu') {
               return status == 'menunggu_konfirmasi';
+            }
             return status == filterKey;
           }).toList();
 
@@ -373,11 +379,11 @@ class _BookingCard extends ConsumerWidget {
           border: isSelected
               ? Border.all(color: AppColors.primary, width: 2)
               : null,
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
                 color: AppColors.shadow,
                 blurRadius: 12,
-                offset: const Offset(0, 4))
+                offset: Offset(0, 4))
           ],
         ),
         child: Column(
@@ -436,23 +442,22 @@ class _BookingCard extends ConsumerWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
+                  CachedImageWidget(
+                    imageUrl: booking.fieldImageUrl,
                     width: 64,
                     height: 64,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(12),
-                      image: booking.fieldImageUrl.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(booking.fieldImageUrl),
-                              fit: BoxFit.cover)
-                          : null,
+                    borderRadius: 12,
+                    errorWidget: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.stadium_outlined, size: 28, color: AppColors.primary),
+                      ),
                     ),
-                    child: booking.fieldImageUrl.isEmpty
-                        ? const Center(
-                            child: Icon(Icons.stadium_outlined,
-                                size: 28, color: AppColors.primary))
-                        : null,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -690,7 +695,7 @@ class _BookingCard extends ConsumerWidget {
                         try {
                           String? imageUrl;
                           if (imageFile != null) {
-                            imageUrl = await CloudinaryService.uploadImage(imageFile!);
+                            imageUrl = await FirebaseStorageService.uploadImage(imageFile!, folder: 'reviews');
                           }
                           
                           final service = ref.read(reviewServiceProvider);
@@ -730,11 +735,19 @@ class _BookingCard extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(8)),
                 ),
                 child: isSubmitting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
+                    ? const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2)),
+                          SizedBox(width: 8),
+                          Text('Mengunggah...',
+                              style: TextStyle(color: Colors.white, fontSize: 13)),
+                        ],
+                      )
                     : const Text('Kirim',
                         style: TextStyle(color: Colors.white)),
               ),

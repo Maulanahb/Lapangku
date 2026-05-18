@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart'; // NEW: Import ImagePicker
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
-import 'package:lapangku/controllers/mitra/mitra_controller.dart'; // NEW: Import MitraController
+// NEW: Import MitraController
 import 'package:lapangku/models/mitra/mitra_profile_model.dart';
-import 'package:lapangku/services/cloudinary_service.dart'; // NEW: Import CloudinaryService
+// NEW: Import FirebaseStorageService
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
@@ -227,33 +227,32 @@ class MitraProfilePage extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 32, top: 8),
       child: Column(
         children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                key: ValueKey(profile.logoUrl),
-                radius: 45,
-                backgroundColor: Colors.white,
-                // NEW: Tampilkan foto jika ada, jika tidak tampilkan inisial
-                backgroundImage:
-                    profile.logoUrl != null && profile.logoUrl!.isNotEmpty
-                        ? NetworkImage(profile.logoUrl!)
-                        : null,
-                child: profile.logoUrl == null || profile.logoUrl!.isEmpty
-                    ? Text(
-                        _getInitials(profile.businessName),
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      )
-                    : null,
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: () => _showImagePicker(context, ref, profile), // NEW: Klik icon camera
+          GestureDetector(
+            onTap: () => _showImagePicker(context, ref, profile),
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  key: ValueKey(profile.logoUrl),
+                  radius: 45,
+                  backgroundColor: Colors.white,
+                  backgroundImage:
+                      profile.logoUrl != null && profile.logoUrl!.isNotEmpty
+                          ? NetworkImage(profile.logoUrl!)
+                          : null,
+                  child: profile.logoUrl == null || profile.logoUrl!.isEmpty
+                      ? Text(
+                          _getInitials(profile.businessName),
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
@@ -268,9 +267,10 @@ class MitraProfilePage extends ConsumerWidget {
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+
           const SizedBox(height: 16),
           Text(
             profile.businessName,
@@ -505,12 +505,8 @@ class MitraProfilePage extends ConsumerWidget {
       if (!context.mounted) return;
       LoadingOverlay.show(context, message: 'Menghapus foto...');
       try {
-        // NEW: Update Firestore dengan logoUrl null/empty
-        final updated = profile.copyWith(logoUrl: '');
-        await ref.read(mitraServiceProvider).updateProfile(updated);
-        
-        // Refresh state
-        await ref.read(mitraProfileProvider.notifier).loadProfile(profile.id);
+        await ref.read(mitraProfileProvider.notifier).deleteLogo();
+
 
         if (context.mounted) {
           LoadingOverlay.dismiss(context);

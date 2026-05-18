@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/services/firebase/review_service.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
+import 'package:lapangku/standards/widgets/shimmer_loading.dart';
+import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 
 class ReviewsPage extends ConsumerWidget {
   const ReviewsPage({super.key});
@@ -39,25 +42,18 @@ class ReviewsPage extends ConsumerWidget {
         ],
       ),
       body: reviewsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF1B6B3A))),
+        loading: () => ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: 4,
+          itemBuilder: (_, __) => ShimmerLoading.card(height: 140),
+        ),
         error: (e, _) => Center(child: Text('Gagal memuat ulasan:\n$e')),
         data: (reviews) {
           if (reviews.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.star_outline, size: 80, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  const Text('Belum ada ulasan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3748))),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Anda belum memberikan ulasan\nuntuk lapangan manapun.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Color(0xFF718096)),
-                  ),
-                ],
-              ),
+            return const EmptyStateWidget(
+              icon: Icons.star_outline,
+              title: 'Belum ada ulasan',
+              subtitle: 'Anda belum memberikan ulasan\nuntuk lapangan manapun.',
             );
           }
 
@@ -119,19 +115,20 @@ class _ReviewCard extends StatelessWidget {
           // Field Info Header
           Row(
             children: [
-              Container(
+              CachedImageWidget(
+                imageUrl: fieldImageUrl,
                 width: 48,
                 height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5EC),
-                  borderRadius: BorderRadius.circular(10),
-                  image: fieldImageUrl.isNotEmpty
-                      ? DecorationImage(image: NetworkImage(fieldImageUrl), fit: BoxFit.cover)
-                      : null,
+                borderRadius: 10,
+                errorWidget: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5EC),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Center(child: Icon(Icons.stadium_outlined, color: Color(0xFF1B6B3A))),
                 ),
-                child: fieldImageUrl.isEmpty
-                    ? const Center(child: Icon(Icons.stadium_outlined, color: Color(0xFF1B6B3A)))
-                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -193,12 +190,11 @@ class _ReviewCard extends StatelessWidget {
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                reviewImageUrl,
+              child: CachedImageWidget(
+                imageUrl: reviewImageUrl,
                 width: double.infinity,
                 height: 160,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorWidget: Container(
                   height: 160,
                   color: Colors.grey.shade200,
                   child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),

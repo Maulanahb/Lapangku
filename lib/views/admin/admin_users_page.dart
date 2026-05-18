@@ -329,12 +329,12 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                           color: Colors.red.withOpacity(0.08),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.block_flipped, size: 10, color: Colors.red),
-                            const SizedBox(width: 4),
-                            const Text(
+                            Icon(Icons.block_flipped, size: 10, color: Colors.red),
+                            SizedBox(width: 4),
+                            Text(
                               'NONAKTIF',
                               style: TextStyle(
                                 color: Colors.red,

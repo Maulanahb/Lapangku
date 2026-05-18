@@ -1,10 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/controllers/field/field_controller.dart';
 // REFAKTOR: import shared constants & formatter
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
+import 'package:lapangku/standards/widgets/shimmer_loading.dart';
+import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 
 class CustomerSearchPage extends ConsumerStatefulWidget {
   const CustomerSearchPage({super.key});
@@ -18,6 +23,17 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
   String _searchQuery = '';
   String _selectedCategory = 'Semua';
   String _sortBy = 'Terdekat';
+  
+  // Advanced Filter & Sorting state
+  Timer? _debounce;
+  final List<String> _selectedFacilities = [];
+  Position? _currentPosition;
+  bool _isLoadingLocation = false;
+
+  final List<String> _availableFacilities = [
+    'Indoor', 'Outdoor', 'Shower', 'Toilet', 
+    'Area Parkir', 'Kantin', 'Mushola', 'Gratis Bola'
+  ];
 
   final List<String> _categories = [
     'Semua',
@@ -29,7 +45,75 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isLoadingLocation = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showLocationServiceDialog();
+        setState(() => _isLoadingLocation = false);
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() => _isLoadingLocation = false);
+          return; // Izin ditolak
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        setState(() => _isLoadingLocation = false);
+        return; // Izin ditolak permanen
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+      setState(() {
+        _currentPosition = position;
+        _isLoadingLocation = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingLocation = false);
+    }
+  }
+
+  void _showLocationServiceDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Aktifkan Lokasi'),
+          content: const Text(
+              'Akses GPS (Lokasi) belum aktif. Untuk menggunakan fitur "Urutkan Berdasarkan Terdekat", mohon aktifkan GPS perangkat Anda.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Geolocator.openLocationSettings();
+              },
+              child: const Text('Buka Pengaturan'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -37,6 +121,7 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
   void _showFilterBottomSheet() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -45,11 +130,17 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              padding: EdgeInsets.only(
+                left: 24.0,
+                right: 24.0,
+                top: 24.0,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24.0,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   const Text('Urutkan Berdasarkan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Wrap(
@@ -64,6 +155,21 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                         selectedColor: AppColors.primary,
                         labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
                         onSelected: (val) {
+                          if (sort == 'Terdekat') {
+                            if (_isLoadingLocation) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Sedang mendeteksi lokasi, mohon tunggu...')),
+                              );
+                              return;
+                            }
+                            if (_currentPosition == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Akses GPS diperlukan untuk fitur ini.')),
+                              );
+                              _showLocationServiceDialog();
+                              return;
+                            }
+                          }
                           setModalState(() => _sortBy = sort);
                           setState(() => _sortBy = sort);
                         },
@@ -91,6 +197,33 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                       );
                     }).toList(),
                   ),
+                  const SizedBox(height: 24),
+                  const Text('Fasilitas', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _availableFacilities.map((facility) {
+                      final isSelected = _selectedFacilities.contains(facility);
+                      return FilterChip(
+                        label: Text(facility),
+                        selected: isSelected,
+                        selectedColor: AppColors.primary,
+                        checkmarkColor: Colors.white,
+                        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
+                        onSelected: (selected) {
+                          setModalState(() {
+                            if (selected) {
+                              _selectedFacilities.add(facility);
+                            } else {
+                              _selectedFacilities.remove(facility);
+                            }
+                          });
+                          setState(() {});
+                        },
+                      );
+                    }).toList(),
+                  ),
                   const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
@@ -107,9 +240,10 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                   ),
                 ],
               ),
-            );
-          },
-        );
+            ),
+          );
+        },
+      );
       },
     );
   }
@@ -158,8 +292,11 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
               child: TextField(
                 controller: _searchController,
                 onChanged: (val) {
-                  setState(() {
-                    _searchQuery = val;
+                  if (_debounce?.isActive ?? false) _debounce!.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 500), () {
+                    setState(() {
+                      _searchQuery = val;
+                    });
                   });
                 },
                 decoration: InputDecoration(
@@ -287,6 +424,21 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
     bool isSelected = _sortBy == label;
     return GestureDetector(
       onTap: () {
+        if (label == 'Terdekat') {
+          if (_isLoadingLocation) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Sedang mendeteksi lokasi, mohon tunggu...')),
+            );
+            return;
+          }
+          if (_currentPosition == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Akses GPS diperlukan untuk fitur ini.')),
+            );
+            _showLocationServiceDialog();
+            return;
+          }
+        }
         setState(() {
           _sortBy = label;
         });
@@ -313,14 +465,13 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
 
   Widget _buildResults(AsyncValue<List<FieldModel>> fieldsAsync) {
     return fieldsAsync.when(
-      // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
-      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      loading: () => ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: 5,
+        itemBuilder: (_, __) => ShimmerLoading.listTile(),
+      ),
       error: (e, _) => Center(child: Text('Terjadi kesalahan:\n$e')),
       data: (fields) {
-        if (_searchQuery.isEmpty && _selectedCategory == 'Semua' && _sortBy == 'Terdekat') {
-          return _buildInitialState();
-        }
-
         final filtered = fields.where((f) {
           final matchQuery = _searchQuery.isEmpty ||
               f.nama.toLowerCase().contains(_searchQuery.toLowerCase().trim()) ||
@@ -329,7 +480,11 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
           final matchCategory = _selectedCategory == 'Semua' ||
               f.kategori.toLowerCase() == _selectedCategory.toLowerCase();
 
-          return matchQuery && matchCategory;
+          final matchFacilities = _selectedFacilities.isEmpty ||
+              _selectedFacilities.every((facility) => 
+                  f.fasilitas.any((fItem) => fItem.toLowerCase() == facility.toLowerCase()));
+
+          return matchQuery && matchCategory && matchFacilities;
         }).toList();
 
         if (_sortBy == 'Termurah') {
@@ -338,6 +493,16 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
           filtered.sort((a, b) => b.hargaPerJam.compareTo(a.hargaPerJam));
         } else if (_sortBy == 'Rating Tertinggi') {
           filtered.sort((a, b) => b.ratingAvg.compareTo(a.ratingAvg));
+        } else if (_sortBy == 'Terdekat' && _currentPosition != null) {
+          filtered.sort((a, b) {
+            final distA = Geolocator.distanceBetween(
+                _currentPosition!.latitude, _currentPosition!.longitude,
+                a.latitude, a.longitude);
+            final distB = Geolocator.distanceBetween(
+                _currentPosition!.latitude, _currentPosition!.longitude,
+                b.latitude, b.longitude);
+            return distA.compareTo(distB);
+          });
         }
 
         if (filtered.isEmpty) {
@@ -362,7 +527,14 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
-                    return _HorizontalFieldCard(field: filtered[index]);
+                    final field = filtered[index];
+                    double? distanceInMeters;
+                    if (_currentPosition != null) {
+                      distanceInMeters = Geolocator.distanceBetween(
+                          _currentPosition!.latitude, _currentPosition!.longitude,
+                          field.latitude, field.longitude);
+                    }
+                    return _HorizontalFieldCard(field: field, distanceInMeters: distanceInMeters);
                   },
                 ),
               ),
@@ -373,96 +545,30 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
     );
   }
 
-  Widget _buildInitialState() {
-    return Container(
-      color: Colors.white,
-      width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_rounded, size: 80, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          // REFAKTOR: sebelumnya Color(0xFF2D3748)
-          const Text(
-            'Temukan Lapangan',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
-          ),
-          const SizedBox(height: 8),
-          // REFAKTOR: sebelumnya Color(0xFF718096)
-          const Text(
-            'Ketik nama atau lokasi lapangan\nuntuk mulai mencari.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildEmptyState() {
-    return Container(
-      color: Colors.white,
-      width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: const BoxDecoration(
-              // REFAKTOR: sebelumnya Color(0xFFF4F6F9)
-              color: AppColors.backgroundPage,
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Stack(
-                children: [
-                  // REFAKTOR: sebelumnya Color(0xFF718096)
-                  Icon(Icons.search, size: 50, color: AppColors.textSecondary),
-                  Positioned(
-                    bottom: 4,
-                    right: 4,
-                    child: Icon(Icons.close, size: 20, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
+    return EmptyStateWidget(
+      icon: Icons.search_off_rounded,
+      title: 'Lapangan tidak ditemukan',
+      subtitle: 'Coba ubah filter atau gunakan kata kunci\nlain untuk hasil yang lebih luas.',
+      actionButton: SizedBox(
+        width: 200,
+        height: 45,
+        child: OutlinedButton(
+          onPressed: () {
+            _searchController.clear();
+            setState(() {
+              _searchQuery = '';
+              _selectedCategory = 'Semua';
+              _sortBy = 'Terdekat';
+              _selectedFacilities.clear();
+            });
+          },
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: AppColors.primary, width: 1.5),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          const SizedBox(height: 24),
-          // REFAKTOR: sebelumnya Color(0xFF2D3748)
-          const Text(
-            'Lapangan tidak ditemukan',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
-          ),
-          const SizedBox(height: 8),
-          // REFAKTOR: sebelumnya Color(0xFF718096)
-          const Text(
-            'Coba ubah filter atau gunakan kata kunci\nlain untuk hasil yang lebih luas.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: 200,
-            height: 45,
-            child: OutlinedButton(
-              onPressed: () {
-                _searchController.clear();
-                setState(() {
-                  _searchQuery = '';
-                  _selectedCategory = 'Semua';
-                  _sortBy = 'Terdekat';
-                });
-              },
-              style: OutlinedButton.styleFrom(
-                // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
-                side: const BorderSide(color: AppColors.primary, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('Reset Filter', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-            ),
-          ),
-        ],
+          child: const Text('Reset Filter', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+        ),
       ),
     );
   }
@@ -470,8 +576,9 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
 
 class _HorizontalFieldCard extends StatelessWidget {
   final FieldModel field;
+  final double? distanceInMeters;
 
-  const _HorizontalFieldCard({required this.field});
+  const _HorizontalFieldCard({required this.field, this.distanceInMeters});
 
   @override
   Widget build(BuildContext context) {
@@ -498,17 +605,12 @@ class _HorizontalFieldCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Thumbnail Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: field.fotoUtama.isNotEmpty
-                  ? Image.network(
-                      field.fotoUtama,
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
-                    )
-                  : _buildImagePlaceholder(),
+            CachedImageWidget(
+              imageUrl: field.fotoUtama,
+              width: 100,
+              height: 100,
+              borderRadius: 12,
+              errorWidget: _buildImagePlaceholder(),
             ),
             const SizedBox(width: 12),
             // Details
@@ -560,7 +662,9 @@ class _HorizontalFieldCard extends StatelessWidget {
                       const SizedBox(width: 2),
                       Expanded(
                         child: Text(
-                          '${field.alamat.split(',').first} • 1.2 km',
+                          distanceInMeters != null
+                              ? '${field.alamat.split(',').first} • ${(distanceInMeters! / 1000).toStringAsFixed(1)} km'
+                              : field.alamat.split(',').first,
                           style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
