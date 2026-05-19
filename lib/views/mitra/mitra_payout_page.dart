@@ -43,6 +43,7 @@ class _MitraPayoutPageState extends ConsumerState<MitraPayoutPage> {
       await ref.read(mitraProfileProvider.notifier).updateBankInfo(
         _selectedBank ?? 'BCA',
         _accountNumberController.text.trim(),
+        _accountNameController.text.trim(),
       );
       if (mounted) {
         SnackbarHelper.showSuccess(context, 'Informasi rekening berhasil disimpan');

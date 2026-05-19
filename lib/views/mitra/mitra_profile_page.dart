@@ -15,7 +15,7 @@ import 'package:lapangku/standards/widgets/loading_overlay.dart';
 
 // Navigation Pages
 import 'mitra_booking_list_page.dart';
-import 'mitra_fields_page.dart';
+import 'lapangan_saya_page.dart';
 import 'mitra_help_page.dart';
 import 'mitra_profile_document_page.dart';
 import 'mitra_revenue_page.dart';
@@ -81,7 +81,7 @@ class MitraProfilePage extends ConsumerWidget {
                     subtitleColor: Colors.green,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const MitraFieldsPage()),
+                      MaterialPageRoute(builder: (_) => const LapanganSayaPage()),
                     ),
                   ),
                   _buildMenuItem(

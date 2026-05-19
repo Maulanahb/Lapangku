@@ -9,6 +9,11 @@ final userReviewsProvider = FutureProvider.family<List<Map<String, dynamic>>, St
   return await service.getUserReviews(userId);
 });
 
+final fieldReviewsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, fieldId) async {
+  final service = ref.watch(reviewServiceProvider);
+  return await service.getFieldReviews(fieldId);
+});
+
 class ReviewService {
   final FirebaseFirestore _db = FirebaseFirestore.instanceFor(
     app: Firebase.app(),
@@ -23,6 +28,7 @@ class ReviewService {
     required int rating,
     required String comment,
     String? userPhotoUrl,
+    String? reviewImageUrl,
   }) async {
     final reviewRef = _db.collection('lapangan').doc(fieldId).collection('reviews').doc();
     final bookingRef = _db.collection('bookings').doc(bookingId);
@@ -55,6 +61,7 @@ class ReviewService {
         'userId': userId,
         'userName': userName,
         'userPhotoUrl': userPhotoUrl,
+        'reviewImageUrl': reviewImageUrl,
         'rating': rating,
         'comment': comment,
         'createdAt': FieldValue.serverTimestamp(),
@@ -79,7 +86,6 @@ class ReviewService {
       final data = doc.data();
       data['id'] = doc.id;
       
-      // Also inject fieldId from the document path
       if (doc.reference.parent.parent != null) {
         data['fieldId'] = doc.reference.parent.parent!.id;
       }
@@ -87,7 +93,6 @@ class ReviewService {
       return data;
     }).toList();
 
-    // Sort locally descending by createdAt to avoid needing a Firestore composite index
     docs.sort((a, b) {
       final aTime = (a['createdAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0);
       final bTime = (b['createdAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -95,5 +100,20 @@ class ReviewService {
     });
 
     return docs;
+  }
+
+  Future<List<Map<String, dynamic>>> getFieldReviews(String fieldId) async {
+    final querySnapshot = await _db
+        .collection('lapangan')
+        .doc(fieldId)
+        .collection('reviews')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    return querySnapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return data;
+    }).toList();
   }
 }

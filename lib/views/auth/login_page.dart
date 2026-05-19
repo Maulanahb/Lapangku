@@ -348,49 +348,53 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     const SizedBox(height: 32),
 
-                    // Google Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: OutlinedButton(
-                        onPressed: authState.isLoading ? null : _loginWithGoogle,
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(color: Color(0xFFE2E8F0)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                              child: Image.network(
-                                'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png',
-                                height: 24,
-                                width: 24,
-                                errorBuilder: (context, error, stackTrace) => const Icon(
-                                  Icons.g_mobiledata,
-                                  size: 32,
-                                  color: Colors.blue,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Lanjutkan dengan Google',
-                              style: TextStyle(
-                                color: Color(0xFF2D3748),
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                     // Google Button
+                     SizedBox(
+                       width: double.infinity,
+                       height: 56,
+                       child: OutlinedButton(
+                         onPressed: authState.isLoading ? null : _loginWithGoogle,
+                         style: OutlinedButton.styleFrom(
+                           backgroundColor: Colors.white,
+                           side: const BorderSide(color: Color(0xFFE2E8F0)),
+                           padding: const EdgeInsets.symmetric(horizontal: 16),
+                           shape: RoundedRectangleBorder(
+                             borderRadius: BorderRadius.circular(16),
+                           ),
+                         ),
+                         child: FittedBox(
+                           fit: BoxFit.scaleDown,
+                           child: Row(
+                             mainAxisAlignment: MainAxisAlignment.center,
+                             children: [
+                               Container(
+                                 padding: const EdgeInsets.all(2),
+                                 decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                                 child: Image.network(
+                                   'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png',
+                                   height: 24,
+                                   width: 24,
+                                   errorBuilder: (context, error, stackTrace) => const Icon(
+                                     Icons.g_mobiledata,
+                                     size: 32,
+                                     color: Colors.blue,
+                                   ),
+                                 ),
+                               ),
+                               const SizedBox(width: 12),
+                               const Text(
+                                 'Lanjutkan dengan Google',
+                                 style: TextStyle(
+                                   color: Color(0xFF2D3748),
+                                   fontSize: 15,
+                                   fontWeight: FontWeight.bold,
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ),
+                       ),
+                     ),
                   ],
                 ),
               ),

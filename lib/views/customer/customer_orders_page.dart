@@ -706,7 +706,7 @@ class _BookingCard extends ConsumerWidget {
                             userName: booking.userName,
                             rating: rating,
                             comment: commentController.text.trim(),
-                            imageUrl: imageUrl,
+                            reviewImageUrl: imageUrl,
                           );
                           if (ctx.mounted) {
                             Navigator.pop(ctx);
