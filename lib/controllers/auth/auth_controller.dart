@@ -38,6 +38,8 @@ String _parseAuthError(Object e) {
   final msg = e.toString();
   if (msg.contains('user-not-found')) return 'Email tidak terdaftar.';
   if (msg.contains('wrong-password')) return 'Password salah.';
+  if (msg.contains('invalid-credential')) return 'Email atau password salah. Jika akun ini dibuat via Google, gunakan tombol "Lanjutkan dengan Google".';
+  if (msg.contains('account-exists-with-different-credential')) return 'Akun dengan email ini sudah ada. Silakan login dengan metode yang sesuai.';
   if (msg.contains('email-already-in-use')) return 'Email sudah digunakan.';
   if (msg.contains('weak-password')) return 'Password minimal 6 karakter.';
   if (msg.contains('invalid-email')) return 'Format email tidak valid.';

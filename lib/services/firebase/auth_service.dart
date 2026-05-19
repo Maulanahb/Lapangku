@@ -9,13 +9,18 @@ class AuthService {
   final FirebaseFirestore _db = FirestoreService.instance;
 
   Future<UserModel> login(String email, String password) async {
-    final result = await _auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-    final user = result.user!;
-    final data = await getUserData(user.uid);
-    return UserModel.fromFirestore(data);
+    try {
+      final result = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final user = result.user!;
+      final data = await getUserData(user.uid);
+      return UserModel.fromFirestore(data);
+    } on FirebaseAuthException {
+      // Langsung rethrow agar error code (invalid-credential, dll) bisa ditangkap controller
+      rethrow;
+    }
   }
 
   Future<UserModel> register({
