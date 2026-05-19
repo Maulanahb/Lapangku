@@ -78,8 +78,8 @@ void main() async {
     host: 'smtp.gmail.com',
     emailPort: EmailPort.port465,
     secureType: SecureType.ssl,
-    username: 'arsyafikrisabilillah10@gmail.com',
-    password: 'adcmnefgcbyvchby',
+    username: 'lapangku1@gmail.com',
+    password: 'hixwfdecnqxcxzxj',
   );
 
   // [RESOLVED] Mengambil kode server: Firebase App Check dibatasi hanya untuk Android.

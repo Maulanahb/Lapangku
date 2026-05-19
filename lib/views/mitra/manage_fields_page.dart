@@ -7,6 +7,7 @@ import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/views/mitra/add_field_page.dart';
 import 'package:lapangku/views/mitra/edit_field_page.dart';
 import 'package:intl/intl.dart';
+import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 
 class ManageFieldsPage extends ConsumerStatefulWidget {
   const ManageFieldsPage({super.key});
@@ -186,11 +187,56 @@ class _ManageFieldsPageState extends ConsumerState<ManageFieldsPage> {
             padding: const EdgeInsets.all(20),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(field.namaLapangan,
-                  style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.2)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(field.namaLapangan,
+                      style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.2)),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: Color(0xFF64748B)),
+                    onSelected: (value) async {
+                      if (value == 'delete') {
+                        final confirm = await ConfirmationDialog.show(
+                          context: context,
+                          title: 'Hapus Lapangan',
+                          message:
+                              'Apakah Anda yakin ingin menghapus lapangan ini?',
+                          confirmText: 'Hapus',
+                          isDestructive: true,
+                        );
+                        if (confirm == true) {
+                          await ref
+                              .read(mitraFieldProvider.notifier)
+                              .deleteField(field.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Lapangan berhasil dihapus')),
+                            );
+                          }
+                        }
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline,
+                                color: Colors.red, size: 20),
+                            SizedBox(width: 8),
+                            Text('Hapus Lapangan',
+                                style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
               const SizedBox(height: 12),
               Row(children: [
                 Container(
@@ -225,15 +271,14 @@ class _ManageFieldsPageState extends ConsumerState<ManageFieldsPage> {
                       color: Color(0xFFFBBF24), size: 24),
                   const SizedBox(width: 4),
                   Text(field.avgRating.toStringAsFixed(1),
-                      style:
-                          const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w900, fontSize: 15)),
                   Text(' (${field.totalReviews} ulasan)',
                       style: TextStyle(
                           color: _textGrey,
                           fontSize: 13,
                           fontWeight: FontWeight.w500)),
                 ]),
-
                 RichText(
                     text: TextSpan(children: [
                   TextSpan(

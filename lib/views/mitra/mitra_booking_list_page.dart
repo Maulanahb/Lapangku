@@ -9,6 +9,8 @@ import 'package:lapangku/standards/models/booking_status.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 import 'package:lapangku/views/mitra/mitra_offline_booking_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
 
 class MitraBookingListPage extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -270,6 +272,17 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
   }
 }
 
+final _userAvatarProvider = FutureProvider.family<String?, String>((ref, userId) async {
+  final doc = await FirestoreService.instance.collection('users').doc(userId).get();
+  if (doc.exists) {
+    final data = doc.data();
+    if (data != null) {
+      return data['avatarUrl']?.toString() ?? data['photoUrl']?.toString();
+    }
+  }
+  return null;
+});
+
 class _BookingCard extends ConsumerWidget {
   final BookingModel booking;
   const _BookingCard({required this.booking});
@@ -278,6 +291,7 @@ class _BookingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLoading = ref.watch(MitraBookingActionsProvider).contains(booking.id);
     final status = BookingStatusParsing.fromString(booking.status);
+    final avatarAsync = ref.watch(_userAvatarProvider(booking.userId));
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -370,9 +384,29 @@ class _BookingCard extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(16),
-                        image: const DecorationImage(
-                          image: NetworkImage('https://i.pravatar.cc/150'),
-                          fit: BoxFit.cover,
+                      ),
+                      child: avatarAsync.when(
+                        data: (avatarUrl) => ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: avatarUrl != null && avatarUrl.isNotEmpty
+                              ? Image.network(
+                                  avatarUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Image.network('https://i.pravatar.cc/150', fit: BoxFit.cover),
+                                )
+                              : Image.network('https://i.pravatar.cc/150', fit: BoxFit.cover),
+                        ),
+                        loading: () => const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        error: (_, __) => ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network('https://i.pravatar.cc/150', fit: BoxFit.cover),
                         ),
                       ),
                     ),

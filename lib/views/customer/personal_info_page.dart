@@ -6,6 +6,10 @@ import 'package:lapangku/models/auth/user_model.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/widgets/loading_overlay.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:lapangku/services/firebase_storage_service.dart';
+import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 
 class PersonalInfoPage extends ConsumerStatefulWidget {
   const PersonalInfoPage({super.key});
@@ -353,21 +357,37 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
       ),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: Colors.white,
-            backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
-                ? NetworkImage(user.avatarUrl!)
-                : null,
-            child: user.avatarUrl == null || user.avatarUrl!.isEmpty
-                ? Text(
-                    initials,
-                    style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold),
-                  )
-                : null,
+          Stack(
+            alignment: Alignment.bottomRight,
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white,
+                backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                    ? NetworkImage(user.avatarUrl!)
+                    : null,
+                child: user.avatarUrl == null || user.avatarUrl!.isEmpty
+                    ? Text(
+                        initials,
+                        style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold),
+                      )
+                    : null,
+              ),
+              GestureDetector(
+                onTap: () => _showImageSourceActionSheet(context, user),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.camera_alt_outlined, size: 16, color: AppColors.primary),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Text(
@@ -388,6 +408,119 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
         ],
       ),
     );
+  }
+
+  void _showImageSourceActionSheet(BuildContext context, UserModel user) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+              title: const Text('Ambil dari Kamera'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUploadImage(ImageSource.camera, user);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+              title: const Text('Pilih dari Galeri'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUploadImage(ImageSource.gallery, user);
+              },
+            ),
+            if (user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: AppColors.error),
+                title: const Text('Hapus Foto', style: TextStyle(color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _handleDeletePhoto(user);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadImage(ImageSource source, UserModel user) async {
+    final ImagePicker picker = ImagePicker();
+    try {
+      final XFile? image = await picker.pickImage(
+        source: source,
+        imageQuality: 70,
+      );
+
+      if (image != null) {
+        if (!mounted) return;
+        LoadingOverlay.show(context, message: 'Mengunggah foto...');
+
+        final String? imageUrl = await FirebaseStorageService.uploadImage(File(image.path), folder: 'avatars');
+
+        if (imageUrl != null) {
+          await ref.read(authProvider.notifier).updateAvatar(user.uid, imageUrl);
+
+          if (!mounted) return;
+          LoadingOverlay.dismiss(context);
+          
+          setState(() {});
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Foto profil berhasil diperbarui')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        LoadingOverlay.dismiss(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memperbarui foto: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDeletePhoto(UserModel user) async {
+    final confirm = await ConfirmationDialog.show(
+      context: context,
+      title: 'Hapus Foto',
+      message: 'Apakah Anda yakin ingin menghapus foto profil?',
+      confirmText: 'Hapus',
+      isDestructive: true,
+    );
+
+    if (confirm == true) {
+      if (!mounted) return;
+      LoadingOverlay.show(context, message: 'Menghapus foto...');
+
+      try {
+        await ref.read(authProvider.notifier).updateAvatar(user.uid, null);
+        
+        if (!mounted) return;
+        LoadingOverlay.dismiss(context);
+        
+        setState(() {});
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Foto profil telah dihapus')),
+        );
+      } catch (e) {
+        if (mounted) {
+          LoadingOverlay.dismiss(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal menghapus foto: $e')),
+          );
+        }
+      }
+    }
+
   }
 
   Widget _buildProgressCard() {
