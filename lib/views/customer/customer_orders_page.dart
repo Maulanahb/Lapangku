@@ -583,55 +583,85 @@ class _BookingCard extends ConsumerWidget {
         builder: (context, setState) {
           return AlertDialog(
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
-            title: const Text('Beri Ulasan',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+                borderRadius: BorderRadius.circular(24)),
+            contentPadding: const EdgeInsets.all(24),
+            title: const Center(
+              child: Text('Beri Ulasan',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+            ),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     'Bagaimana pengalaman Anda di ${booking.fieldName}?',
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
-                        fontSize: 13, color: AppColors.textSecondary),
+                        fontSize: 14, color: AppColors.textSecondary),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(5, (index) {
-                      return IconButton(
-                        icon: Icon(
-                          index < rating
-                              ? Icons.star_rounded
-                              : Icons.star_border_rounded,
-                          color: AppColors.star,
-                          size: 32,
-                        ),
-                        onPressed: () {
-                          setState(() => rating = index + 1);
-                        },
-                      );
-                    }),
+                  const SizedBox(height: 24),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() => rating = index + 1);
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Icon(
+                                  Icons.star_rounded,
+                                  color: index < rating ? AppColors.star : Colors.transparent,
+                                  size: 32,
+                                ),
+                                Icon(
+                                  Icons.star_outline_rounded,
+                                  color: index < rating ? Colors.black.withValues(alpha: 0.8) : Colors.grey.shade500,
+                                  size: 32,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   TextField(
                     controller: commentController,
                     maxLines: 3,
+                    style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'Tuliskan ulasan Anda (opsional)...',
                       hintStyle:
-                          const TextStyle(fontSize: 13, color: Colors.grey),
+                          const TextStyle(fontSize: 14, color: Colors.grey),
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      contentPadding: const EdgeInsets.all(16),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            BorderSide(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const Text('Upload Foto (Opsional)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 20),
+                  const Text('Upload Foto (Opsional)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark)),
+                  const SizedBox(height: 12),
                   GestureDetector(
                     onTap: () async {
                       final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
@@ -643,25 +673,28 @@ class _BookingCard extends ConsumerWidget {
                       width: double.infinity,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
                       ),
                       child: imageFile != null
                           ? Stack(
                               fit: StackFit.expand,
                               children: [
                                 ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(14),
                                   child: Image.file(imageFile!, fit: BoxFit.cover),
                                 ),
                                 Positioned(
-                                  top: 4, right: 4,
+                                  top: 8, right: 8,
                                   child: GestureDetector(
                                     onTap: () => setState(() => imageFile = null),
                                     child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(alpha: 0.6), 
+                                        shape: BoxShape.circle
+                                      ),
                                       child: const Icon(Icons.close, color: Colors.white, size: 16),
                                     ),
                                   ),
@@ -671,9 +704,23 @@ class _BookingCard extends ConsumerWidget {
                           : Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.add_a_photo_outlined, size: 32, color: Colors.grey.shade400),
-                                const SizedBox(height: 8),
-                                Text('Ketuk untuk tambah foto', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.03),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      )
+                                    ]
+                                  ),
+                                  child: const Icon(Icons.add_a_photo_outlined, size: 24, color: AppColors.primary),
+                                ),
+                                const SizedBox(height: 12),
+                                const Text('Ketuk untuk tambah foto', style: TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
                               ],
                             ),
                     ),
@@ -681,11 +728,16 @@ class _BookingCard extends ConsumerWidget {
                 ],
               ),
             ),
+            actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             actions: [
               TextButton(
                 onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
                 child: const Text('Batal',
-                    style: TextStyle(color: Colors.grey)),
+                    style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
               ),
               ElevatedButton(
                 onPressed: isSubmitting
@@ -731,8 +783,10 @@ class _BookingCard extends ConsumerWidget {
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 child: isSubmitting
                     ? const Row(
@@ -745,11 +799,11 @@ class _BookingCard extends ConsumerWidget {
                                   color: Colors.white, strokeWidth: 2)),
                           SizedBox(width: 8),
                           Text('Mengunggah...',
-                              style: TextStyle(color: Colors.white, fontSize: 13)),
+                              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
                         ],
                       )
-                    : const Text('Kirim',
-                        style: TextStyle(color: Colors.white)),
+                    : const Text('Kirim Ulasan',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ],
           );

@@ -24,11 +24,17 @@ class EmptyStateWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveColor = iconColor ?? AppColors.primary;
     
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Premium Icon Container
             Container(
@@ -77,9 +83,12 @@ class EmptyStateWidget extends StatelessWidget {
               const SizedBox(height: 32),
               actionButton!,
             ],
-          ],
+            ],
+          ),
         ),
       ),
-    );
+    ),
+  );
+});
   }
 }
