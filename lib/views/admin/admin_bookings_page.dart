@@ -4,7 +4,6 @@ import 'package:lapangku/controllers/admin/admin_controller.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
-import 'package:lapangku/standards/models/booking_status.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 import 'package:intl/intl.dart';
 
@@ -216,11 +215,11 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: AppColors.shadow,
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),

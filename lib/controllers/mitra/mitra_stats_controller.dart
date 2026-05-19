@@ -51,14 +51,48 @@ final mitraTodayStatsProvider = Provider.family<Map<String, dynamic>, String>((r
         revenue += b.totalBayar;
       }
 
+      final waitingToday = todayBookings.where((b) => b.status == 'menunggu_konfirmasi').toList();
+
       return {
         'count': todayBookings.length,
         'revenue': revenue,
         'confirmedCount': confirmedToday.length,
+        'waitingCount': waitingToday.length,
       };
     },
-    loading: () => {'count': 0, 'revenue': 0, 'confirmedCount': 0, 'isLoading': true},
-    error: (e, s) => {'count': 0, 'revenue': 0, 'confirmedCount': 0, 'error': e},
+    loading: () => {'count': 0, 'revenue': 0, 'confirmedCount': 0, 'waitingCount': 0, 'isLoading': true},
+    error: (e, s) => {'count': 0, 'revenue': 0, 'confirmedCount': 0, 'waitingCount': 0, 'error': e},
+  );
+});
+
+/// Provider untuk statistik bulan ini
+final mitraMonthlyStatsProvider = Provider.family<Map<String, dynamic>, String>((ref, mitraId) {
+  final bookingsAsync = ref.watch(mitraBookingsProvider(mitraId));
+  final now = DateTime.now();
+
+  return bookingsAsync.when(
+    data: (bookings) {
+      final monthBookings = bookings.where((b) {
+        return b.tanggal.year == now.year && b.tanggal.month == now.month;
+      }).toList();
+
+      final confirmedMonth = monthBookings.where(
+        (b) => b.status == 'dikonfirmasi' || b.status == 'selesai'
+      ).toList();
+
+      int revenue = 0;
+      for (var b in confirmedMonth) {
+        revenue += b.totalBayar;
+      }
+
+      return {
+        'totalBookings': monthBookings.length,
+        'confirmedBookings': confirmedMonth.length,
+        'revenue': revenue,
+      };
+    },
+    loading: () => {'totalBookings': 0, 'confirmedBookings': 0, 'revenue': 0},
+    error: (e, s) => {'totalBookings': 0, 'confirmedBookings': 0, 'revenue': 0},
   );
 });
 

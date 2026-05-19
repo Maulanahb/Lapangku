@@ -212,6 +212,44 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> sendPhoneVerificationOTP({
+    required String phoneNumber,
+    required Function(String) onCodeSent,
+    required Function(Exception) onError,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _service.sendPhoneVerificationOTP(
+        phoneNumber: phoneNumber,
+        codeSent: (verificationId) {
+          state = state.copyWith(isLoading: false);
+          onCodeSent(verificationId);
+        },
+        verificationFailed: (e) {
+          state = state.copyWith(isLoading: false, errorMessage: e.toString());
+          onError(e);
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      onError(Exception(e.toString()));
+    }
+  }
+
+  Future<void> verifyPhoneOTP(String verificationId, String smsCode) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _service.verifyPhoneOTP(verificationId, smsCode);
+      state = state.copyWith(isLoading: false, clearError: true);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+      );
+      rethrow;
+    }
+  }
+
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,

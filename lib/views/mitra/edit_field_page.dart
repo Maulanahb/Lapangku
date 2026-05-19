@@ -28,6 +28,7 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
   late TextEditingController _priceController;
   late TextEditingController _descriptionController;
   late String _selectedSport;
+  late String _selectedTipe;
   late List<String> _selectedFacilities;
   late TimeOfDay _openingTime;
   late TimeOfDay _closingTime;
@@ -52,6 +53,7 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
     _priceController = TextEditingController(text: f.hargaPerJam.toString());
     _descriptionController = TextEditingController(text: f.deskripsi);
     _selectedSport = f.jenisLapangan;
+    _selectedTipe = f.tipeLapangan;
     _selectedFacilities = List.from(f.fasilitas);
     _existingPhotoUrls = List.from(f.photoUrls);
     _openingTime = _parseTime(f.jamBuka);
@@ -143,6 +145,7 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
         namaVenue: _venueController.text,
         namaLapangan: _nameController.text,
         jenisLapangan: _selectedSport,
+        tipeLapangan: _selectedTipe,
         hargaPerJam: int.parse(_priceController.text),
         hargaWeekend: _useWeekendPrice ? int.tryParse(_weekendPriceController.text) : null,
         jamBuka: _formatTime(_openingTime),
@@ -238,6 +241,9 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
         const SizedBox(height: 20),
         FieldFormWidgets.buildLabel('Jenis Olahraga'),
         _buildSportChips(),
+        const SizedBox(height: 20),
+        FieldFormWidgets.buildLabel('Tipe Lapangan'),
+        _buildTipeChips(),
         const SizedBox(height: 24),
         FieldFormWidgets.buildLabel('Lokasi Peta'),
         _buildLocationPicker(),
@@ -315,8 +321,11 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
             return GestureDetector(
               onTap: () {
                 setState(() {
-                  if (isSelected) _selectedFacilities.remove(facility['name']);
-                  else _selectedFacilities.add(facility['name'] as String);
+                  if (isSelected) {
+                    _selectedFacilities.remove(facility['name']);
+                  } else {
+                    _selectedFacilities.add(facility['name'] as String);
+                  }
                 });
               },
               child: AnimatedContainer(
@@ -391,8 +400,11 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
                       ),
                       FieldFormWidgets.buildPositionDetector(onTap: () {
                         setState(() {
-                          if (allItems[0]['type'] == 'url') _existingPhotoUrls.removeAt(0);
-                          else _photoFiles.removeAt(0);
+                          if (allItems[0]['type'] == 'url') {
+                            _existingPhotoUrls.removeAt(0);
+                          } else {
+                            _photoFiles.removeAt(0);
+                          }
                         });
                       }),
                     ],
@@ -429,13 +441,19 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
                         ),
                         FieldFormWidgets.buildPositionDetector(onTap: () {
                           setState(() {
-                            if (allItems[itemIndex]['type'] == 'url') _existingPhotoUrls.remove(allItems[itemIndex]['value']);
-                            else _photoFiles.remove(allItems[itemIndex]['value']);
+                            if (allItems[itemIndex]['type'] == 'url') {
+                              _existingPhotoUrls.remove(allItems[itemIndex]['value']);
+                            } else {
+                              _photoFiles.remove(allItems[itemIndex]['value']);
+                            }
                           });
                         }),
                       ],
                     )
-                  : const Icon(Icons.add, color: Color(0xFF9CA3AF)),
+                  : GestureDetector(
+                      onTap: _pickImage,
+                      child: const Center(child: Icon(Icons.add, color: Color(0xFF9CA3AF))),
+                    ),
             );
           }),
         ),
@@ -456,6 +474,42 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(color: isSelected ? const Color(0xFF0F5A3C) : const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(30)),
             child: Text(sport, style: TextStyle(color: isSelected ? Colors.white : const Color(0xFF1E40AF), fontWeight: FontWeight.bold, fontSize: 13)),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTipeChips() {
+    final types = ['Indoor', 'Outdoor'];
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: types.map((tipe) {
+        bool isSelected = _selectedTipe == tipe;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedTipe = tipe),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFF0F5A3C) : const Color(0xFFF0F4FF),
+                borderRadius: BorderRadius.circular(30)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  tipe == 'Indoor' ? Icons.roofing : Icons.wb_sunny_outlined,
+                  size: 16,
+                  color: isSelected ? Colors.white : const Color(0xFF1E40AF),
+                ),
+                const SizedBox(width: 6),
+                Text(tipe,
+                    style: TextStyle(
+                        color: isSelected ? Colors.white : const Color(0xFF1E40AF),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13)),
+              ],
+            ),
           ),
         );
       }).toList(),

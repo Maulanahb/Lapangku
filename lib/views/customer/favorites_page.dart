@@ -4,13 +4,14 @@ import 'package:lapangku/controllers/favorite/favorite_controller.dart';
 import 'package:lapangku/controllers/field/field_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/models/field/field_model.dart';
-import 'package:lapangku/services/firebase/favorite_service.dart';
 // REFAKTOR: import shared components
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 import 'package:lapangku/standards/widgets/loading_overlay.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
+import 'package:lapangku/standards/widgets/shimmer_loading.dart';
 
 class FavoritesPage extends ConsumerStatefulWidget {
   const FavoritesPage({super.key});
@@ -122,14 +123,22 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
       body: user == null
           ? _buildLoginPrompt()
           : favoriteIdsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+              loading: () => ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: 4,
+                itemBuilder: (_, __) => ShimmerLoading.listTile(),
+              ),
               error: (e, _) => Center(child: Text('Terjadi kesalahan: $e',
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: AppColors.textSecondary))),
               data: (favoriteIds) {
                 if (favoriteIds.isEmpty) return _buildEmptyState();
                 return allFieldsAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                  loading: () => ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: 4,
+                    itemBuilder: (_, __) => ShimmerLoading.listTile(),
+                  ),
                   error: (e, _) => Center(child: Text('Gagal memuat lapangan: $e', textAlign: TextAlign.center)),
                   data: (allFields) {
                     final favoriteFields = allFields.where((f) => favoriteIds.contains(f.id)).toList();
@@ -257,16 +266,15 @@ class _FavoriteFieldCard extends ConsumerWidget {
               ),
               child: SizedBox(
                 width: 100, height: 100,
-                child: field.fotoUtama.isNotEmpty
-                    ? Image.network(field.fotoUtama, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: AppColors.primaryLight, // REFAKTOR: Color(0xFFE8F5EC)
-                          child: const Center(child: Icon(Icons.stadium_outlined, size: 32, color: AppColors.primary)),
-                        ))
-                    : Container(
-                        color: AppColors.primaryLight, // REFAKTOR: Color(0xFFE8F5EC)
-                        child: const Center(child: Icon(Icons.image_not_supported, size: 32, color: AppColors.primary)),
-                      ),
+                child: CachedImageWidget(
+                  imageUrl: field.fotoUtama,
+                  width: 100,
+                  height: 100,
+                  errorWidget: Container(
+                    color: AppColors.primaryLight,
+                    child: const Center(child: Icon(Icons.stadium_outlined, size: 32, color: AppColors.primary)),
+                  ),
+                ),
               ),
             ),
             Expanded(

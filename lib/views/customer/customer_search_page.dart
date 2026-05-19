@@ -7,6 +7,9 @@ import 'package:lapangku/controllers/field/field_controller.dart';
 // REFAKTOR: import shared constants & formatter
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
+import 'package:lapangku/standards/widgets/shimmer_loading.dart';
+import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 
 class CustomerSearchPage extends ConsumerStatefulWidget {
   const CustomerSearchPage({super.key});
@@ -19,16 +22,17 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedCategory = 'Semua';
+  String _selectedTipe = 'Semua'; // Semua / Indoor / Outdoor
   String _sortBy = 'Terdekat';
   
   // Advanced Filter & Sorting state
   Timer? _debounce;
-  List<String> _selectedFacilities = [];
+  final List<String> _selectedFacilities = [];
   Position? _currentPosition;
   bool _isLoadingLocation = false;
 
   final List<String> _availableFacilities = [
-    'Indoor', 'Outdoor', 'Shower', 'Toilet', 
+    'Shower', 'Toilet', 
     'Area Parkir', 'Kantin', 'Mushola', 'Gratis Bola'
   ];
 
@@ -195,6 +199,39 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                     }).toList(),
                   ),
                   const SizedBox(height: 24),
+                  const Text('Tipe Lapangan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: ['Semua', 'Indoor', 'Outdoor'].map((tipe) {
+                      final isSelected = _selectedTipe == tipe;
+                      return ChoiceChip(
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (tipe != 'Semua') ...[
+                              Icon(
+                                tipe == 'Indoor' ? Icons.roofing : Icons.wb_sunny_outlined,
+                                size: 14,
+                                color: isSelected ? Colors.white : Colors.black87,
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                            Text(tipe),
+                          ],
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppColors.primary,
+                        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
+                        onSelected: (val) {
+                          setModalState(() => _selectedTipe = tipe);
+                          setState(() => _selectedTipe = tipe);
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
                   const Text('Fasilitas', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Wrap(
@@ -327,7 +364,7 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
               children: [
                 // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
                 const Icon(Icons.tune, color: AppColors.primary),
-                if (_selectedCategory != 'Semua' || _sortBy != 'Terdekat')
+                if (_selectedCategory != 'Semua' || _selectedTipe != 'Semua' || _sortBy != 'Terdekat' || _selectedFacilities.isNotEmpty)
                   Positioned(
                     top: 0,
                     right: -2,
@@ -462,8 +499,11 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
 
   Widget _buildResults(AsyncValue<List<FieldModel>> fieldsAsync) {
     return fieldsAsync.when(
-      // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
-      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      loading: () => ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: 5,
+        itemBuilder: (_, __) => ShimmerLoading.listTile(),
+      ),
       error: (e, _) => Center(child: Text('Terjadi kesalahan:\n$e')),
       data: (fields) {
         final filtered = fields.where((f) {
@@ -474,11 +514,14 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
           final matchCategory = _selectedCategory == 'Semua' ||
               f.kategori.toLowerCase() == _selectedCategory.toLowerCase();
 
+          final matchTipe = _selectedTipe == 'Semua' ||
+              f.tipeLapangan.toLowerCase() == _selectedTipe.toLowerCase();
+
           final matchFacilities = _selectedFacilities.isEmpty ||
               _selectedFacilities.every((facility) => 
                   f.fasilitas.any((fItem) => fItem.toLowerCase() == facility.toLowerCase()));
 
-          return matchQuery && matchCategory && matchFacilities;
+          return matchQuery && matchCategory && matchTipe && matchFacilities;
         }).toList();
 
         if (_sortBy == 'Termurah') {
@@ -540,69 +583,30 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
   }
 
   Widget _buildEmptyState() {
-    return Container(
-      color: Colors.white,
-      width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: const BoxDecoration(
-              // REFAKTOR: sebelumnya Color(0xFFF4F6F9)
-              color: AppColors.backgroundPage,
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Stack(
-                children: [
-                  // REFAKTOR: sebelumnya Color(0xFF718096)
-                  Icon(Icons.search, size: 50, color: AppColors.textSecondary),
-                  Positioned(
-                    bottom: 4,
-                    right: 4,
-                    child: Icon(Icons.close, size: 20, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
+    return EmptyStateWidget(
+      icon: Icons.search_off_rounded,
+      title: 'Lapangan tidak ditemukan',
+      subtitle: 'Coba ubah filter atau gunakan kata kunci\nlain untuk hasil yang lebih luas.',
+      actionButton: SizedBox(
+        width: 200,
+        height: 45,
+        child: OutlinedButton(
+          onPressed: () {
+            _searchController.clear();
+            setState(() {
+              _searchQuery = '';
+              _selectedCategory = 'Semua';
+              _selectedTipe = 'Semua';
+              _sortBy = 'Terdekat';
+              _selectedFacilities.clear();
+            });
+          },
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: AppColors.primary, width: 1.5),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          const SizedBox(height: 24),
-          // REFAKTOR: sebelumnya Color(0xFF2D3748)
-          const Text(
-            'Lapangan tidak ditemukan',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
-          ),
-          const SizedBox(height: 8),
-          // REFAKTOR: sebelumnya Color(0xFF718096)
-          const Text(
-            'Coba ubah filter atau gunakan kata kunci\nlain untuk hasil yang lebih luas.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: 200,
-            height: 45,
-            child: OutlinedButton(
-              onPressed: () {
-                _searchController.clear();
-                setState(() {
-                  _searchQuery = '';
-                  _selectedCategory = 'Semua';
-                  _sortBy = 'Terdekat';
-                });
-              },
-              style: OutlinedButton.styleFrom(
-                // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
-                side: const BorderSide(color: AppColors.primary, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('Reset Filter', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-            ),
-          ),
-        ],
+          child: const Text('Reset Filter', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+        ),
       ),
     );
   }
@@ -639,17 +643,12 @@ class _HorizontalFieldCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Thumbnail Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: field.fotoUtama.isNotEmpty
-                  ? Image.network(
-                      field.fotoUtama,
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
-                    )
-                  : _buildImagePlaceholder(),
+            CachedImageWidget(
+              imageUrl: field.fotoUtama,
+              width: 100,
+              height: 100,
+              borderRadius: 12,
+              errorWidget: _buildImagePlaceholder(),
             ),
             const SizedBox(width: 12),
             // Details
@@ -679,17 +678,55 @@ class _HorizontalFieldCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
-                          color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          field.kategori.toUpperCase(),
-                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary),
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
+                              color: AppColors.primaryLight,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              field.kategori.toUpperCase(),
+                              style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: field.tipeLapangan == 'Indoor'
+                                  ? const Color(0xFFEEF2FF)
+                                  : const Color(0xFFFFF7ED),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  field.tipeLapangan == 'Indoor' ? Icons.roofing : Icons.wb_sunny_outlined,
+                                  size: 8,
+                                  color: field.tipeLapangan == 'Indoor'
+                                      ? const Color(0xFF4338CA)
+                                      : const Color(0xFFEA580C),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  field.tipeLapangan.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                    color: field.tipeLapangan == 'Indoor'
+                                        ? const Color(0xFF4338CA)
+                                        : const Color(0xFFEA580C),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

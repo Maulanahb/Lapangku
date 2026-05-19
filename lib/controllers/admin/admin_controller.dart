@@ -243,42 +243,67 @@ final adminAllMitrasProvider = StreamProvider<List<AdminFieldModel>>((ref) {
   });
 });
 
+final adminAllUsersStreamProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  return FirestoreService.instance.collection('users').snapshots().map((snapshot) {
+    return snapshot.docs.map((doc) => doc.data()).toList();
+  });
+});
+
 class AdminDashboardStats {
-  final int totalBookingSelesai;
+  final int totalPengguna;
+  final int totalMitra;
+  final int totalBookingHariIni;
   final int totalPendapatan;
-  final int totalLapangan;
 
   AdminDashboardStats({
-    required this.totalBookingSelesai,
+    required this.totalPengguna,
+    required this.totalMitra,
+    required this.totalBookingHariIni,
     required this.totalPendapatan,
-    required this.totalLapangan,
   });
 }
 
 final adminDashboardStatsProvider = Provider<AdminDashboardStats>((ref) {
   final bookingsAsync = ref.watch(adminAllBookingsProvider);
-  final fieldsAsync = ref.watch(adminAllFieldsProvider);
+  final mitrasAsync = ref.watch(adminAllMitrasProvider);
+  final usersAsync = ref.watch(adminAllUsersStreamProvider);
 
-  int totalBookingSelesai = 0;
+  int totalPengguna = 0;
+  int totalMitra = 0;
+  int totalBookingHariIni = 0;
   int totalPendapatan = 0;
-  int totalLapangan = 0;
+
+  if (usersAsync.hasValue) {
+    totalPengguna = usersAsync.value!.length;
+  }
+
+  if (mitrasAsync.hasValue) {
+    totalMitra = mitrasAsync.value!.length;
+  }
 
   if (bookingsAsync.hasValue) {
+    final now = DateTime.now();
     for (var b in bookingsAsync.value!) {
       if (b.status == 'selesai') {
-        totalBookingSelesai++;
-        totalPendapatan += b.biayaLayanan;
+        // Sama dengan laporan analistik: gunakan totalBayar (= totalHarga)
+        totalPendapatan += b.totalBayar;
+      }
+
+      if (b.tanggal.year == now.year && b.tanggal.month == now.month && b.tanggal.day == now.day) {
+        totalBookingHariIni++;
       }
     }
   }
 
-  if (fieldsAsync.hasValue) {
-    totalLapangan = fieldsAsync.value!.length;
-  }
-
   return AdminDashboardStats(
-    totalBookingSelesai: totalBookingSelesai,
+    totalPengguna: totalPengguna,
+    totalMitra: totalMitra,
+    totalBookingHariIni: totalBookingHariIni,
     totalPendapatan: totalPendapatan,
-    totalLapangan: totalLapangan,
   );
+});
+
+final adminPayoutsProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final service = ref.watch(adminServiceProvider);
+  return service.streamAllPayouts();
 });

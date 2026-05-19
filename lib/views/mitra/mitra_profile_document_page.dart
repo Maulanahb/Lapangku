@@ -22,6 +22,9 @@ class _MitraProfileDocumentPageState
   late TextEditingController _phoneController;
   late TextEditingController _addressController;
   late TextEditingController _descriptionController;
+  late TextEditingController _bankNameController;
+  late TextEditingController _bankAccountController;
+  late TextEditingController _bankAccountNameController;
 
   bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
@@ -40,6 +43,12 @@ class _MitraProfileDocumentPageState
         TextEditingController(text: profileState?.alamat ?? '');
     _descriptionController =
         TextEditingController(text: profileState?.description ?? '');
+    _bankNameController =
+        TextEditingController(text: profileState?.bankName ?? '');
+    _bankAccountController =
+        TextEditingController(text: profileState?.bankAccount ?? '');
+    _bankAccountNameController =
+        TextEditingController(text: profileState?.bankAccountName ?? '');
   }
 
   @override
@@ -50,6 +59,9 @@ class _MitraProfileDocumentPageState
     _phoneController.dispose();
     _addressController.dispose();
     _descriptionController.dispose();
+    _bankNameController.dispose();
+    _bankAccountController.dispose();
+    _bankAccountNameController.dispose();
     super.dispose();
   }
 
@@ -65,6 +77,11 @@ class _MitraProfileDocumentPageState
             phone: _phoneController.text.trim(),
             alamat: _addressController.text.trim(),
             description: _descriptionController.text.trim(),
+          );
+      await ref.read(mitraProfileProvider.notifier).updateBankInfo(
+            _bankNameController.text.trim(),
+            _bankAccountController.text.trim(),
+            _bankAccountNameController.text.trim(),
           );
       if (mounted) {
         SnackbarHelper.showSuccess(context, 'Profil berhasil diperbarui');
@@ -228,6 +245,28 @@ class _MitraProfileDocumentPageState
                     label: 'Alamat Lengkap',
                     icon: Icons.location_on,
                     maxLines: 2,
+                  ),
+                  const SizedBox(height: 32),
+                  const Text('Informasi Rekening',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _bankNameController,
+                    label: 'Nama Bank (contoh: BCA, Mandiri)',
+                    icon: Icons.account_balance,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTextField(
+                    controller: _bankAccountController,
+                    label: 'Nomor Rekening',
+                    icon: Icons.numbers,
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTextField(
+                    controller: _bankAccountNameController,
+                    label: 'Atas Nama (Nama Pemilik Rekening)',
+                    icon: Icons.person_outline,
                   ),
                   const SizedBox(height: 32),
                   const Text('Dokumen Verifikasi',

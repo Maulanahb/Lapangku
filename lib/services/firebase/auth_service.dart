@@ -249,6 +249,67 @@ class AuthService {
     }
   }
 
+  Future<void> sendPhoneVerificationOTP({
+    required String phoneNumber,
+    required Function(String verificationId) codeSent,
+    required Function(Exception e) verificationFailed,
+  }) async {
+    String formattedPhone = phoneNumber;
+    if (formattedPhone.startsWith('08')) {
+      formattedPhone = '+62${formattedPhone.substring(1)}';
+    } else if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+$formattedPhone';
+    }
+
+    await _auth.verifyPhoneNumber(
+      phoneNumber: formattedPhone,
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        try {
+          final user = _auth.currentUser;
+          if (user != null) {
+            await user.updatePhoneNumber(credential);
+            await _db.collection('users').doc(user.uid).update({'phoneVerified': true});
+          }
+        } catch (e) {
+          verificationFailed(Exception('Gagal verifikasi otomatis: $e'));
+        }
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        verificationFailed(e);
+      },
+      codeSent: (String verificationId, int? resendToken) {
+        codeSent(verificationId);
+      },
+      codeAutoRetrievalTimeout: (String verificationId) {},
+    );
+  }
+
+  Future<void> verifyPhoneOTP(String verificationId, String smsCode) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Pengguna tidak terautentikasi.');
+
+    try {
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: smsCode,
+      );
+      
+      await user.updatePhoneNumber(credential);
+      await _db.collection('users').doc(user.uid).update({'phoneVerified': true});
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'invalid-verification-code') {
+        throw Exception('Kode OTP tidak valid atau salah.');
+      } else if (e.code == 'session-expired') {
+        throw Exception('Kode OTP telah kedaluwarsa. Silakan minta ulang.');
+      } else if (e.code == 'credential-already-in-use') {
+        throw Exception('Nomor HP sudah digunakan oleh akun lain.');
+      }
+      throw Exception('Gagal memverifikasi OTP: ${e.message}');
+    } catch (e) {
+      throw Exception('Terjadi kesalahan: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> getUserData(String uid) async {
     try {
       print('DEBUG AUTH: Mengambil data user $uid dari server...');

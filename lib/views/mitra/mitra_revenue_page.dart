@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/controllers/mitra/mitra_revenue_provider.dart';
+import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
 import 'package:lapangku/models/mitra/mitra_revenue_model.dart';
+import 'package:lapangku/models/mitra/mitra_payout_model.dart';
+import 'package:lapangku/services/firebase/mitra_service.dart';
+import 'package:lapangku/views/mitra/mitra_payout_request_sheet.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
@@ -140,7 +144,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                "Pendapatan Bulan Ini",
+                "Saldo Aktif",
                 style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
               Container(
@@ -163,17 +167,44 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
           FittedBox( // FIX: Gunakan FittedBox agar nominal tidak overflow
             fit: BoxFit.scaleDown,
             child: Text(
-              CurrencyFormatter.format(revenue.totalRevenue),
+              CurrencyFormatter.format(revenue.availableBalance),
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 32,
+                fontSize: 36,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          Text(
-            "Dari ${revenue.totalOrders} booking selesai bulan ini", // FIX: Menggunakan data dinamis
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () async {
+                final profileAsync = ref.read(mitraProfileProvider);
+                if (profileAsync.hasValue) {
+                  final result = await showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => MitraPayoutRequestSheet(
+                      availableBalance: revenue.availableBalance,
+                      profile: profileAsync.value!,
+                    ),
+                  );
+                  if (result == true) {
+                    ref.read(mitraRevenueProvider.notifier).loadRevenue();
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Tarik Dana', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
           ),
           const SizedBox(height: 24),
           const Divider(color: Colors.white24),
@@ -273,9 +304,9 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
         childAspectRatio: 1.1, // FIX: Kecilkan ratio (1.4 -> 1.1) agar card lebih tinggi untuk menampung teks
         children: [
           _buildDetailCard(
-            "Pendapatan Hari Ini",
-            CurrencyFormatter.format(revenue.todayRevenue),
-            "+12% dari kemarin",
+            "Total Pendapatan",
+            CurrencyFormatter.format(revenue.totalRevenue),
+            "Sepanjang waktu",
             Icons.account_balance_wallet,
             Colors.green,
           ),
@@ -364,7 +395,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
             ],
           ),
           const SizedBox(height: 20),
-          Container(
+          SizedBox(
             height: 120,
             width: double.infinity,
             child: CustomPaint(
@@ -444,39 +475,116 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
   }
 
   Widget _buildPayoutStatus() {
-    return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-            child: const Icon(Icons.account_balance, color: AppColors.primary, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Payout berikutnya diproses Senin, 1 April",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textHeading),
+    final profileAsync = ref.watch(mitraProfileProvider);
+    if (!profileAsync.hasValue) return const SizedBox.shrink();
+
+    final mitraId = profileAsync.value!.id;
+    final service = MitraService();
+
+    return StreamBuilder<List<MitraPayoutModel>>(
+      stream: service.streamMitraPayouts(mitraId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final payouts = snapshot.data!;
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Text(
+                "Riwayat Penarikan",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textHeading,
                 ),
-                Text(
-                  "Pendapatan booking selesai akan otomatis dicairkan.",
-                  style: TextStyle(color: AppColors.primary.withOpacity(0.7), fontSize: 11),
-                ),
-              ],
+              ),
             ),
-          ),
-          const Icon(Icons.chevron_right, color: AppColors.primary),
-        ],
-      ),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: payouts.length > 5 ? 5 : payouts.length,
+              itemBuilder: (context, index) {
+                final payout = payouts[index];
+                
+                Color statusColor;
+                IconData statusIcon;
+                String statusText;
+
+                switch (payout.status) {
+                  case 'completed':
+                    statusColor = Colors.green;
+                    statusIcon = Icons.check_circle;
+                    statusText = 'Selesai';
+                    break;
+                  case 'rejected':
+                    statusColor = Colors.red;
+                    statusIcon = Icons.cancel;
+                    statusText = 'Ditolak';
+                    break;
+                  default:
+                    statusColor = Colors.orange;
+                    statusIcon = Icons.access_time;
+                    statusText = 'Diproses';
+                }
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 4)],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: statusColor.withOpacity(0.1), shape: BoxShape.circle),
+                        child: Icon(statusIcon, color: statusColor, size: 20),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Tarik Dana",
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                            Text(
+                              DateFormat('dd MMM yyyy - HH:mm').format(payout.requestedAt),
+                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            CurrencyFormatter.format(payout.amount),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          Text(
+                            statusText,
+                            style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -9,6 +9,8 @@ import 'package:lapangku/controllers/favorite/favorite_controller.dart';
 import 'package:lapangku/services/firebase/review_service.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
+import 'package:lapangku/standards/widgets/shimmer_loading.dart';
 import 'package:lapangku/standards/utils/facility_helper.dart';
 
 class CustomerFieldDetailPage extends ConsumerStatefulWidget {
@@ -26,18 +28,39 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   bool _showFullDesc = false;
   late TabController _tabController;
   final List<Map<String, String>> _dates = [];
+  List<String> _allSlots = [];
 
-  // Generate time labels 06:00 - 22:00
-  final List<String> _allSlots = List.generate(16, (i) {
-    final h = i + 6;
-    return '${h.toString().padLeft(2, '0')}:00 - ${(h + 1).toString().padLeft(2, '0')}:00';
-  });
+  void _generateDynamicSlots() {
+    int startHour = 8;
+    int endHour = 22;
+
+    try {
+      startHour = int.parse(widget.field.jamBuka.split(':')[0]);
+      endHour = int.parse(widget.field.jamTutup.split(':')[0]);
+    } catch (_) {}
+
+    if (endHour <= startHour) {
+      endHour += 24;
+    }
+
+    final int totalSlots = endHour - startHour;
+    _allSlots = List.generate(totalSlots, (i) {
+      final h = startHour + i;
+      final nextH = h + 1;
+      
+      final hStr = (h % 24).toString().padLeft(2, '0');
+      final nextHStr = (nextH % 24).toString().padLeft(2, '0');
+      
+      return '$hStr:00 - $nextHStr:00';
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _generateDates();
+    _generateDynamicSlots();
   }
 
   @override
@@ -74,6 +97,8 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     );
   }
 
+  int _currentImageIndex = 0;
+
   // ── HERO ──
   Widget _heroAppBar() {
     final imgs = widget.field.fotoGaleri;
@@ -88,13 +113,38 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(fit: StackFit.expand, children: [
-          imgs.isNotEmpty
-              ? Image.network(imgs.first, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _ph())
-              : _ph(),
+          if (imgs.isNotEmpty)
+            PageView.builder(
+              itemCount: imgs.length,
+              onPageChanged: (i) => setState(() => _currentImageIndex = i),
+              itemBuilder: (_, i) => CachedImageWidget(imageUrl: imgs[i], fit: BoxFit.cover, errorWidget: _ph()),
+            )
+          else
+            _ph(),
           const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
             begin: Alignment.topCenter, end: Alignment.bottomCenter,
             colors: [Colors.black38, Colors.transparent, Colors.black26],
           ))),
+          // Dot indicators
+          if (imgs.length > 1)
+            Positioned(
+              bottom: 32,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(imgs.length, (i) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: _currentImageIndex == i ? 20 : 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: _currentImageIndex == i ? Colors.white : Colors.white54,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                )),
+              ),
+            ),
           Positioned(
             bottom: -1, left: 0, right: 0,
             child: Container(
@@ -200,10 +250,10 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
             decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(12)),
-            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.circle, size: 8, color: AppColors.primary),
-              SizedBox(width: 4),
-              Text('Buka • 06:00-22:00', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.circle, size: 8, color: AppColors.primary),
+              const SizedBox(width: 4),
+              Text('Buka • ${f.jamBuka}-${f.jamTutup}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
             ]),
           ),
         ]),
@@ -247,7 +297,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       const SizedBox(height: 16),
       // REFAKTOR: sebelumnya _fmt() — sekarang pakai CurrencyFormatter
       _iRow(Icons.attach_money, 'Harga Sewa', '${CurrencyFormatter.format(widget.field.hargaPerJam)} / jam'),
-      _iRow(Icons.access_time_rounded, 'Jam Operasional', '06:00 - 22:00 WIB'),
+      _iRow(Icons.access_time_rounded, 'Jam Operasional', '${widget.field.jamBuka} - ${widget.field.jamTutup} WIB'),
     ]));
   }
 
@@ -281,7 +331,15 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
       reviewsAsync.when(
         loading: () => Column(children: [
           _buildSummaryBox(f, 0, 0, 0, 0, 0),
-          const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator(color: AppColors.primary))),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: 3,
+              itemBuilder: (_, __) => ShimmerLoading.listTile(),
+            ),
+          ),
         ]),
         error: (e, _) => Column(children: [
           _buildSummaryBox(f, 0, 0, 0, 0, 0),
@@ -291,8 +349,9 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
           int c5 = 0, c4 = 0, c3 = 0, c2 = 0, c1 = 0;
           for (var r in reviews) {
             int rating = r['rating'] ?? 5;
-            if (rating == 5) c5++;
-            else if (rating == 4) c4++;
+            if (rating == 5) {
+              c5++;
+            } else if (rating == 4) c4++;
             else if (rating == 3) c3++;
             else if (rating == 2) c2++;
             else if (rating == 1) c1++;
@@ -317,8 +376,11 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
                     final reviewImageUrl = review['reviewImageUrl'] ?? '';
                     DateTime date = DateTime.now();
                     if (review['createdAt'] != null) {
-                      if (review['createdAt'] is DateTime) date = review['createdAt'] as DateTime;
-                      else date = review['createdAt'].toDate();
+                      if (review['createdAt'] is DateTime) {
+                        date = review['createdAt'] as DateTime;
+                      } else {
+                        date = review['createdAt'].toDate();
+                      }
                     }
                     final time = DateFormat('dd MMM yyyy').format(date);
                     return _rc(n, s, t, time, reviewImageUrl);
@@ -365,12 +427,11 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
         const SizedBox(height: 12),
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: Image.network(
-            reviewImageUrl,
+          child: CachedImageWidget(
+            imageUrl: reviewImageUrl,
             width: double.infinity,
             height: 140,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(height: 140, color: Colors.grey.shade200, child: const Center(child: Icon(Icons.broken_image, color: Colors.grey))),
+            errorWidget: Container(height: 140, color: Colors.grey.shade200, child: const Center(child: Icon(Icons.broken_image, color: Colors.grey))),
           ),
         ),
       ],
@@ -405,18 +466,10 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
                 ? Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        mapImageUrl,
+                      CachedImageWidget(
+                        imageUrl: mapImageUrl,
                         fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.primary, strokeWidth: 2,
-                            ),
-                          );
-                        },
-                        errorBuilder: (_, __, ___) => const Center(
+                        errorWidget: const Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -555,23 +608,46 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
               children: List.generate(_allSlots.length, (i) {
                 final slot = _allSlots[i];
                 final isBooked = bookedSlots.contains(slot);
+                
+                // Tambahkan validasi untuk mendisable waktu yang sudah lewat (khusus hari ini)
+                bool isPassed = false;
+                if (_selectedDateIndex == 0) {
+                  final startTimeStr = slot.split(' - ')[0]; // misal "06:00"
+                  final parts = startTimeStr.split(':');
+                  if (parts.length >= 2) {
+                    final hour = int.tryParse(parts[0]) ?? 0;
+                    final minute = int.tryParse(parts[1]) ?? 0;
+                    final now = DateTime.now();
+                    final startDateTime = DateTime(
+                      _selectedDate.year,
+                      _selectedDate.month,
+                      _selectedDate.day,
+                      hour,
+                      minute,
+                    );
+                    if (now.isAfter(startDateTime)) {
+                      isPassed = true;
+                    }
+                  }
+                }
+                
+                final isUnavailable = isBooked || isPassed;
                 final isSel = _selectedTimeIndices.contains(i);
 
                 Color bg, border, txt;
                 String sub = '';
                 if (isBooked) {
-                  // REFAKTOR: sebelumnya Color(0xFFF4F6F9)
                   bg = AppColors.backgroundPage; border = Colors.grey.shade200; txt = Colors.grey.shade400; sub = 'TERPESAN';
+                } else if (isPassed) {
+                  bg = AppColors.backgroundPage; border = Colors.grey.shade200; txt = Colors.grey.shade400; sub = 'LEWAT';
                 } else if (isSel) {
-                  // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
                   bg = AppColors.primary; border = AppColors.primary; txt = Colors.white; sub = 'TERPILIH';
                 } else {
-                  // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
                   bg = Colors.white; border = AppColors.primary; txt = AppColors.primary;
                 }
 
                 return GestureDetector(
-                  onTap: isBooked ? null : () => setState(() { isSel ? _selectedTimeIndices.remove(i) : _selectedTimeIndices.add(i); }),
+                  onTap: isUnavailable ? null : () => setState(() { isSel ? _selectedTimeIndices.remove(i) : _selectedTimeIndices.add(i); }),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: (MediaQuery.of(context).size.width - 50) / 2,
