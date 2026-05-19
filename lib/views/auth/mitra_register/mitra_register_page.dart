@@ -72,6 +72,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
   final _fieldNameController = TextEditingController();
   final _fieldDescriptionController = TextEditingController();
   String _selectedSport = 'Futsal';
+  String _selectedFieldType = 'Indoor';
   final List<String> _selectedFacilities = [];
 
   // Location
@@ -456,6 +457,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
           'hargaPerJam': int.tryParse(_priceController.text) ?? 0,
           'sport': _selectedSport,
           'jenisLapangan': _selectedSport,
+          'tipeLapangan': _selectedFieldType,
           'facilities': _selectedFacilities,
           'fasilitas': _selectedFacilities,
           'jamOperasional':
@@ -621,6 +623,8 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
           descriptionController: _fieldDescriptionController,
           selectedSport: _selectedSport,
           onSportSelected: (sport) => setState(() => _selectedSport = sport),
+          selectedFieldType: _selectedFieldType,
+          onFieldTypeSelected: (type) => setState(() => _selectedFieldType = type),
           selectedFacilities: _selectedFacilities,
           onFacilityToggled: (facility) {
             setState(() {

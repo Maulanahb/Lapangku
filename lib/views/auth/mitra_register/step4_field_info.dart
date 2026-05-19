@@ -8,6 +8,8 @@ class Step4FieldInfo extends StatelessWidget {
   final TextEditingController descriptionController;
   final String selectedSport;
   final Function(String) onSportSelected;
+  final String selectedFieldType;
+  final Function(String) onFieldTypeSelected;
   final List<String> selectedFacilities;
   final Function(String) onFacilityToggled;
 
@@ -31,6 +33,8 @@ class Step4FieldInfo extends StatelessWidget {
     required this.descriptionController,
     required this.selectedSport,
     required this.onSportSelected,
+    required this.selectedFieldType,
+    required this.onFieldTypeSelected,
     required this.selectedFacilities,
     required this.onFacilityToggled,
   });
@@ -143,6 +147,52 @@ class Step4FieldInfo extends StatelessWidget {
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.w600,
                         ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 32),
+
+              // Tipe Lapangan
+              _buildLabel('Tipe Lapangan'),
+              Row(
+                children: [
+                  'Indoor',
+                  'Outdoor'
+                ].map((type) {
+                  bool isSelected = selectedFieldType == type;
+                  IconData icon = type == 'Indoor' ? Icons.home_rounded : Icons.wb_sunny_rounded;
+                  return GestureDetector(
+                    onTap: () => onFieldTypeSelected(type),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isSelected ? primary : const Color(0xFFEDF2F7),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            icon,
+                            color: isSelected ? Colors.white : const Color(0xFF2D3748),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            type,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFF2D3748),
+                              fontSize: 14,
+                              fontWeight:
+                                  isSelected ? FontWeight.bold : FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
