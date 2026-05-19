@@ -287,10 +287,41 @@ class _FieldCard extends StatelessWidget {
                   ),
                   Positioned(
                     top: 12, left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                      child: Text(field.kategori.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
+                          child: Text(field.kategori.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary, 
+                            borderRadius: BorderRadius.circular(8)
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                field.tipeLapangan == 'Indoor' ? Icons.roofing : Icons.wb_sunny_outlined,
+                                size: 12,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                field.tipeLapangan.toUpperCase(), 
+                                style: const TextStyle(
+                                  fontSize: 10, 
+                                  fontWeight: FontWeight.bold, 
+                                  color: Colors.white, 
+                                  letterSpacing: 0.5
+                                )
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

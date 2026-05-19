@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -61,10 +62,17 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     _tabController = TabController(length: 4, vsync: this);
     _generateDates();
     _generateDynamicSlots();
+
+    final imgsCount = widget.field.fotoGaleri.length;
+    _pageController = PageController(initialPage: imgsCount > 0 ? imgsCount * 1000 : 0);
   }
 
   @override
-  void dispose() { _tabController.dispose(); super.dispose(); }
+  void dispose() { 
+    _pageController.dispose();
+    _tabController.dispose(); 
+    super.dispose(); 
+  }
 
   void _generateDates() {
     final now = DateTime.now();
@@ -98,6 +106,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   }
 
   int _currentImageIndex = 0;
+  late PageController _pageController;
 
   // ── HERO ──
   Widget _heroAppBar() {
@@ -115,16 +124,18 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
         background: Stack(fit: StackFit.expand, children: [
           if (imgs.isNotEmpty)
             PageView.builder(
-              itemCount: imgs.length,
-              onPageChanged: (i) => setState(() => _currentImageIndex = i),
-              itemBuilder: (_, i) => CachedImageWidget(imageUrl: imgs[i], fit: BoxFit.cover, errorWidget: _ph()),
+              controller: _pageController,
+              onPageChanged: (i) => setState(() => _currentImageIndex = i % imgs.length),
+              itemBuilder: (_, i) => CachedImageWidget(imageUrl: imgs[i % imgs.length], fit: BoxFit.cover, errorWidget: _ph()),
             )
           else
             _ph(),
-          const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
-            begin: Alignment.topCenter, end: Alignment.bottomCenter,
-            colors: [Colors.black38, Colors.transparent, Colors.black26],
-          ))),
+          IgnorePointer(
+            child: const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
+              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              colors: [Colors.black38, Colors.transparent, Colors.black26],
+            ))),
+          ),
           // Dot indicators
           if (imgs.length > 1)
             Positioned(
@@ -219,11 +230,33 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          // REFAKTOR: sebelumnya Color(0xFFD1FAE5) dan Color(0xFF1B6B3A)
-          decoration: BoxDecoration(color: AppColors.statusSuccessBg, borderRadius: BorderRadius.circular(16)),
-          child: Text(f.kategori.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary)),
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(color: AppColors.statusSuccessBg, borderRadius: BorderRadius.circular(16)),
+              child: Text(f.kategori.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary)),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(color: AppColors.statusSuccessBg, borderRadius: BorderRadius.circular(16)),
+              child: Row(
+                children: [
+                  Icon(
+                    f.tipeLapangan == 'Indoor' ? Icons.roofing : Icons.wb_sunny_outlined,
+                    size: 12,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    f.tipeLapangan.toUpperCase(), 
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary)
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         if (f.namaVenue.isNotEmpty) ...[
