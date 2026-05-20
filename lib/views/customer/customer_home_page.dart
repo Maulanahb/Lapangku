@@ -9,6 +9,7 @@ import 'package:lapangku/standards/widgets/cached_image_widget.dart';
 import 'package:lapangku/standards/widgets/shimmer_loading.dart';
 import 'package:lapangku/controllers/notification/notification_controller.dart';
 import 'package:lapangku/views/customer/notification_page.dart';
+import 'package:geolocator/geolocator.dart';
 
 class CustomerHomePage extends ConsumerStatefulWidget {
   const CustomerHomePage({super.key});
@@ -205,9 +206,48 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-              child: Text(
-                _selectedCategory == 'Semua' ? 'Rekomendasi Lapangan' : 'Hasil Pencarian',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _selectedCategory == 'Semua' ? 'Rekomendasi Lapangan' : 'Hasil Pencarian',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                  ),
+                  if (user?.alamatLatLng == null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.primary),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline, color: AppColors.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: const Text(
+                              'Isi alamat di Informasi Pribadi untuk melihat lapangan terdekat',
+                              style: TextStyle(color: AppColors.primaryDark, fontSize: 12, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/customer-profile');
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(50, 30),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text('Isi Sekarang', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
@@ -237,11 +277,41 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                 );
               }
 
+              if (user?.alamatLatLng != null) {
+                filtered.sort((a, b) {
+                  final distA = Geolocator.distanceBetween(
+                    user!.alamatLatLng!.latitude,
+                    user.alamatLatLng!.longitude,
+                    a.latitude,
+                    a.longitude,
+                  );
+                  final distB = Geolocator.distanceBetween(
+                    user.alamatLatLng!.latitude,
+                    user.alamatLatLng!.longitude,
+                    b.latitude,
+                    b.longitude,
+                  );
+                  return distA.compareTo(distB);
+                });
+              }
+
               return SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) => _FieldCard(field: filtered[index]),
+                    (context, index) {
+                      final field = filtered[index];
+                      double? distance;
+                      if (user?.alamatLatLng != null) {
+                        distance = Geolocator.distanceBetween(
+                          user!.alamatLatLng!.latitude,
+                          user.alamatLatLng!.longitude,
+                          field.latitude,
+                          field.longitude,
+                        );
+                      }
+                      return _FieldCard(field: field, distanceInMeters: distance);
+                    },
                     childCount: filtered.length,
                   ),
                 ),
@@ -291,8 +361,9 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
 
 class _FieldCard extends StatelessWidget {
   final FieldModel field;
+  final double? distanceInMeters;
 
-  const _FieldCard({required this.field});
+  const _FieldCard({required this.field, this.distanceInMeters});
 
   // _formatHarga dihapus — gunakan CurrencyFormatter.formatShort() dari shared/utils
 
@@ -400,6 +471,19 @@ class _FieldCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(child: Text(field.alamat, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
                     ]),
+                    if (distanceInMeters != null) ...[
+                      const SizedBox(height: 4),
+                      Row(children: [
+                        const Icon(Icons.directions_run, size: 16, color: AppColors.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          distanceInMeters! > 1000 
+                              ? '${(distanceInMeters! / 1000).toStringAsFixed(1)} km dari lokasi Anda'
+                              : '${distanceInMeters!.toStringAsFixed(0)} m dari lokasi Anda',
+                          style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600),
+                        ),
+                      ]),
+                    ],
                     if (field.fasilitas.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       SingleChildScrollView(

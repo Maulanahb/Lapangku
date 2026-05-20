@@ -16,6 +16,7 @@ class UserModel {
   final String? gender;
   final String? city;
   final String? address;
+  final GeoPoint? alamatLatLng;
   final String? birthday;
   
   // Security Fields
@@ -41,6 +42,7 @@ class UserModel {
     this.gender,
     this.city,
     this.address,
+    this.alamatLatLng,
     this.birthday,
     this.lastPasswordChange,
     this.twoFactorEnabled = false,
@@ -81,6 +83,7 @@ class UserModel {
       gender: data['gender']?.toString(),
       city: data['city']?.toString(),
       address: data['address']?.toString(),
+      alamatLatLng: data['alamatLatLng'] is GeoPoint ? data['alamatLatLng'] as GeoPoint : null,
       birthday: data['birthday']?.toString(),
       lastPasswordChange: lastPwd,
       twoFactorEnabled: data['twoFactorEnabled'] == true,
@@ -115,6 +118,7 @@ class UserModel {
       'gender': gender,
       'city': city,
       'address': address,
+      if (alamatLatLng != null) 'alamatLatLng': alamatLatLng,
       'birthday': birthday,
       'lastPasswordChange': lastPasswordChange != null ? Timestamp.fromDate(lastPasswordChange!) : null,
       'twoFactorEnabled': twoFactorEnabled,

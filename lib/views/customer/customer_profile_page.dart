@@ -9,7 +9,7 @@ import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 import 'package:lapangku/standards/widgets/loading_overlay.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
-import 'personal_info_page.dart';
+import 'customer_info_page.dart';
 import 'security_page.dart';
 import 'help_page.dart';
 import 'about_page.dart';
@@ -89,7 +89,7 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
                     icon: Icons.person_outlined,
                     title: 'Informasi Pribadi',
                     subtitle: 'Ubah data diri & profil',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalInfoPage())),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerInfoPage())),
                   ),
                   _buildMenuItem(
                     icon: Icons.lock_outlined,
