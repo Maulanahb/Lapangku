@@ -7,6 +7,7 @@ import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/widgets/cached_image_widget.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
+import 'jadwal_ketersediaan_page.dart';
 
 class LapanganSayaPage extends ConsumerWidget {
   const LapanganSayaPage({super.key});
@@ -243,8 +244,17 @@ class LapanganSayaPage extends ConsumerWidget {
                           final isActive = field.isActive;
                           final photoUrl = field.photoUrls.isNotEmpty ? field.photoUrls.first : '';
 
-                          return Container(
-                            decoration: BoxDecoration(
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => JadwalKetersediaanPage(lapangan: field),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(24),
                               boxShadow: [
@@ -390,8 +400,9 @@ class LapanganSayaPage extends ConsumerWidget {
                                 ),
                               ],
                             ),
-                          );
-                        },
+                          ),
+                        );
+                      },
                       ),
                     ),
                     // Info Footer Box

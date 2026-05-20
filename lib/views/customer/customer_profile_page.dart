@@ -13,8 +13,9 @@ import 'personal_info_page.dart';
 import 'security_page.dart';
 import 'help_page.dart';
 import 'about_page.dart';
-import 'contact_cs_page.dart'; // FIX:
-import 'notification_settings_page.dart'; // FIX:
+import 'contact_cs_page.dart';
+import 'notification_settings_page.dart';
+import 'package:lapangku/standards/widgets/cached_image_widget.dart';
 
 class CustomerProfilePage extends ConsumerStatefulWidget {
   const CustomerProfilePage({super.key});
@@ -194,24 +195,31 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
           Stack(
             alignment: Alignment.bottomRight,
             children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.white,
-                backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
-                    ? NetworkImage(user.avatarUrl!)
-                    : null,
-                child: user.avatarUrl == null || user.avatarUrl!.isEmpty
-                    ? Text(
-                        user.nama.trim().isNotEmpty
-                            ? user.nama.trim().split(' ').where((l) => l.isNotEmpty).map((l) => l[0]).take(2).join().toUpperCase()
-                            : 'U',
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      )
-                    : null,
+              GestureDetector(
+                onTap: () {
+                  if (user.avatarUrl != null && user.avatarUrl!.isNotEmpty) {
+                    _showFullScreenPhoto(context, user.avatarUrl!);
+                  }
+                },
+                child: CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Colors.white,
+                  backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                      ? NetworkImage(user.avatarUrl!)
+                      : null,
+                  child: user.avatarUrl == null || user.avatarUrl!.isEmpty
+                      ? Text(
+                          user.nama.trim().isNotEmpty
+                              ? user.nama.trim().split(' ').where((l) => l.isNotEmpty).map((l) => l[0]).take(2).join().toUpperCase()
+                              : 'U',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                ),
               ),
               // NEW: GestureDetector untuk mengubah foto profil
               GestureDetector(
@@ -481,5 +489,39 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
         );
       }
     }
+  }
+
+  void _showFullScreenPhoto(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.black87,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Center(
+                child: CachedImageWidget(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

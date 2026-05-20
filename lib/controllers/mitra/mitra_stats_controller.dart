@@ -95,7 +95,6 @@ final mitraMonthlyStatsProvider = Provider.family<Map<String, dynamic>, String>(
     error: (e, s) => {'totalBookings': 0, 'confirmedBookings': 0, 'revenue': 0},
   );
 });
-
 /// Provider Statistik Lanjutan untuk Dashboard Statistik Booking
 final mitraAdvancedStatsProvider = Provider.family<Map<String, dynamic>, String>((ref, mitraId) {
   final bookingsAsync = ref.watch(mitraBookingsProvider(mitraId));

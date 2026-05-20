@@ -7,6 +7,8 @@ import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/cached_image_widget.dart';
 import 'package:lapangku/standards/widgets/shimmer_loading.dart';
+import 'package:lapangku/controllers/notification/notification_controller.dart';
+import 'package:lapangku/views/customer/notification_page.dart';
 
 class CustomerHomePage extends ConsumerStatefulWidget {
   const CustomerHomePage({super.key});
@@ -83,19 +85,40 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Container(
-                                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle),
-                                  child: IconButton(
-                                    icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
-                                    onPressed: () {},
-                                  ),
+                                Consumer(
+                                  builder: (context, ref, child) {
+                                    final unreadCount = ref.watch(unreadNotificationsCountProvider);
+                                    return Container(
+                                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle),
+                                      child: IconButton(
+                                        icon: Badge(
+                                          isLabelVisible: unreadCount > 0,
+                                          label: Text(unreadCount.toString()),
+                                          backgroundColor: Colors.red,
+                                          child: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+                                        ),
+                                        onPressed: () {
+                                          Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationPage()));
+                                        },
+                                      ),
+                                    );
+                                  },
                                 ),
                                 const SizedBox(width: 12),
-                                CircleAvatar(
-                                  radius: 24,
-                                  backgroundColor: Colors.white.withValues(alpha: 0.24),
-                                  backgroundImage: hasAvatar ? NetworkImage(avatarUrl) : null,
-                                  child: hasAvatar ? null : const Icon(Icons.person, color: Colors.white),
+                                GestureDetector(
+                                  onTap: () {
+                                    if (hasAvatar) {
+                                      _showFullScreenPhoto(context, avatarUrl!);
+                                    } else {
+                                      Navigator.pushNamed(context, '/customer-profile');
+                                    }
+                                  },
+                                  child: CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: Colors.white.withValues(alpha: 0.24),
+                                    backgroundImage: hasAvatar ? NetworkImage(avatarUrl!) : null,
+                                    child: hasAvatar ? null : const Icon(Icons.person, color: Colors.white),
+                                  ),
                                 ),
                               ],
                             ),
@@ -228,6 +251,39 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
 
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
+      ),
+    );
+  }
+  void _showFullScreenPhoto(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.black87,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Center(
+                child: CachedImageWidget(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
