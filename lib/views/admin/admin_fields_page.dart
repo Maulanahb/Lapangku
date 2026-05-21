@@ -18,19 +18,25 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
   static const _textGrey = Color(0xFF6B7280);
 
   String _filterStatus = 'menunggu';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final mitrasAsync = ref.watch(adminAllMitrasProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: Colors.white,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTopHeader(),
-          _buildHeaderInfo(mitrasAsync),
-          _buildTabs(),
+          _buildHeader(mitrasAsync),
           Expanded(
             child: mitrasAsync.when(
               loading: () => const Center(
@@ -44,157 +50,150 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     );
   }
 
-  Widget _buildTopHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      color: Colors.white,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
-            'Verifikasi Mitra',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: _textDark,
-            ),
-          ),
-          Row(
-            children: [
-              ElevatedButton.icon(
-                onPressed: () => ref.read(adminFieldsProvider.notifier).load(),
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Refresh Data'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF064E3B),
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  elevation: 0,
-                ),
-              ),
-              const SizedBox(width: 16),
-              const Icon(Icons.notifications_none, color: _textDark),
-              const SizedBox(width: 16),
-              const Icon(Icons.grid_view_rounded, color: _textDark),
-              const SizedBox(width: 16),
-              const CircleAvatar(
-                radius: 16,
-                backgroundImage:
-                    NetworkImage('https://i.pravatar.cc/150?u=admin'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderInfo(AsyncValue<List<AdminFieldModel>> mitrasAsync) {
+  Widget _buildHeader(AsyncValue<List<AdminFieldModel>> mitrasAsync) {
     final pendingCount = mitrasAsync.value
             ?.where((m) => m.statusVerifikasi == 'menunggu')
             .length ??
         0;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
-                'Verifikasi Mitra',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: _textDark,
-                  letterSpacing: -0.5,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'Verifikasi Mitra',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: _textDark,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '$pendingCount Menunggu Verifikasi',
+                            style: const TextStyle(
+                              color: Color(0xFF92400E),
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Tinjau dan setujui pengajuan mitra baru untuk aktif di platform.',
+                      style: TextStyle(fontSize: 14, color: _textGrey),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '$pendingCount Menunggu Verifikasi',
-                  style: const TextStyle(
-                    color: Color(0xFF92400E),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+              InkWell(
+                onTap: () => ref.read(adminFieldsProvider.notifier).load(),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.refresh, size: 16, color: Color(0xFF166534)),
+                      SizedBox(width: 8),
+                      Text(
+                        'Refresh',
+                        style: TextStyle(
+                          color: Color(0xFF166534),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Tinjau dan setujui pengajuan mitra baru untuk aktif di platform.',
-            style: TextStyle(fontSize: 14, color: _textGrey),
+          const SizedBox(height: 24),
+          // Search Bar
+          Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val),
+              decoration: const InputDecoration(
+                hintText: 'Cari mitra...',
+                hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+                prefixIcon: Icon(Icons.search, color: Color(0xFF9CA3AF), size: 20),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Tabs
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _tabPill('Semua', 'semua'),
+                _tabPill('Menunggu ($pendingCount)', 'menunggu'),
+                _tabPill('Terverifikasi', 'aktif'),
+                _tabPill('Ditolak', 'ditolak'),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTabs() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Row(
-        children: [
-          _tabPill('Semua', 'semua'),
-          const SizedBox(width: 12),
-          _tabPill('Menunggu (${_getPendingCount()})', 'menunggu'),
-          const SizedBox(width: 12),
-          _tabPill('Terverifikasi', 'aktif'),
-          const SizedBox(width: 12),
-          _tabPill('Ditolak', 'ditolak'),
-        ],
-      ),
-    );
-  }
 
-  int _getPendingCount() {
-    final mitrasAsync = ref.read(adminAllMitrasProvider);
-    return mitrasAsync.value
-            ?.where((m) => m.statusVerifikasi == 'menunggu')
-            .length ??
-        0;
-  }
 
   Widget _tabPill(String label, String status) {
     final isSelected = _filterStatus == status;
     return GestureDetector(
       onTap: () => setState(() => _filterStatus = status),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? _primary : Colors.white,
           borderRadius: BorderRadius.circular(30),
-          border:
-              Border.all(color: isSelected ? _primary : Colors.grey.shade300),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: _primary.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  )
-                ]
-              : null,
+          border: Border.all(
+            color: isSelected ? _primary : Colors.grey.shade300,
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: isSelected ? Colors.white : _textGrey,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            fontSize: 14,
+            fontSize: 13,
           ),
         ),
       ),
@@ -203,327 +202,251 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
 
   Widget _buildContent(List<AdminFieldModel> mitras) {
     final filtered = mitras.where((m) {
-      if (_filterStatus == 'semua') return true;
-      return m.statusVerifikasi.toLowerCase().trim() ==
-          _filterStatus.toLowerCase().trim();
+      bool statusMatch = _filterStatus == 'semua' ||
+          m.statusVerifikasi.toLowerCase().trim() == _filterStatus.toLowerCase().trim();
+      bool searchMatch = _searchQuery.isEmpty ||
+          m.namaLapangan.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          m.namaMitra.toLowerCase().contains(_searchQuery.toLowerCase());
+      return statusMatch && searchMatch;
     }).toList();
 
     return Container(
-      margin: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Table Header
-          Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFFEEF2FF),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: filtered.isEmpty
+          ? const Center(
+              child: Text('Tidak ada pengajuan',
+                  style: TextStyle(color: _textGrey)))
+          : ListView.separated(
+              itemCount: filtered.length,
+              separatorBuilder: (context, index) =>
+                  const SizedBox(height: 16),
+              itemBuilder: (context, index) =>
+                  _buildMitraCard(filtered[index]),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: const Row(
-              children: [
-                Expanded(
-                    flex: 3,
-                    child: Text('MITRA / BISNIS',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4338CA)))),
-                Expanded(
-                    flex: 2,
-                    child: Text('PEMILIK',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4338CA)))),
-                Expanded(
-                    flex: 2,
-                    child: Text('LOKASI',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4338CA)))),
-                Expanded(
-                    flex: 2,
-                    child: Text('TANGGAL PENGAJUAN',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4338CA)))),
-                Expanded(
-                    flex: 3,
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Text('AKSI',
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF4338CA))),
-                    )),
-              ],
-            ),
-          ),
-          // Table Body
-          Expanded(
-            child: filtered.isEmpty
-                ? const Center(
-                    child: Text('Tidak ada pengajuan',
-                        style: TextStyle(color: _textGrey)))
-                : ListView.separated(
-                    itemCount: filtered.length,
-                    separatorBuilder: (context, index) =>
-                        const Divider(height: 1, color: Color(0xFFF3F4F6)),
-                    itemBuilder: (context, index) =>
-                        _buildTableRow(filtered[index]),
-                  ),
-          ),
-          // Pagination Placeholder
-          _buildPagination(filtered.length),
-        ],
-      ),
     );
   }
 
-  Widget _buildTableRow(AdminFieldModel mitra) {
+  Widget _buildMitraCard(AdminFieldModel mitra) {
     final statusVerifikasi = mitra.statusVerifikasi.toLowerCase().trim();
     final dateStr = mitra.createdAt != null
         ? DateFormat('dd MMM yyyy').format(mitra.createdAt!)
         : '-';
 
+    String imageUrl = '';
+    if (mitra.photoUrls != null && mitra.photoUrls!.isNotEmpty) {
+      imageUrl = mitra.photoUrls!.first;
+    }
+
+    // parsing jenis
+    List<String> categories = [];
+    if (mitra.jenis.isNotEmpty) {
+      categories = mitra.jenis
+          .split(',')
+          .map((e) => e.trim().toUpperCase())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // MITRA / BISNIS
-          Expanded(
-            flex: 3,
-            child: Text(mitra.namaLapangan,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: _textDark)),
-          ),
-          // PEMILIK
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(mitra.namaMitra,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: _textDark)),
-                Text(mitra.emailPemilik,
-                    style: const TextStyle(fontSize: 12, color: _textGrey)),
-              ],
-            ),
-          ),
-          // LOKASI
-          Expanded(
-            flex: 2,
-            child: Row(
-              children: [
-                const Icon(Icons.location_on_outlined,
-                    size: 16, color: _textGrey),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(mitra.lokasi,
-                      style: const TextStyle(fontSize: 13, color: _textGrey),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis),
-                ),
-              ],
-            ),
-          ),
-          // TANGGAL PENGAJUAN
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(dateStr,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        color: _textDark,
-                        fontWeight: FontWeight.w500)),
-                Text(
-                  _getTimeAgo(mitra.createdAt ?? DateTime.now()),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: statusVerifikasi == 'menunggu'
-                        ? const Color(0xFFD97706)
-                        : _textGrey,
-                    fontWeight: statusVerifikasi == 'menunggu'
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // AKSI
-          Expanded(
-            flex: 3,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (statusVerifikasi == 'menunggu') ...[
-                  _actionButton(
-                    onPressed: () => _updateStatus(mitra, 'aktif'),
-                    icon: Icons.check,
-                    label: 'Verifikasi',
-                    color: const Color(0xFF1B6B3A),
-                    isFilled: true,
-                  ),
-                  const SizedBox(width: 8),
-                  _actionButton(
-                    onPressed: () => _updateStatus(mitra, 'ditolak'),
-                    icon: Icons.close,
-                    label: 'Tolak',
-                    color: const Color(0xFFEF4444),
-                    isFilled: false,
-                  ),
-                ] else
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: statusVerifikasi == 'aktif'
-                          ? const Color(0xFFD1FAE5)
-                          : const Color(0xFFFEE2E2),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      statusVerifikasi == 'aktif' ? 'Terverifikasi' : 'Ditolak',
-                      style: TextStyle(
-                        color: statusVerifikasi == 'aktif'
-                            ? const Color(0xFF065F46)
-                            : const Color(0xFF991B1B),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+          // 1. Image & Status Badge
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 140,
+              height: 100,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  imageUrl.isNotEmpty
+                      ? Image.network(imageUrl, fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                  color: Colors.grey.shade200,
+                                  child: const Icon(Icons.image_not_supported,
+                                      color: Colors.grey)))
+                      : Container(
+                          color: Colors.grey.shade200,
+                          child: const Icon(Icons.image, color: Colors.grey)),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusVerifikasi == 'menunggu'
+                            ? const Color(0xFFF59E0B)
+                            : const Color(0xFF10B981),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        statusVerifikasi == 'menunggu'
+                            ? 'MENUNGGU'
+                            : 'TERVERIFIKASI',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
-                const SizedBox(width: 12),
-                _iconButton(
-                    Icons.remove_red_eye_outlined, const Color(0xFF1E3A8A)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+
+          // 2. Info Section
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  mitra.namaLapangan,
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _textDark),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${mitra.namaMitra} • ${mitra.emailPemilik}',
+                  style: const TextStyle(fontSize: 13, color: _textGrey),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.location_on_outlined,
+                            size: 14, color: _textGrey),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(mitra.lokasi,
+                              style: const TextStyle(
+                                  fontSize: 12, color: _textGrey),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_today_outlined,
+                            size: 14, color: _textGrey),
+                        const SizedBox(width: 4),
+                        Text(dateStr,
+                            style: const TextStyle(
+                                fontSize: 12, color: _textGrey)),
+                      ],
+                    ),
+                    ...categories.map((cat) => Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEEF2FF),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            cat,
+                            style: const TextStyle(
+                                color: Color(0xFF4F46E5),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        )),
+                  ],
+                ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
+          const SizedBox(width: 16),
 
-  Widget _actionButton({
-    required VoidCallback onPressed,
-    required IconData icon,
-    required String label,
-    required Color color,
-    required bool isFilled,
-  }) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 14),
-      label: Text(label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isFilled ? color : Colors.white,
-        foregroundColor: isFilled ? Colors.white : color,
-        elevation: 0,
-        side: isFilled ? null : BorderSide(color: color),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
-  }
-
-  Widget _iconButton(IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFDBEAFE),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: IconButton(
-        icon: Icon(icon, size: 18, color: color),
-        onPressed: () {},
-        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-        padding: EdgeInsets.zero,
-      ),
-    );
-  }
-
-  Widget _buildPagination(int count) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Text('Menampilkan 1-$count dari $count pengajuan',
-              style: const TextStyle(color: _textGrey, fontSize: 13)),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          // 3. Actions Section
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _pageIcon(Icons.chevron_left, false),
-              const SizedBox(width: 8),
-              _pageNumber('1', true),
-              const SizedBox(width: 8),
-              _pageNumber('2', false),
-              const SizedBox(width: 8),
-              _pageNumber('3', false),
-              const SizedBox(width: 8),
-              _pageIcon(Icons.chevron_right, true),
+              if (statusVerifikasi == 'menunggu') ...[
+                SizedBox(
+                  width: 120,
+                  height: 32,
+                  child: ElevatedButton(
+                    onPressed: () => _updateStatus(mitra, 'aktif'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1B6B3A),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
+                      elevation: 0,
+                    ),
+                    child: const Text('Verifikasi',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              SizedBox(
+                width: 120,
+                height: 32,
+                child: OutlinedButton(
+                  onPressed: () => _showMitraDetails(mitra),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _textDark,
+                    side: BorderSide(color: Colors.grey.shade300),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6)),
+                  ),
+                  child: const Text('Lihat Detail',
+                      style: TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w600)),
+                ),
+              ),
+              if (statusVerifikasi == 'menunggu') ...[
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () => _updateStatus(mitra, 'ditolak'),
+                  child: const Padding(
+                    padding:
+                        EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                    child: Text('Tolak',
+                        style: TextStyle(
+                            color: Color(0xFFDC2626),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _pageIcon(IconData icon, bool active) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(icon,
-          size: 18, color: active ? _textDark : Colors.grey.shade400),
-    );
-  }
-
-  Widget _pageNumber(String num, bool active) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: active ? const Color(0xFF064E3B) : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-        border: active ? null : Border.all(color: Colors.grey.shade300),
-      ),
-      child: Center(
-        child: Text(
-          num,
-          style: TextStyle(
-            color: active ? Colors.white : _textGrey,
-            fontWeight: active ? FontWeight.bold : FontWeight.w500,
-            fontSize: 13,
-          ),
-        ),
       ),
     );
   }
@@ -568,21 +491,227 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     }
   }
 
-  String _getTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final date = DateTime(dateTime.year, dateTime.month, dateTime.day);
-    final diff = today.difference(date).inDays;
+  void _showMitraDetails(AdminFieldModel mitra) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          insetPadding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Detail Pengajuan Mitra',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textDark),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+                // Body
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDetailSectionTitle('Data Pemilik & Bisnis'),
+                        _buildDetailRow('Nama Pemilik', mitra.namaMitra),
+                        _buildDetailRow('Email', mitra.emailPemilik),
+                        _buildDetailRow('No. Telepon', mitra.phone),
+                        _buildDetailRow('Nama Bisnis', mitra.namaLapangan),
+                        
+                        const SizedBox(height: 16),
+                        const Text('Dokumen Identitas', style: TextStyle(fontWeight: FontWeight.w600, color: _textDark)),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            if (mitra.ktpUrl != null)
+                              Expanded(child: _buildImageCard('Foto KTP', mitra.ktpUrl!)),
+                            if (mitra.ktpUrl != null && mitra.selfieUrl != null)
+                              const SizedBox(width: 16),
+                            if (mitra.selfieUrl != null)
+                              Expanded(child: _buildImageCard('Selfie KTP', mitra.selfieUrl!)),
+                          ],
+                        ),
+                        
+                        const Divider(height: 32),
+                        
+                        _buildDetailSectionTitle('Informasi Lapangan'),
+                        _buildDetailRow('Jenis Olahraga', mitra.jenis),
+                        _buildDetailRow('Tipe Lapangan', mitra.tipeLapangan),
+                        _buildDetailRow('Harga Per Jam', NumberFormat.currency(locale: 'id', symbol: 'Rp', decimalDigits: 0).format(mitra.hargaPerJam)),
+                        
+                        const SizedBox(height: 8),
+                        const Text('Fasilitas', style: TextStyle(fontWeight: FontWeight.w600, color: _textDark)),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: mitra.fasilitas.map((f) => Chip(
+                            label: Text(f, style: const TextStyle(fontSize: 12)),
+                            backgroundColor: Colors.grey.shade100,
+                            side: BorderSide(color: Colors.grey.shade300),
+                          )).toList(),
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        const Text('Deskripsi', style: TextStyle(fontWeight: FontWeight.w600, color: _textDark)),
+                        const SizedBox(height: 4),
+                        Text(mitra.deskripsi.isEmpty ? '-' : mitra.deskripsi, style: const TextStyle(color: _textGrey)),
+                        
+                        const Divider(height: 32),
+                        
+                        _buildDetailSectionTitle('Lokasi & Operasional'),
+                        _buildDetailRow('Alamat', mitra.lokasi),
+                        _buildDetailRow('Jam Operasional', mitra.jamOperasional),
+                        _buildDetailRow('Hari Operasional', mitra.hariOperasional.join(', ')),
+                        
+                        const Divider(height: 32),
+                        
+                        _buildDetailSectionTitle('Foto Lapangan'),
+                        if (mitra.photoUrls != null && mitra.photoUrls!.isNotEmpty)
+                          SizedBox(
+                            height: 120,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: mitra.photoUrls!.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 12),
+                              itemBuilder: (context, index) {
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    mitra.photoUrls![index],
+                                    width: 160,
+                                    height: 120,
+                                    fit: BoxFit.cover,
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                        else
+                          const Text('Tidak ada foto', style: TextStyle(color: _textGrey)),
+                      ],
+                    ),
+                  ),
+                ),
+                // Footer
+                if (mitra.statusVerifikasi == 'menunggu')
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                      border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _updateStatus(mitra, 'ditolak');
+                          },
+                          child: const Text('Tolak Pengajuan', style: TextStyle(color: Color(0xFFDC2626))),
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _updateStatus(mitra, 'aktif');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1B6B3A),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Verifikasi Mitra'),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-    if (diff == 0) {
-      final duration = now.difference(dateTime);
-      if (duration.inHours > 0) return '${duration.inHours} jam lalu';
-      if (duration.inMinutes > 0) return '${duration.inMinutes} menit lalu';
-      return 'Baru saja';
-    } else if (diff == 1) {
-      return 'Kemarin';
-    } else {
-      return '$diff hari lalu';
-    }
+  Widget _buildDetailSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _primary),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              label,
+              style: const TextStyle(color: _textGrey, fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value.isEmpty ? '-' : value,
+              style: const TextStyle(color: _textDark, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageCard(String title, String url) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 12, color: _textGrey)),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            url,
+            height: 120,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              height: 120,
+              color: Colors.grey.shade200,
+              alignment: Alignment.center,
+              child: const Icon(Icons.error, color: Colors.grey),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

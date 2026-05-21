@@ -7,6 +7,15 @@ class AdminFieldModel extends BaseFieldModel {
   final String jenis;
   final String statusVerifikasi;
   final DateTime? createdAt;
+  final List<String>? photoUrls;
+  final String phone;
+  final String deskripsi;
+  final String tipeLapangan;
+  final List<String> fasilitas;
+  final String jamOperasional;
+  final List<String> hariOperasional;
+  final String? ktpUrl;
+  final String? selfieUrl;
 
   const AdminFieldModel({
     required super.fieldId,
@@ -19,6 +28,15 @@ class AdminFieldModel extends BaseFieldModel {
     required this.jenis,
     required this.statusVerifikasi,
     this.createdAt,
+    this.photoUrls,
+    this.phone = '',
+    this.deskripsi = '',
+    this.tipeLapangan = '',
+    this.fasilitas = const [],
+    this.jamOperasional = '',
+    this.hariOperasional = const [],
+    this.ktpUrl,
+    this.selfieUrl,
   }) : super(
           namaVenue: '',
         );

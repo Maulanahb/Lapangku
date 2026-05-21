@@ -235,9 +235,18 @@ final adminAllMitrasProvider = StreamProvider<List<AdminFieldModel>>((ref) {
         emailPemilik: data['email'] ?? '',
         lokasi: data['alamat'] ?? 'Alamat belum diatur',
         hargaPerJam: 0,
-        jenis: '',
+        jenis: data['sport'] ?? data['jenisLapangan'] ?? '',
         statusVerifikasi: status,
         createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        photoUrls: (data['photoUrls'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
+        phone: data['phone'] ?? '',
+        deskripsi: data['deskripsi'] ?? '',
+        tipeLapangan: data['tipeLapangan'] ?? '',
+        fasilitas: (data['fasilitas'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? (data['facilities'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+        jamOperasional: data['jamOperasional'] ?? '',
+        hariOperasional: (data['hariOperasional'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+        ktpUrl: data['ktpUrl'],
+        selfieUrl: data['selfieUrl'],
       );
     }).toList();
   });
