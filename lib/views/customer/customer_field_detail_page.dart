@@ -260,9 +260,18 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
         ),
         const SizedBox(height: 12),
         if (f.namaVenue.isNotEmpty) ...[
-          // REFAKTOR: sebelumnya Color(0xFF718096)
-          Text(f.namaVenue.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 1.0)),
-          const SizedBox(height: 4),
+          Text(
+            f.namaVenue.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textSecondary,
+              letterSpacing: 1.0,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 6),
         ],
         // REFAKTOR: sebelumnya Color(0xFF2D3748)
         Text(f.nama, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),

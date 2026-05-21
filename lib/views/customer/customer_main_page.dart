@@ -4,6 +4,7 @@ import 'customer_home_page.dart';
 import 'customer_orders_page.dart';
 import 'customer_profile_page.dart';
 import 'favorites_page.dart';
+import 'package:geolocator/geolocator.dart';
 
 class CustomerMainPage extends ConsumerStatefulWidget {
   const CustomerMainPage({super.key});
@@ -21,6 +22,56 @@ class _CustomerMainPageState extends ConsumerState<CustomerMainPage> {
     const FavoritesPage(),
     const CustomerProfilePage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLocationPermission();
+  }
+
+  Future<void> _checkLocationPermission() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) {
+        _showLocationServiceDialog();
+      }
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return;
+      }
+    }
+  }
+
+  void _showLocationServiceDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Aktifkan Lokasi'),
+          content: const Text(
+              'Akses GPS (Lokasi) belum aktif. Mohon aktifkan GPS perangkat Anda agar aplikasi dapat menampilkan lapangan terdekat dari Anda.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Geolocator.openLocationSettings();
+              },
+              child: const Text('Buka Pengaturan'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

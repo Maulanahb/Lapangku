@@ -664,9 +664,18 @@ class _HorizontalFieldCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (field.namaVenue.isNotEmpty) ...[
-                              // REFAKTOR: sebelumnya Color(0xFF718096)
-                              Text(field.namaVenue.toUpperCase(), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 0.5)),
-                              const SizedBox(height: 2),
+                              Text(
+                                field.namaVenue.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textSecondary,
+                                  letterSpacing: 0.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
                             ],
                             Text(
                               field.nama,

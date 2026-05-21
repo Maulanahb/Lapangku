@@ -311,9 +311,18 @@ class _FavoriteFieldCard extends ConsumerWidget {
                   ]),
                   const SizedBox(height: 6),
                   if (field.namaVenue.isNotEmpty) ...[
-                    Text(field.namaVenue.toUpperCase(),
-                        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 0.5)),
-                    const SizedBox(height: 2),
+                    Text(
+                      field.namaVenue.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textSecondary,
+                        letterSpacing: 0.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
                   ],
                   Text(field.nama,
                       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textDark),

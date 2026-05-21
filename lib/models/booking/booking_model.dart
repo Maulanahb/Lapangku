@@ -69,7 +69,7 @@ class BookingStatusHelper {
       case ditolak:
         return 'Ditolak';
       case expired:
-        return 'Expired';
+        return 'Melewati Batas';
       default:
         return status;
     }
@@ -200,7 +200,16 @@ class BookingModel {
       slots = ['${data['jamMulai']} - ${data['jamSelesai']}'];
     }
 
-    return BookingModel(
+    final parsedBatasWaktuBayar = (data['batasWaktuBayar'] as Timestamp?)?.toDate() ??
+        DateTime.now().add(const Duration(hours: 4));
+
+    String currentStatus = data['status'] ?? BookingStatusHelper.menungguBayar;
+    if (currentStatus == BookingStatusHelper.menungguBayar &&
+        DateTime.now().isAfter(parsedBatasWaktuBayar)) {
+      currentStatus = BookingStatusHelper.expired;
+    }
+
+    BookingModel model = BookingModel(
       id: doc.id,
       bookingId: data['bookingId'] ?? 'LPK-${doc.id.substring(0, 8).toUpperCase()}',
       fieldId: data['fieldId'] ?? '',
@@ -219,18 +228,17 @@ class BookingModel {
       totalBayar: data['totalBayar'] ?? data['totalHarga'] ?? 0,
       metodePembayaran: data['metodePembayaran'] ?? '',
       buktiTransferUrl: data['buktiTransferUrl'],
-      status: data['status'] ?? BookingStatusHelper.menungguBayar,
+      status: currentStatus,
       alasanPenolakan: data['alasanPenolakan'],
       statusTimeline: data['statusTimeline'] != null
           ? List<Map<String, dynamic>>.from(data['statusTimeline'])
           : [
               {
-                'status': data['status'] ?? BookingStatusHelper.menungguBayar,
+                'status': currentStatus,
                 'waktu': data['createdAt'] ?? Timestamp.now(),
               }
             ],
-      batasWaktuBayar: (data['batasWaktuBayar'] as Timestamp?)?.toDate() ??
-          DateTime.now().add(const Duration(hours: 4)),
+      batasWaktuBayar: parsedBatasWaktuBayar,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isReviewed: data['isReviewed'] ?? false,
@@ -242,6 +250,12 @@ class BookingModel {
       rescheduleReason: data['rescheduleReason'],
       rescheduleStatus: data['rescheduleStatus'],
     );
+
+    if (model.isTicketExpired) {
+      return model.copyWith(status: BookingStatusHelper.expired);
+    }
+
+    return model;
   }
 
   // ─── Method: toFirestore ──────────────────────────────────────────────────

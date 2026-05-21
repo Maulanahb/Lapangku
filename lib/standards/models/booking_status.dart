@@ -34,7 +34,7 @@ extension BookingStatusX on BookingStatus {
       case BookingStatus.ditolak:
         return 'Ditolak';
       case BookingStatus.expired:
-        return 'Kedaluwarsa';
+        return 'Melewati Batas';
       case BookingStatus.unknown:
         return 'Tidak Diketahui';
     }
@@ -60,7 +60,7 @@ extension BookingStatusX on BookingStatus {
       case BookingStatus.ditolak:
         return 'Ditolak';
       case BookingStatus.expired:
-        return 'Kedaluwarsa';
+        return 'Melewati Batas';
       case BookingStatus.unknown:
         return 'Tidak Diketahui';
     }
@@ -149,7 +149,7 @@ extension BookingStatusX on BookingStatus {
       case BookingStatus.ditolak:
         return 'Pesanan Ditolak';
       case BookingStatus.expired:
-        return 'Pesanan Kedaluwarsa';
+        return 'Pesanan Melewati Batas';
       case BookingStatus.unknown:
         return 'Status Tidak Diketahui';
     }

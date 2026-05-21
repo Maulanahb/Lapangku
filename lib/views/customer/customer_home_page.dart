@@ -458,6 +458,20 @@ class _FieldCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (field.namaVenue.isNotEmpty) ...[
+                      Text(
+                        field.namaVenue.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 10, 
+                          fontWeight: FontWeight.w800, 
+                          color: AppColors.textSecondary, 
+                          letterSpacing: 0.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                    ],
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Expanded(child: Text(field.nama, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark), maxLines: 1, overflow: TextOverflow.ellipsis)),
                       Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
