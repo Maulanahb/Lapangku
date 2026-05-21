@@ -52,6 +52,7 @@ dependencies:
   path: any
   shimmer: ^3.0.0
   gal: ^2.3.2
+  flutter_dotenv: ^5.2.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -69,3 +70,5 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  assets:
+    - .env

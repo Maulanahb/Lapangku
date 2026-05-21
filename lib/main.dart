@@ -5,6 +5,7 @@ import 'package:email_otp/email_otp.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // â”€â”€â”€ Views (MVC) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import 'views/auth/splash_page.dart';
@@ -32,6 +33,9 @@ import 'models/booking/booking_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
 
   // Inisialisasi locale Indonesia untuk intl (DateFormat)
   await initializeDateFormatting('id', null);
@@ -78,8 +82,8 @@ void main() async {
     host: 'smtp.gmail.com',
     emailPort: EmailPort.port465,
     secureType: SecureType.ssl,
-    username: 'lapangku1@gmail.com',
-    password: 'hixwfdecnqxcxzxj',
+    username: dotenv.env['SMTP_USERNAME'] ?? '',
+    password: dotenv.env['SMTP_PASSWORD'] ?? '',
   );
 
   // [RESOLVED] Mengambil kode server: Firebase App Check dibatasi hanya untuk Android.
