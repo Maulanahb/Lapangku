@@ -36,8 +36,14 @@ import 'models/booking/booking_model.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
+  // Load environment variables safely
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    if (kDebugMode) {
+      print("Warning: .env file not found. Ensure to copy .env.example to .env. Error: $e");
+    }
+  }
 
   // Inisialisasi locale Indonesia untuk intl (DateFormat)
   await initializeDateFormatting('id', null);
