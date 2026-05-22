@@ -1,1 +1,38 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"lapangku-4e610","appId":"1:1050784867568:android:0971a4f050353606c54e35","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"lapangku-4e610","configurations":{"android":"1:1050784867568:android:0971a4f050353606c54e35","web":"1:1050784867568:web:e31663989aa3d7e8c54e35"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "lapangku-4e610",
+          "appId": "1:1050784867568:android:0971a4f050353606c54e35",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "lapangku-4e610",
+          "configurations": {
+            "android": "1:1050784867568:android:0971a4f050353606c54e35",
+            "web": "1:1050784867568:web:e31663989aa3d7e8c54e35"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ]
+}

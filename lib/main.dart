@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:email_otp/email_otp.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'services/firebase/push_notification_service.dart';
 
 // â”€â”€â”€ Views (MVC) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import 'views/auth/splash_page.dart';
@@ -43,6 +45,12 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // ── Push Notification Setup ──
+  // Register background handler (HARUS sebelum runApp)
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  // Initialize FCM service (request permission, save token, setup listeners)
+  await PushNotificationService.instance.initialize();
 
   // KONFIGURASI EMAIL OTP
   // 1. TAMBAHKAN CONFIG INI DULU
@@ -109,6 +117,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'LapangKu',
       debugShowCheckedModeBanner: false,
+      // Navigator key untuk navigasi dari push notification
+      navigatorKey: PushNotificationService.navigatorKey,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B6B3A)),
         useMaterial3: true,

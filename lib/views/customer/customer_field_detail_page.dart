@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
@@ -484,11 +485,6 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     final lng = widget.field.longitude;
     final hasCoordinates = lat != 0.0 && lng != 0.0;
 
-    // OpenStreetMap static tile (gratis, tanpa API key)
-    final mapImageUrl = hasCoordinates
-        ? 'https://staticmap.openstreetmap.de/staticmap.php?center=$lat,$lng&zoom=15&size=600x300&markers=$lat,$lng,red-pushpin'
-        : null;
-
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -504,22 +500,30 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
               color: AppColors.borderLight,
             ),
             clipBehavior: Clip.antiAlias,
-            child: mapImageUrl != null
+            child: hasCoordinates
                 ? Stack(
                     fit: StackFit.expand,
                     children: [
-                      CachedImageWidget(
-                        imageUrl: mapImageUrl,
-                        fit: BoxFit.cover,
-                        errorWidget: const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.map_outlined, size: 48, color: AppColors.textSecondary),
-                              SizedBox(height: 8),
-                              Text('Gagal memuat peta', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                            ],
+                      IgnorePointer(
+                        child: GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: LatLng(lat, lng),
+                            zoom: 15,
                           ),
+                          markers: {
+                            Marker(
+                              markerId: const MarkerId('field_location'),
+                              position: LatLng(lat, lng),
+                            ),
+                          },
+                          zoomGesturesEnabled: false,
+                          scrollGesturesEnabled: false,
+                          rotateGesturesEnabled: false,
+                          tiltGesturesEnabled: false,
+                          myLocationButtonEnabled: false,
+                          myLocationEnabled: false,
+                          zoomControlsEnabled: false,
+                          liteModeEnabled: true,
                         ),
                       ),
                       // Overlay gradient + label

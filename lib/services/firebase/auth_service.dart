@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/auth/user_model.dart';
+import 'package:lapangku/services/firebase/push_notification_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -110,6 +111,9 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    // Hapus FCM token dari Firestore agar perangkat tidak menerima notif setelah logout
+    await PushNotificationService.instance.removeToken();
+
     try {
       print('DEBUG AUTH: Melakukan logout...');
       await GoogleSignIn().signOut();
