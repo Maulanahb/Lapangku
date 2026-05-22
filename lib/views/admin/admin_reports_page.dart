@@ -10,7 +10,8 @@ import 'package:excel/excel.dart' as excel;
 import 'package:universal_html/html.dart' as html;
 import 'package:path_provider/path_provider.dart';
 import 'package:lapangku/controllers/admin/admin_controller.dart';
-import 'package:lapangku/models/admin/booking_model.dart';
+import 'package:lapangku/models/booking/booking_model.dart';
+import 'package:printing/printing.dart';
 
 class AdminReportsPage extends ConsumerStatefulWidget {
   const AdminReportsPage({super.key});
@@ -27,7 +28,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bookingsAsync = ref.watch(bookingsProvider);
+    final bookingsAsync = ref.watch(adminAllBookingsProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,7 +75,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
   }
 
   Widget _buildTabs() {
-    final bookingsAsync = ref.read(bookingsProvider);
+    final bookingsAsync = ref.read(adminAllBookingsProvider);
     final allBookings = bookingsAsync.value ?? [];
 
     return Padding(
@@ -165,7 +166,6 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
     final total = bookings.length;
     final selesai = bookings.where((b) => b.status == 'selesai').length;
     final batal = bookings.where((b) => b.status == 'dibatalkan').length;
-    final successRate = total == 0 ? 0 : (selesai / total * 100).round();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -192,7 +192,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
 
   Widget _buildRevenueReport(List<BookingModel> bookings) {
     final completedBookings = bookings.where((b) => b.status == 'selesai').toList();
-    final totalRevenue = completedBookings.fold<int>(0, (sum, b) => sum + b.totalHarga);
+    final totalRevenue = completedBookings.fold<int>(0, (sum, b) => sum + b.totalBayar);
     final avgRevenue = completedBookings.isEmpty ? 0 : (totalRevenue / completedBookings.length).round();
     
     final currencyFormat = NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
@@ -367,9 +367,9 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
                   return DataRow(
                     cells: [
                       DataCell(Text(dateFormat.format(b.tanggal), style: const TextStyle(fontSize: 13, color: Color(0xFF334155), fontWeight: FontWeight.w500))),
-                      DataCell(Text(b.namaLapangan.isEmpty ? '-' : b.namaLapangan, style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A), fontWeight: FontWeight.w600))),
-                      DataCell(Text(b.namaPenyewa.isEmpty ? '-' : b.namaPenyewa, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
-                      if (isRevenue) DataCell(Text(currencyFormat.format(b.totalHarga), style: const TextStyle(fontWeight: FontWeight.bold, color: _primary, fontSize: 13))),
+                      DataCell(Text(b.fieldName.isEmpty ? '-' : b.fieldName, style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A), fontWeight: FontWeight.w600))),
+                      DataCell(Text(b.userName.isEmpty ? '-' : b.userName, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
+                      if (isRevenue) DataCell(Text(currencyFormat.format(b.totalBayar), style: const TextStyle(fontWeight: FontWeight.bold, color: _primary, fontSize: 13))),
                       if (!isRevenue) DataCell(_buildStatusChip(b.status)),
                     ],
                   );
@@ -438,7 +438,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
     for (var b in bookings) {
       if (b.status == 'selesai') {
         final month = b.tanggal.month - 1;
-        if (month >= 0 && month < 12) revenue[month] += (b.totalHarga / 1000000); // In millions for chart
+        if (month >= 0 && month < 12) revenue[month] += (b.totalBayar / 1000000); // In millions for chart
       }
     }
     return revenue;
@@ -524,63 +524,305 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
 
   Future<void> _exportToPdf(List<BookingModel> bookings) async {
     final pdf = pw.Document();
-    
+    final rangeStr = _selectedDateRange == null 
+      ? 'Semua Periode' 
+      : '${DateFormat('dd MMM yyyy').format(_selectedDateRange!.start)} - ${DateFormat('dd MMM yyyy').format(_selectedDateRange!.end)}';
+
+    int totalKotor = 0;
+    int totalPotongan = 0;
+    int totalBersih = 0;
+    int suksesCount = 0;
+    int gagalCount = 0;
+
+    for (var b in bookings) {
+      final isSukses = b.status == 'selesai';
+      final isGagal = b.status == 'dibatalkan' || b.status == 'expired' || b.status == 'ditolak';
+
+      if (isSukses) {
+        totalKotor += b.hargaLapangan;
+        totalPotongan += b.biayaLayanan;
+        suksesCount++;
+      } else if (isGagal) {
+        gagalCount++;
+      }
+    }
+    totalBersih = totalKotor - totalPotongan;
+
+    final currencyFormat = NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
+
     pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4.landscape,
+        margin: const pw.EdgeInsets.all(32),
         build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text('Laporan $_selectedReportType Lapangku', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
-              if (_selectedDateRange != null)
-                pw.Text('Periode: ${DateFormat('dd MMM yyyy').format(_selectedDateRange!.start)} - ${DateFormat('dd MMM yyyy').format(_selectedDateRange!.end)}'),
-              pw.SizedBox(height: 20),
-              pw.TableHelper.fromTextArray(
-                context: context,
-                headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                data: <List<String>>[
-                  <String>['Tanggal', 'Lapangan', 'Penyewa', 'Status', 'Total Harga'],
-                  ...bookings.map((b) => [
-                    DateFormat('dd MMM yyyy').format(b.tanggal),
-                    b.namaLapangan,
-                    b.namaPenyewa,
-                    b.status,
-                    'Rp ${b.totalHarga}'
-                  ]),
+          return [
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('LAPORAN $_selectedReportType PLATFORM LAPANGKU', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 4),
+                    pw.Text('Periode Laporan: $rangeStr', style: const pw.TextStyle(fontSize: 11)),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text('Tanggal Cetak: ${DateFormat('dd MMM yyyy HH:mm').format(DateTime.now())}', style: const pw.TextStyle(fontSize: 9)),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+              columnWidths: const {
+                0: pw.FlexColumnWidth(1.2), // No / Kode Booking
+                1: pw.FlexColumnWidth(2.0), // Jadwal Bermain
+                2: pw.FlexColumnWidth(1.5), // Pelanggan
+                3: pw.FlexColumnWidth(2.2), // Detail Lapangan
+                4: pw.FlexColumnWidth(1.8), // Rincian Biaya
+                5: pw.FlexColumnWidth(1.3), // Status
+              },
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                  children: [
+                    _buildTableHeader('No / Kode Booking'),
+                    _buildTableHeader('Jadwal Bermain'),
+                    _buildTableHeader('Pelanggan'),
+                    _buildTableHeader('Detail Lapangan'),
+                    _buildTableHeader('Rincian Biaya'),
+                    _buildTableHeader('Status'),
+                  ],
+                ),
+                ...List<pw.TableRow>.generate(bookings.length, (index) {
+                  final b = bookings[index];
+                  return pw.TableRow(
+                    children: [
+                      _buildTableCell('${index + 1}\n${b.bookingId}'),
+                      _buildTableCell('${DateFormat('dd MMM yyyy').format(b.tanggal)} / ${b.timeSlots.join(", ")}'),
+                      _buildTableCell(b.userName),
+                      _buildTableCell('${b.fieldName} - ${b.fieldCategory}'),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(6),
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(
+                              currencyFormat.format(b.totalBayar),
+                              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
+                            ),
+                            pw.Text(
+                              b.metodePembayaran,
+                              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
+                            ),
+                          ],
+                        ),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(6),
+                        child: _buildPdfStatusChip(b.status),
+                      ),
+                    ],
+                  );
+                }),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey),
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('RINGKASAN EKSEKUTIF / FOOTER SUMMARY', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
+                  pw.SizedBox(height: 8),
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Total Pendapatan Kotor keseluruhan:', style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text(currencyFormat.format(totalKotor), style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                    ],
+                  ),
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Total Potongan Aplikasi:', style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text(currencyFormat.format(totalPotongan), style: pw.TextStyle(color: PdfColors.red, fontSize: 10)),
+                    ],
+                  ),
+                  pw.Divider(color: PdfColors.grey),
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Total Pendapatan Bersih Mitra:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                      pw.Text(currencyFormat.format(totalBersih), style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.green, fontSize: 10)),
+                    ],
+                  ),
+                  pw.SizedBox(height: 6),
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Jumlah Transaksi Sukses:', style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text('$suksesCount Sukses', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                    ],
+                  ),
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Jumlah Transaksi Batal/Gagal:', style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text('$gagalCount Gagal', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.red)),
+                    ],
+                  ),
                 ],
               ),
-            ],
-          );
+            ),
+          ];
         },
       ),
     );
 
-    final bytes = await pdf.save();
-    await _saveAndDownloadFile(bytes, 'Laporan_$_selectedReportType.pdf', 'application/pdf');
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Laporan_$_selectedReportType.pdf',
+    );
+  }
+
+  pw.Widget _buildTableHeader(String text) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(6),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
+      ),
+    );
+  }
+
+  pw.Widget _buildTableCell(String text) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(6),
+      child: pw.Text(
+        text,
+        style: const pw.TextStyle(fontSize: 8),
+      ),
+    );
+  }
+
+  pw.Widget _buildPdfStatusChip(String status) {
+    PdfColor textColor;
+    PdfColor bgColor;
+    switch (status) {
+      case 'selesai':
+        textColor = PdfColors.green900;
+        bgColor = PdfColors.green100;
+        break;
+      case 'dibatalkan':
+      case 'expired':
+      case 'ditolak':
+        textColor = PdfColors.red900;
+        bgColor = PdfColors.red100;
+        break;
+      case 'dikonfirmasi':
+        textColor = PdfColors.blue900;
+        bgColor = PdfColors.blue100;
+        break;
+      default:
+        textColor = PdfColors.orange900;
+        bgColor = PdfColors.orange100;
+    }
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: pw.BoxDecoration(
+        color: bgColor,
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+      ),
+      child: pw.Text(
+        BookingStatusHelper.getLabel(status).toUpperCase(),
+        style: pw.TextStyle(color: textColor, fontSize: 7, fontWeight: pw.FontWeight.bold),
+      ),
+    );
   }
 
   Future<void> _exportToExcel(List<BookingModel> bookings) async {
     final excelDoc = excel.Excel.createExcel();
     final sheet = excelDoc['Sheet1'];
 
+    // Header
     sheet.appendRow([
-      excel.TextCellValue('Tanggal'),
-      excel.TextCellValue('Lapangan'),
-      excel.TextCellValue('Penyewa'),
-      excel.TextCellValue('Status'),
-      excel.TextCellValue('Total Harga'),
+      excel.TextCellValue('ID Booking / Kode Transaksi (bookingId)'),
+      excel.TextCellValue('Tanggal Main (tanggal)'),
+      excel.TextCellValue('Waktu / Slot Jam (timeSlots)'),
+      excel.TextCellValue('Nama Pelanggan (userName)'),
+      excel.TextCellValue('Nama Lapangan (fieldName)'),
+      excel.TextCellValue('Kategori Lapangan (fieldCategory)'),
+      excel.TextCellValue('Durasi (durasi)'),
+      excel.TextCellValue('Harga Lapangan / Pendapatan Kotor (hargaLapangan)'),
+      excel.TextCellValue('Biaya Layanan / Komisi Aplikasi (biayaLayanan)'),
+      excel.TextCellValue('Total Bayar (totalBayar)'),
+      excel.TextCellValue('Metode Pembayaran (metodePembayaran)'),
+      excel.TextCellValue('Status (status)'),
+      excel.TextCellValue('Tanggal Pemesanan (createdAt)'),
+      excel.TextCellValue('Keterangan / Catatan Tambahan'),
     ]);
 
+    int totalKotor = 0;
+    int totalPotongan = 0;
+    int totalBersih = 0;
+    int suksesCount = 0;
+    int gagalCount = 0;
+
     for (var b in bookings) {
+      final isSukses = b.status == 'selesai';
+      final isGagal = b.status == 'dibatalkan' || b.status == 'expired' || b.status == 'ditolak';
+
+      if (isSukses) {
+        totalKotor += b.hargaLapangan;
+        totalPotongan += b.biayaLayanan;
+        suksesCount++;
+      } else if (isGagal) {
+        gagalCount++;
+      }
+
+      String keterangan = '';
+      if (b.status == 'ditolak' && b.alasanPenolakan != null) {
+        keterangan = 'Ditolak: ${b.alasanPenolakan}';
+      } else if (b.isRescheduleRequested) {
+        keterangan = 'Reschedule Requested';
+      }
+
       sheet.appendRow([
-        excel.TextCellValue(DateFormat('dd MMM yyyy').format(b.tanggal)),
-        excel.TextCellValue(b.namaLapangan),
-        excel.TextCellValue(b.namaPenyewa),
-        excel.TextCellValue(b.status),
-        excel.IntCellValue(b.totalHarga),
+        excel.TextCellValue(b.bookingId),
+        excel.TextCellValue(DateFormat('yyyy-MM-dd').format(b.tanggal)),
+        excel.TextCellValue(b.timeSlots.join(', ')),
+        excel.TextCellValue(b.userName),
+        excel.TextCellValue(b.fieldName),
+        excel.TextCellValue(b.fieldCategory),
+        excel.IntCellValue(b.durasi),
+        excel.IntCellValue(b.hargaLapangan),
+        excel.IntCellValue(b.biayaLayanan),
+        excel.IntCellValue(b.totalBayar),
+        excel.TextCellValue(b.metodePembayaran),
+        excel.TextCellValue(BookingStatusHelper.getLabel(b.status)),
+        excel.TextCellValue(DateFormat('yyyy-MM-dd HH:mm').format(b.createdAt)),
+        excel.TextCellValue(keterangan),
       ]);
     }
+
+    totalBersih = totalKotor - totalPotongan;
+
+    sheet.appendRow([]);
+    sheet.appendRow([excel.TextCellValue('RINGKASAN EKSEKUTIF')]);
+    sheet.appendRow([excel.TextCellValue('Total Pendapatan Kotor keseluruhan'), excel.IntCellValue(totalKotor)]);
+    sheet.appendRow([excel.TextCellValue('Total Potongan Aplikasi'), excel.IntCellValue(totalPotongan)]);
+    sheet.appendRow([excel.TextCellValue('Total Pendapatan Bersih Mitra'), excel.IntCellValue(totalBersih)]);
+    sheet.appendRow([excel.TextCellValue('Jumlah Transaksi Sukses'), excel.IntCellValue(suksesCount)]);
+    sheet.appendRow([excel.TextCellValue('Jumlah Transaksi Batal/Gagal'), excel.IntCellValue(gagalCount)]);
 
     final bytes = excelDoc.encode()!;
     await _saveAndDownloadFile(bytes, 'Laporan_$_selectedReportType.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -590,7 +832,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
     if (kIsWeb) {
       final blob = html.Blob([bytes], mimeType);
       final url = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.AnchorElement(href: url)
+      html.AnchorElement(href: url)
         ..setAttribute('download', filename)
         ..click();
       html.Url.revokeObjectUrl(url);

@@ -27,14 +27,19 @@ export const sendBookingReminders = onSchedule(
 
     console.log(`⏰ [Reminder] Running at ${now.toISOString()}`);
 
-    // Query booking yang dikonfirmasi (masih aktif, belum selesai)
+    // Batasi range waktu query untuk menghemat read quota (12 jam lalu s.d 30 jam ke depan)
+    // Ini mengkover H-1 (24 jam) dan 2 jam bermain dengan aman dari pergeseran timezone
+    const startRange = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+    const endRange = new Date(now.getTime() + 30 * 60 * 60 * 1000);
+
     const bookingsSnap = await db
       .collection("bookings")
-      .where("status", "==", "dikonfirmasi")
+      .where("tanggal", ">=", admin.firestore.Timestamp.fromDate(startRange))
+      .where("tanggal", "<=", admin.firestore.Timestamp.fromDate(endRange))
       .get();
 
     if (bookingsSnap.empty) {
-      console.log("⏰ [Reminder] No confirmed bookings found.");
+      console.log("⏰ [Reminder] No bookings found in range.");
       return;
     }
 
@@ -43,6 +48,9 @@ export const sendBookingReminders = onSchedule(
 
     for (const doc of bookingsSnap.docs) {
       const data = doc.data();
+
+      // Hanya proses booking yang berstatus 'dikonfirmasi'
+      if (data.status !== "dikonfirmasi") continue;
 
       // Parse tanggal bermain
       const tanggal = data.tanggal;
