@@ -143,32 +143,59 @@ class _State extends ConsumerState<PaymentUploadPage> {
     final minutes = (_timeLeft.inMinutes % 60).toString().padLeft(2, '0');
     final seconds = (_timeLeft.inSeconds % 60).toString().padLeft(2, '0');
 
-    return Container(
+    // Dynamic color logic
+    Color bgColor;
+    Color borderColor;
+    Color textColor;
+    Color iconColor;
+
+    if (_timeLeft.inMinutes < 5) {
+      // Critical (< 5 mins): Red
+      bgColor = const Color(0xFFFEF2F2);
+      borderColor = const Color(0xFFFCA5A5);
+      textColor = const Color(0xFFDC2626);
+      iconColor = const Color(0xFFEF4444);
+    } else if (_timeLeft.inMinutes < 15) {
+      // Warning (< 15 mins): Orange
+      bgColor = const Color(0xFFFFF7ED);
+      borderColor = const Color(0xFFFDBA74);
+      textColor = const Color(0xFFEA580C);
+      iconColor = const Color(0xFFF97316);
+    } else {
+      // Safe (>= 15 mins): Primary/Neutral Green
+      bgColor = const Color(0xFFF0FDF4);
+      borderColor = const Color(0xFF86EFAC);
+      textColor = const Color(0xFF16A34A);
+      iconColor = const Color(0xFF22C55E);
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF9E6),
+        color: bgColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFE5B4)),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 20),
+              Icon(Icons.timer_outlined, color: iconColor, size: 20),
               const SizedBox(width: 8),
-              Text('Selesaikan pembayaran sebelum:', style: TextStyle(color: Colors.orange.shade800, fontWeight: FontWeight.w500)),
+              Text('Selesaikan pembayaran sebelum:', style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _timeBox(hours, 'JAM'),
-              const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text(':', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFD97706)))),
-              _timeBox(minutes, 'MENIT'),
-              const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text(':', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFD97706)))),
-              _timeBox(seconds, 'DETIK'),
+              _timeBox(hours, 'JAM', textColor),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Text(':', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor))),
+              _timeBox(minutes, 'MENIT', textColor),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Text(':', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor))),
+              _timeBox(seconds, 'DETIK', textColor),
             ],
           ),
         ],
@@ -176,11 +203,11 @@ class _State extends ConsumerState<PaymentUploadPage> {
     );
   }
 
-  Widget _timeBox(String value, String label) {
+  Widget _timeBox(String value, String label, Color color) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFD97706))),
-        Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.orange.shade800)),
+        Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: color)),
+        Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color.withOpacity(0.8))),
       ],
     );
   }
@@ -244,13 +271,13 @@ class _State extends ConsumerState<PaymentUploadPage> {
             width: double.infinity,
             height: 160,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.grey.shade50,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+              border: Border.all(color: Colors.grey.shade300, width: 2), // Simulate dashed feel
             ),
             child: _imageFile != null
                 ? ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
@@ -263,11 +290,11 @@ class _State extends ConsumerState<PaymentUploadPage> {
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.cloud_upload_outlined, size: 48, color: Colors.grey.shade400),
-                      const SizedBox(height: 8),
-                      Text('Ketuk untuk ambil/pilih foto', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                      Icon(Icons.cloud_upload_outlined, size: 48, color: const Color(0xFF1B6B3A).withOpacity(0.5)),
+                      const SizedBox(height: 12),
+                      const Text('Ketuk untuk ambil/pilih foto', style: TextStyle(color: Color(0xFF1B6B3A), fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      Text('Format JPG, PNG (Max 5MB)', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+                      Text('Format JPG, PNG (Max 5MB)', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                     ],
                   ),
           ),
@@ -376,18 +403,22 @@ class _State extends ConsumerState<PaymentUploadPage> {
 
   Widget _buildTransferBottomBar() {
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(context).padding.bottom + 14),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -4))]),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 16),
+      decoration: BoxDecoration(
+        color: Colors.white, 
+        border: Border(top: BorderSide(color: Colors.grey.shade200))
+      ),
       child: ElevatedButton(
         onPressed: _imageFile == null || _isUploading ? null : _handleUpload,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1B6B3A),
           disabledBackgroundColor: Colors.grey.shade300,
           foregroundColor: Colors.white,
-          elevation: 0,
+          elevation: _imageFile == null ? 0 : 4,
+          shadowColor: const Color(0xFF1B6B3A).withOpacity(0.4),
           padding: const EdgeInsets.symmetric(vertical: 16),
           minimumSize: const Size(double.infinity, 0),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: _isUploading
             ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))

@@ -122,6 +122,12 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B6B3A)),
         useMaterial3: true,
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
       ),
       // Setelan home sudah otomatis mendeteksi Web (untuk admin) atau Mobile (Splash untuk customer)
       home: kIsWeb ? const AdminLoginPage() : const SplashPage(),

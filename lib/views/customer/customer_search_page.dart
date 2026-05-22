@@ -319,9 +319,15 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                // REFAKTOR: sebelumnya Color(0xFFF4F6F9)
-                color: AppColors.backgroundPage,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  )
+                ],
               ),
               child: TextField(
                 controller: _searchController,
@@ -509,6 +515,7 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
         final filtered = fields.where((f) {
           final matchQuery = _searchQuery.isEmpty ||
               f.nama.toLowerCase().contains(_searchQuery.toLowerCase().trim()) ||
+              f.namaVenue.toLowerCase().contains(_searchQuery.toLowerCase().trim()) ||
               f.alamat.toLowerCase().contains(_searchQuery.toLowerCase().trim());
 
           final matchCategory = _selectedCategory == 'Semua' ||
@@ -630,11 +637,10 @@ class _HorizontalFieldCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 16,
               offset: const Offset(0, 4),
             )
           ],

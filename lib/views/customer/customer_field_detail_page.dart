@@ -718,28 +718,29 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   Widget _bottomBar() {
     final hasSel = _selectedTimeIndices.isNotEmpty;
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(context).padding.bottom + 14),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -4))]),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 16),
+      decoration: BoxDecoration(
+        color: Colors.white, 
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+      ),
       child: Row(children: [
         Expanded(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // REFAKTOR: sebelumnya Color(0xFF718096)
           Text(hasSel ? '${_dates[_selectedDateIndex]['full']} • ${_selectedTimeIndices.length} sesi' : 'Pilih jadwal terlebih dahulu',
-              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
           const SizedBox(height: 2),
-          // REFAKTOR: sebelumnya _fmt(_totalHarga) dan Color(0xFF1B6B3A)
-          Text(hasSel ? CurrencyFormatter.format(_totalHarga) : 'Rp -', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
+          Text(hasSel ? CurrencyFormatter.format(_totalHarga) : 'Rp -', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.textDark)),
         ])),
         const SizedBox(width: 16),
         ElevatedButton(
           onPressed: hasSel ? () => _handleBooking() : null,
           style: ElevatedButton.styleFrom(
-            // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
             backgroundColor: AppColors.primary, disabledBackgroundColor: Colors.grey.shade300,
-            foregroundColor: Colors.white, elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            foregroundColor: Colors.white, elevation: hasSel ? 4 : 0,
+            shadowColor: AppColors.primary.withOpacity(0.4),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
-          child: const Text('Pesan Sekarang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          child: const Text('Pesan Sekarang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         ),
       ]),
     );

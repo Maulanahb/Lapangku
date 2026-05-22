@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/field/field_model.dart';
+import 'package:lapangku/models/auth/user_model.dart';
 import 'package:lapangku/controllers/field/field_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
@@ -43,115 +44,25 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
       backgroundColor: AppColors.backgroundPage,
       body: CustomScrollView(
         slivers: [
-          // Elegant Header
-          SliverAppBar(
-            expandedHeight: 220.0,
-            floating: false,
+          // Custom Elegant Header (Greeting + Sticky Search Bar)
+          SliverPersistentHeader(
             pinned: true,
-            backgroundColor: AppColors.primary,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.primaryDark, AppColors.primary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Halo, ${user?.nama ?? 'Sobat'} 👋',
-                                    style: const TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500),
-                                    maxLines: 1, overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  const Text('Cari Lapangan Favoritmu!',
-                                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Consumer(
-                                  builder: (context, ref, child) {
-                                    final unreadCount = ref.watch(unreadNotificationsCountProvider);
-                                    return Container(
-                                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle),
-                                      child: IconButton(
-                                        icon: Badge(
-                                          isLabelVisible: unreadCount > 0,
-                                          label: Text(unreadCount.toString()),
-                                          backgroundColor: Colors.red,
-                                          child: const Icon(Icons.notifications_none_rounded, color: Colors.white),
-                                        ),
-                                        onPressed: () {
-                                          Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationPage()));
-                                        },
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(width: 12),
-                                GestureDetector(
-                                  onTap: () {
-                                    if (hasAvatar) {
-                                      _showFullScreenPhoto(context, avatarUrl!);
-                                    } else {
-                                      Navigator.pushNamed(context, '/customer-profile');
-                                    }
-                                  },
-                                  child: CircleAvatar(
-                                    radius: 24,
-                                    backgroundColor: Colors.white.withValues(alpha: 0.24),
-                                    backgroundImage: hasAvatar ? NetworkImage(avatarUrl!) : null,
-                                    child: hasAvatar ? null : const Icon(Icons.person, color: Colors.white),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        Container(
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
-                          ),
-                          child: TextField(
-                            readOnly: true,
-                            onTap: () {
-                              Navigator.pushNamed(context, '/search');
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Nama lapangan atau lokasi...',
-                              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
-                              prefixIcon: const Icon(Icons.search, color: AppColors.primary),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            delegate: _HeaderDelegate(
+              expandedHeight: 200.0,
+              collapsedHeight: MediaQuery.of(context).padding.top + 76.0,
+              user: user,
+              avatarUrl: avatarUrl,
+              hasAvatar: hasAvatar,
+              unreadCount: ref.watch(unreadNotificationsCountProvider),
+              onSearchTap: () => Navigator.pushNamed(context, '/search'),
+              onNotificationTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationPage())),
+              onAvatarTap: () {
+                if (hasAvatar) {
+                  _showFullScreenPhoto(context, avatarUrl!);
+                } else {
+                  Navigator.pushNamed(context, '/customer-profile');
+                }
+              },
             ),
           ),
 
@@ -226,8 +137,8 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                         children: [
                           const Icon(Icons.info_outline, color: AppColors.primary, size: 20),
                           const SizedBox(width: 8),
-                          Expanded(
-                            child: const Text(
+                          const Expanded(
+                            child: Text(
                               'Isi alamat di Informasi Pribadi untuk melihat lapangan terdekat',
                               style: TextStyle(color: AppColors.primaryDark, fontSize: 12, fontWeight: FontWeight.w500),
                             ),
@@ -324,6 +235,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
       ),
     );
   }
+
   void _showFullScreenPhoto(BuildContext context, String imageUrl) {
     showDialog(
       context: context,
@@ -359,13 +271,162 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
   }
 }
 
+// ─── Custom Header Delegate ─────────────────────────────────────────────
+class _HeaderDelegate extends SliverPersistentHeaderDelegate {
+  final double expandedHeight;
+  final double collapsedHeight;
+  final UserModel? user;
+  final String? avatarUrl;
+  final bool hasAvatar;
+  final int unreadCount;
+  final VoidCallback onSearchTap;
+  final VoidCallback onNotificationTap;
+  final VoidCallback onAvatarTap;
+
+  _HeaderDelegate({
+    required this.expandedHeight,
+    required this.collapsedHeight,
+    required this.user,
+    required this.avatarUrl,
+    required this.hasAvatar,
+    required this.unreadCount,
+    required this.onSearchTap,
+    required this.onNotificationTap,
+    required this.onAvatarTap,
+  });
+
+  @override
+  double get maxExtent => expandedHeight;
+
+  @override
+  double get minExtent => collapsedHeight;
+
+  @override
+  bool shouldRebuild(covariant _HeaderDelegate oldDelegate) {
+    return user != oldDelegate.user ||
+        avatarUrl != oldDelegate.avatarUrl ||
+        unreadCount != oldDelegate.unreadCount ||
+        hasAvatar != oldDelegate.hasAvatar ||
+        expandedHeight != oldDelegate.expandedHeight ||
+        collapsedHeight != oldDelegate.collapsedHeight;
+  }
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    // Calculate fade-out opacity for greeting section
+    final double fadeEnd = expandedHeight - collapsedHeight - 20.0;
+    double opacity = 1.0 - (shrinkOffset / fadeEnd);
+    opacity = opacity.clamp(0.0, 1.0);
+
+    return Container(
+      color: AppColors.primary,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Greeting Text and Avatar (Fades out on scroll)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 20,
+            left: 24,
+            right: 24,
+            child: Opacity(
+              opacity: opacity,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Halo, ${user?.nama ?? 'Sobat'} 👋',
+                          style: const TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        const Text('Cari Lapangan\nFavoritmu!',
+                          style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), shape: BoxShape.circle),
+                        child: IconButton(
+                          icon: Badge(
+                            isLabelVisible: unreadCount > 0,
+                            label: Text(unreadCount.toString()),
+                            backgroundColor: Colors.red,
+                            child: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+                          ),
+                          onPressed: onNotificationTap,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: onAvatarTap,
+                        child: CircleAvatar(
+                          radius: 24,
+                          backgroundColor: Colors.white.withOpacity(0.24),
+                          backgroundImage: hasAvatar ? NetworkImage(avatarUrl!) : null,
+                          child: hasAvatar ? null : const Icon(Icons.person, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Sticky Search Bar (always visible at bottom)
+          Positioned(
+            bottom: 16,
+            left: 24,
+            right: 24,
+            child: Container(
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: onSearchTap,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search, color: AppColors.primary, size: 22),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Nama lapangan atau lokasi...',
+                          style: TextStyle(color: Colors.grey.shade400, fontSize: 15),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Field Card Widget ──────────────────────────────────────────────────
 class _FieldCard extends StatelessWidget {
   final FieldModel field;
   final double? distanceInMeters;
 
   const _FieldCard({required this.field, this.distanceInMeters});
-
-  // _formatHarga dihapus — gunakan CurrencyFormatter.formatShort() dari shared/utils
 
   @override
   Widget build(BuildContext context) {
