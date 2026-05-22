@@ -51,7 +51,7 @@ final bookingDetailProvider =
 /// Dipakai di halaman detail booking agar status selalu up-to-date.
 /// Usage: ref.watch(activeBookingStreamProvider('bookingDocId'))
 final activeBookingStreamProvider =
-    StreamProvider.family<BookingModel?, String>((ref, bookingId) {
+    StreamProvider.autoDispose.family<BookingModel?, String>((ref, bookingId) {
   final service = ref.watch(bookingServiceProvider);
   return service.streamBooking(bookingId);
 });

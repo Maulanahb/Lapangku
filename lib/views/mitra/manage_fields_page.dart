@@ -187,56 +187,12 @@ class _ManageFieldsPageState extends ConsumerState<ManageFieldsPage> {
             padding: const EdgeInsets.all(20),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(field.namaLapangan,
-                      style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.2)),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, color: Color(0xFF64748B)),
-                    onSelected: (value) async {
-                      if (value == 'delete') {
-                        final confirm = await ConfirmationDialog.show(
-                          context: context,
-                          title: 'Hapus Lapangan',
-                          message:
-                              'Apakah Anda yakin ingin menghapus lapangan ini?',
-                          confirmText: 'Hapus',
-                          isDestructive: true,
-                        );
-                        if (confirm == true) {
-                          await ref
-                              .read(mitraFieldProvider.notifier)
-                              .deleteField(field.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Lapangan berhasil dihapus')),
-                            );
-                          }
-                        }
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_outline,
-                                color: Colors.red, size: 20),
-                            SizedBox(width: 8),
-                            Text('Hapus Lapangan',
-                                style: TextStyle(color: Colors.red)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              // Bagian Judul: Titik 3 (PopupMenuButton) sudah dihapus dari sini
+              Text(field.namaLapangan,
+                  style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.2)),
               const SizedBox(height: 12),
               Row(children: [
                 Container(
@@ -364,28 +320,38 @@ class _ManageFieldsPageState extends ConsumerState<ManageFieldsPage> {
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12))))),
                     const SizedBox(width: 12),
+                    // Mengubah Tombol Jadwal menjadi Tombol Hapus Lapangan
                     Expanded(
                         child: ElevatedButton.icon(
-                            onPressed: () {},
-                            icon: Icon(
-                                isActive
-                                    ? Icons.calendar_today_rounded
-                                    : Icons.calendar_month_outlined,
-                                size: 18),
-                            label: Text(isActive ? 'Lihat Jadwal' : 'Jadwal'),
+                            onPressed: () async {
+                              final confirm = await ConfirmationDialog.show(
+                                context: context,
+                                title: 'Hapus Lapangan',
+                                message:
+                                    'Apakah Anda yakin ingin menghapus lapangan ini?',
+                                confirmText: 'Hapus',
+                                isDestructive: true,
+                              );
+                              if (confirm == true) {
+                                await ref
+                                    .read(mitraFieldProvider.notifier)
+                                    .deleteField(field.id);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Lapangan berhasil dihapus')),
+                                  );
+                                }
+                              }
+                            },
+                            icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                            label: const Text('Hapus'),
                             style: ElevatedButton.styleFrom(
-                                backgroundColor: isActive
-                                    ? const Color(0xFFEBF5FF)
-                                    : Colors.white,
-                                foregroundColor: isActive
-                                    ? const Color(0xFF1E40AF)
-                                    : Colors.grey[400],
+                                backgroundColor: const Color(0xFFFEE8E7),
+                                foregroundColor: const Color(0xFFE04443),
                                 elevation: 0,
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 12),
-                                side: !isActive
-                                    ? BorderSide(color: Colors.grey[100]!)
-                                    : BorderSide.none,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12))))),
                   ])),

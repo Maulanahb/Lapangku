@@ -9,7 +9,6 @@ import 'package:lapangku/standards/models/booking_status.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 import 'package:lapangku/views/mitra/mitra_offline_booking_page.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 
 class MitraBookingListPage extends ConsumerStatefulWidget {
@@ -118,8 +117,8 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildBookingList(null),
-                _buildBookingList('menunggu_konfirmasi'),
+                _buildBookingList('semua'),
+                _buildBookingList('menunggu'),
                 _buildBookingList('dikonfirmasi'),
                 _buildBookingList('selesai'),
               ],
@@ -219,15 +218,29 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
     );
   }
 
-  Widget _buildBookingList(String? statusFilter) {
-    final bookingsAsync = ref.watch(MitraBookingStreamProvider(statusFilter));
+  Widget _buildBookingList(String filterKey) {
+    // Selalu fetch semua booking, lalu filter di lokal agar efisien & mendukung logika OR
+    final bookingsAsync = ref.watch(MitraBookingStreamProvider(null));
 
     return bookingsAsync.when(
       data: (bookings) {
         final filteredBookings = bookings.where((b) {
+          // 1. Text Search Filter
           final query = _searchController.text.toLowerCase();
-          return b.userName.toLowerCase().contains(query) ||
+          final matchesSearch = b.userName.toLowerCase().contains(query) ||
               b.bookingId.toLowerCase().contains(query);
+          if (!matchesSearch) return false;
+
+          // 2. Tab Filter
+          final status = b.status.toLowerCase();
+          if (filterKey == 'menunggu') {
+            return status == 'menunggu_konfirmasi' || (b.isRescheduleRequested && b.rescheduleStatus == 'pending');
+          } else if (filterKey == 'dikonfirmasi') {
+            return status == 'dikonfirmasi' && !(b.isRescheduleRequested && b.rescheduleStatus == 'pending');
+          } else if (filterKey == 'selesai') {
+            return status == 'selesai';
+          }
+          return true; // 'semua'
         }).toList();
 
         switch (_selectedSort) {
@@ -551,7 +564,7 @@ class _BookingCard extends ConsumerWidget {
                 ],
               ),
             ),
-          if (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending')
+          if (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending' && booking.status == BookingStatus.dikonfirmasi.firestoreValue)
             _buildRescheduleRequestUI(context, ref, booking),
         ],
       ),
