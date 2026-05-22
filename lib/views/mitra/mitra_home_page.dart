@@ -8,6 +8,8 @@ import 'package:lapangku/controllers/mitra/mitra_booking_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
 
+// PASTIKAN import model BookingModel di bawah ini sudah benar jalurnya
+import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/views/mitra/mitra_booking_list_page.dart';
 import 'package:intl/intl.dart';
 
@@ -143,10 +145,8 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
   }
 
   Widget _buildWelcomeSection() {
-    // Mengambil waktu saat ini
     final now = DateTime.now();
 
-    // Array untuk nama hari dan bulan dalam bahasa Indonesia
     final List<String> days = [
       'Senin',
       'Selasa',
@@ -171,7 +171,6 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
       'Desember'
     ];
 
-    // Membentuk string tanggal yang rapi
     final String currentDate =
         '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} ${now.year}';
 
@@ -180,7 +179,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
           style: TextStyle(
               fontSize: 28, fontWeight: FontWeight.w900, color: Colors.black)),
       const SizedBox(height: 4),
-      Text(currentDate, // <--- Tanggal sekarang otomatis tampil di sini
+      Text(currentDate,
           style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],
@@ -194,7 +193,6 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
     final fieldsAsync = ref.watch(mitraFieldProvider).fields;
     final waitingBookings = ref.watch(mitraWaitingBookingsProvider(_uid));
 
-    // Pre-compute field stats
     int activeCount = 0;
     int totalCount = 0;
     double avgRating = 0.0;
@@ -216,7 +214,6 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
     });
 
     return Column(children: [
-      // ── Row 1: Pesanan & Pendapatan Hari Ini ──
       IntrinsicHeight(
         child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Expanded(
@@ -251,7 +248,6 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
         ]),
       ),
       const SizedBox(height: 12),
-      // ── Row 2: Lapangan Aktif & Rating ──
       IntrinsicHeight(
         child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Expanded(
@@ -316,15 +312,15 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isPressed
-                    ? _primaryGreen.withValues(alpha: 0.3)
+                    ? _primaryGreen.withOpacity(0.3)
                     : Colors.grey[100]!,
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
                     color: isPressed
-                        ? _primaryGreen.withValues(alpha: 0.18)
-                        : Colors.black.withValues(alpha: 0.02),
+                        ? _primaryGreen.withOpacity(0.18)
+                        : Colors.black.withOpacity(0.02),
                     blurRadius: isPressed ? 18 : 10,
                     spreadRadius: isPressed ? 2 : 0,
                     offset: const Offset(0, 4))
@@ -481,7 +477,6 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
       );
     }
 
-    // Tampilkan pesanan paling baru yang menunggu
     final booking = waitingBookings.first;
 
     return Container(
@@ -489,10 +484,10 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
       decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
+          border: Border.all(color: Colors.black.withOpacity(0.02)),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
+                color: Colors.black.withOpacity(0.06),
                 blurRadius: 24,
                 spreadRadius: 0,
                 offset: const Offset(0, 8))
@@ -501,7 +496,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
         Row(children: [
           CircleAvatar(
             radius: 24,
-            backgroundColor: _primaryGreen.withValues(alpha: 0.1),
+            backgroundColor: _primaryGreen.withOpacity(0.1),
             child: Text(
               booking.userName[0].toUpperCase(),
               style: TextStyle(
@@ -539,6 +534,25 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                       fontWeight: FontWeight.bold))),
         ]),
         const SizedBox(height: 16),
+        if (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending') ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF7ED),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFFFEDD5)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.edit_calendar_rounded, color: Color(0xFFEA580C), size: 14),
+                SizedBox(width: 6),
+                Text('PENGAJUAN RESCHEDULE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFF9A3412))),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -601,19 +615,23 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
             ),
         ]),
         const SizedBox(height: 20),
-        _buildActionButtons(booking.id),
+        _buildActionButtons(booking),
       ]),
     );
   }
 
-  Widget _buildActionButtons(String bookingId) {
+  // Baris yang sebelumnya error sekarang sudah aman jika BookingModel di-import dengan benar
+  Widget _buildActionButtons(BookingModel booking) {
+    final bookingId = booking.id;
     final isMutating =
         ref.watch(MitraBookingActionsProvider).contains(bookingId);
+    
+    final isReschedule = booking.isRescheduleRequested && booking.rescheduleStatus == 'pending';
 
     return Row(children: [
       Expanded(
         child: ElevatedButton(
-          onPressed: isMutating ? null : () => _handleReject(bookingId),
+          onPressed: isMutating ? null : () => isReschedule ? _handleRejectReschedule(bookingId) : _handleReject(bookingId),
           style: ElevatedButton.styleFrom(
             backgroundColor: _bgLightRed,
             foregroundColor: _textRed,
@@ -623,14 +641,14 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
             ),
             minimumSize: const Size(double.infinity, 50),
           ),
-          child: const Text('Tolak',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+          child: Text(isReschedule ? 'Tolak' : 'Tolak',
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
         ),
       ),
       const SizedBox(width: 12),
       Expanded(
         child: ElevatedButton(
-          onPressed: isMutating ? null : () => _handleConfirm(bookingId),
+          onPressed: isMutating ? null : () => isReschedule ? _handleApproveReschedule(bookingId) : _handleConfirm(bookingId),
           style: ElevatedButton.styleFrom(
             backgroundColor: _primaryGreen,
             foregroundColor: Colors.white,
@@ -649,8 +667,8 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                     color: Colors.white,
                   ),
                 )
-              : const Text('Konfirmasi',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+              : Text(isReschedule ? 'Konfirmasi' : 'Konfirmasi',
+                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
         ),
       ),
     ]);
@@ -674,12 +692,45 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
   }
 
   Future<void> _handleReject(String id) async {
-    // Tampilkan dialog alasan penolakan jika perlu
     try {
       await ref.read(MitraBookingActionsProvider.notifier).rejectBooking(id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Pesanan berhasil ditolak')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menolak: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleApproveReschedule(String id) async {
+    try {
+      await ref.read(MitraBookingActionsProvider.notifier).approveReschedule(id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reschedule berhasil disetujui')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menyetujui: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleRejectReschedule(String id) async {
+    try {
+      await ref.read(MitraBookingActionsProvider.notifier).rejectReschedule(id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reschedule berhasil ditolak')),
         );
       }
     } catch (e) {
@@ -701,7 +752,6 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
   Widget _buildRevenueSummarySection() {
     final weeklyData = ref.watch(mitraRevenueWeeklyProvider(_uid));
 
-    // Calculate total 7 days revenue
     int totalWeekly = 0;
     for (var data in weeklyData) {
       totalWeekly += data['revenue'] as int;
@@ -785,7 +835,6 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
     return GestureDetector(
       onTap: () => onTap?.call(day),
       child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-        // Tooltip / label
         AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
           opacity: showTooltip ? 1.0 : 0.0,
@@ -804,7 +853,6 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                     fontSize: 9)),
           ),
         ),
-        // Bar
         AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,
@@ -868,7 +916,6 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
     );
   }
 
-
   String _getInitials(String name) {
     if (name.isEmpty) return 'MT';
     final parts = name.trim().split(' ');
@@ -880,4 +927,3 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
         : name.toUpperCase();
   }
 }
-

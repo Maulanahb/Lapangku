@@ -11,28 +11,36 @@ final bookingServiceProvider = Provider<BookingService>((ref) {
 enum StatsFilter { hariIni, mingguIni, bulanIni, tahunIni }
 
 /// Provider untuk menyimpan state filter aktif
-final statsFilterProvider = StateProvider<StatsFilter>((ref) => StatsFilter.bulanIni);
+final statsFilterProvider =
+    StateProvider<StatsFilter>((ref) => StatsFilter.bulanIni);
 
 /// Provider untuk mengambil semua booking milik mitra secara real-time
-final mitraBookingsProvider = StreamProvider.family<List<BookingModel>, String>((ref, mitraId) {
+final mitraBookingsProvider =
+    StreamProvider.family<List<BookingModel>, String>((ref, mitraId) {
   final bookingService = ref.watch(bookingServiceProvider);
-  
+
   if (mitraId.isEmpty) return Stream.value([]);
   return bookingService.streamMitraBookingsByMitraId(mitraId);
 });
 
 /// Provider untuk pesanan yang menunggu konfirmasi (Waiting List)
-final mitraWaitingBookingsProvider = Provider.family<List<BookingModel>, String>((ref, mitraId) {
+final mitraWaitingBookingsProvider =
+    Provider.family<List<BookingModel>, String>((ref, mitraId) {
   final bookingsAsync = ref.watch(mitraBookingsProvider(mitraId));
   return bookingsAsync.when(
-    data: (bookings) => bookings.where((b) => b.status == 'menunggu_konfirmasi').toList(),
+    data: (bookings) => bookings
+        .where((b) =>
+            b.status == 'menunggu_konfirmasi' ||
+            (b.isRescheduleRequested && b.rescheduleStatus == 'pending'))
+        .toList(),
     loading: () => [],
     error: (e, s) => [],
   );
 });
 
 /// Provider untuk statistik hari ini (Jumlah Pesanan & Total Pendapatan)
-final mitraTodayStatsProvider = Provider.family<Map<String, dynamic>, String>((ref, mitraId) {
+final mitraTodayStatsProvider =
+    Provider.family<Map<String, dynamic>, String>((ref, mitraId) {
   final bookingsAsync = ref.watch(mitraBookingsProvider(mitraId));
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
@@ -44,14 +52,20 @@ final mitraTodayStatsProvider = Provider.family<Map<String, dynamic>, String>((r
         return bDate.isAtSameMomentAs(today);
       }).toList();
 
-      final confirmedToday = todayBookings.where((b) => b.status == 'dikonfirmasi' || b.status == 'selesai').toList();
-      
+      final confirmedToday = todayBookings
+          .where((b) => b.status == 'dikonfirmasi' || b.status == 'selesai')
+          .toList();
+
       int revenue = 0;
       for (var b in confirmedToday) {
         revenue += b.totalBayar;
       }
 
-      final waitingToday = todayBookings.where((b) => b.status == 'menunggu_konfirmasi').toList();
+      final waitingToday = todayBookings
+          .where((b) =>
+              b.status == 'menunggu_konfirmasi' ||
+              (b.isRescheduleRequested && b.rescheduleStatus == 'pending'))
+          .toList();
 
       return {
         'count': todayBookings.length,
@@ -60,13 +74,26 @@ final mitraTodayStatsProvider = Provider.family<Map<String, dynamic>, String>((r
         'waitingCount': waitingToday.length,
       };
     },
-    loading: () => {'count': 0, 'revenue': 0, 'confirmedCount': 0, 'waitingCount': 0, 'isLoading': true},
-    error: (e, s) => {'count': 0, 'revenue': 0, 'confirmedCount': 0, 'waitingCount': 0, 'error': e},
+    loading: () => {
+      'count': 0,
+      'revenue': 0,
+      'confirmedCount': 0,
+      'waitingCount': 0,
+      'isLoading': true
+    },
+    error: (e, s) => {
+      'count': 0,
+      'revenue': 0,
+      'confirmedCount': 0,
+      'waitingCount': 0,
+      'error': e
+    },
   );
 });
 
 /// Provider untuk statistik bulan ini
-final mitraMonthlyStatsProvider = Provider.family<Map<String, dynamic>, String>((ref, mitraId) {
+final mitraMonthlyStatsProvider =
+    Provider.family<Map<String, dynamic>, String>((ref, mitraId) {
   final bookingsAsync = ref.watch(mitraBookingsProvider(mitraId));
   final now = DateTime.now();
 
@@ -76,9 +103,9 @@ final mitraMonthlyStatsProvider = Provider.family<Map<String, dynamic>, String>(
         return b.tanggal.year == now.year && b.tanggal.month == now.month;
       }).toList();
 
-      final confirmedMonth = monthBookings.where(
-        (b) => b.status == 'dikonfirmasi' || b.status == 'selesai'
-      ).toList();
+      final confirmedMonth = monthBookings
+          .where((b) => b.status == 'dikonfirmasi' || b.status == 'selesai')
+          .toList();
 
       int revenue = 0;
       for (var b in confirmedMonth) {
@@ -95,16 +122,18 @@ final mitraMonthlyStatsProvider = Provider.family<Map<String, dynamic>, String>(
     error: (e, s) => {'totalBookings': 0, 'confirmedBookings': 0, 'revenue': 0},
   );
 });
+
 /// Provider Statistik Lanjutan untuk Dashboard Statistik Booking
-final mitraAdvancedStatsProvider = Provider.family<Map<String, dynamic>, String>((ref, mitraId) {
+final mitraAdvancedStatsProvider =
+    Provider.family<Map<String, dynamic>, String>((ref, mitraId) {
   final bookingsAsync = ref.watch(mitraBookingsProvider(mitraId));
   final filter = ref.watch(statsFilterProvider);
-  
+
   return bookingsAsync.when(
     data: (bookings) {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      
+
       // FIX: Debugging print
       print('DEBUG: mitraId: $mitraId');
       print('DEBUG: Total bookings fetched: ${bookings.length}');
@@ -113,13 +142,15 @@ final mitraAdvancedStatsProvider = Provider.family<Map<String, dynamic>, String>
       // 1. Filter bookings berdasarkan range waktu
       List<BookingModel> filteredBookings = bookings.where((b) {
         final bDate = DateTime(b.tanggal.year, b.tanggal.month, b.tanggal.day);
-        
+
         switch (filter) {
           case StatsFilter.hariIni:
             return bDate.isAtSameMomentAs(today);
           case StatsFilter.mingguIni:
-            final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
-            return bDate.isAfter(startOfWeek.subtract(const Duration(seconds: 1)));
+            final startOfWeek =
+                today.subtract(Duration(days: today.weekday - 1));
+            return bDate
+                .isAfter(startOfWeek.subtract(const Duration(seconds: 1)));
           case StatsFilter.bulanIni:
             return bDate.year == now.year && bDate.month == now.month;
           case StatsFilter.tahunIni:
@@ -131,7 +162,8 @@ final mitraAdvancedStatsProvider = Provider.family<Map<String, dynamic>, String>
       print('DEBUG: Filtered bookings count: ${filteredBookings.length}');
 
       // 2. Hitung Total Berhasil (Hero Card)
-      final totalSuccess = filteredBookings.where((b) => b.status == 'selesai').length;
+      final totalSuccess =
+          filteredBookings.where((b) => b.status == 'selesai').length;
 
       // 3. Hitung Statistik Hari Ini (Info Row)
       final countToday = bookings.where((b) {
@@ -140,11 +172,20 @@ final mitraAdvancedStatsProvider = Provider.family<Map<String, dynamic>, String>
       }).length;
 
       // 4. Hitung Kehadiran (Selesai vs Total Konfirmasi/Selesai/Batal)
-      final relevantForAttendance = filteredBookings.where((b) => 
-        ['selesai', 'dikonfirmasi', 'dibatalkan', 'ditolak', 'expired'].contains(b.status)
-      ).length;
-      final attendanceRate = relevantForAttendance > 0 
-          ? (filteredBookings.where((b) => b.status == 'selesai').length / relevantForAttendance * 100).round()
+      final relevantForAttendance = filteredBookings
+          .where((b) => [
+                'selesai',
+                'dikonfirmasi',
+                'dibatalkan',
+                'ditolak',
+                'expired'
+              ].contains(b.status))
+          .length;
+      final attendanceRate = relevantForAttendance > 0
+          ? (filteredBookings.where((b) => b.status == 'selesai').length /
+                  relevantForAttendance *
+                  100)
+              .round()
           : 0;
 
       // 5. Cari Jam Teramai (Berdasarkan slot pertama)
@@ -165,19 +206,31 @@ final mitraAdvancedStatsProvider = Provider.family<Map<String, dynamic>, String>
       });
 
       // 6. Grid Stats
-      final activeCount = filteredBookings.where((b) => b.status == 'dikonfirmasi' || b.status == 'menunggu_konfirmasi').length;
-      final cancelledCount = filteredBookings.where((b) => b.status == 'dibatalkan' || b.status == 'ditolak' || b.status == 'expired').length;
+      final activeCount = filteredBookings
+          .where((b) =>
+              b.status == 'dikonfirmasi' || b.status == 'menunggu_konfirmasi')
+          .length;
+      final cancelledCount = filteredBookings
+          .where((b) =>
+              b.status == 'dibatalkan' ||
+              b.status == 'ditolak' ||
+              b.status == 'expired')
+          .length;
 
       // 7. Aktivitas Mingguan (7 Hari Terakhir)
       List<Map<String, dynamic>> weeklyData = [];
       for (int i = 6; i >= 0; i--) {
         final date = now.subtract(Duration(days: i));
         final dayDate = DateTime(date.year, date.month, date.day);
-        final dayName = DateFormat('EEE', 'id').format(dayDate).toUpperCase(); // SEN, SEL, ...
-        
+        final dayName = DateFormat('EEE', 'id')
+            .format(dayDate)
+            .toUpperCase(); // SEN, SEL, ...
+
         final dayCount = bookings.where((b) {
-          final bDate = DateTime(b.tanggal.year, b.tanggal.month, b.tanggal.day);
-          return bDate.isAtSameMomentAs(dayDate) && (b.status == 'selesai' || b.status == 'dikonfirmasi');
+          final bDate =
+              DateTime(b.tanggal.year, b.tanggal.month, b.tanggal.day);
+          return bDate.isAtSameMomentAs(dayDate) &&
+              (b.status == 'selesai' || b.status == 'dikonfirmasi');
         }).length;
 
         weeklyData.add({
@@ -194,12 +247,16 @@ final mitraAdvancedStatsProvider = Provider.family<Map<String, dynamic>, String>
           slotMap[slot] = (slotMap[slot] ?? 0) + 1;
         }
       }
-      var sortedSlots = slotMap.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      var sortedSlots = slotMap.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
       List<Map<String, dynamic>> popularSlots = [];
       for (int i = 0; i < 3 && i < sortedSlots.length; i++) {
         popularSlots.add({
           'slot': sortedSlots[i].key,
-          'percentage': (sortedSlots[i].value / (filteredBookings.length.clamp(1, 100000)) * 100).round(),
+          'percentage': (sortedSlots[i].value /
+                  (filteredBookings.length.clamp(1, 100000)) *
+                  100)
+              .round(),
         });
       }
       // Fill empty slots if less than 3
@@ -237,7 +294,8 @@ final mitraAdvancedStatsProvider = Provider.family<Map<String, dynamic>, String>
           'count': topFieldCount,
           'badge': 'PALING RAMAI',
         },
-        'filteredCount': filteredBookings.length, // FIX: return filtered count for empty check
+        'filteredCount': filteredBookings
+            .length, // FIX: return filtered count for empty check
       };
     },
     loading: () => {'isLoading': true},
@@ -246,22 +304,25 @@ final mitraAdvancedStatsProvider = Provider.family<Map<String, dynamic>, String>
 });
 
 /// Provider untuk ringkasan pendapatan 7 hari terakhir (tetap dipertahankan jika ada yang pakai)
-final mitraRevenueWeeklyProvider = Provider.family<List<Map<String, dynamic>>, String>((ref, mitraId) {
+final mitraRevenueWeeklyProvider =
+    Provider.family<List<Map<String, dynamic>>, String>((ref, mitraId) {
   final bookingsAsync = ref.watch(mitraBookingsProvider(mitraId));
-  
+
   return bookingsAsync.when(
     data: (bookings) {
       final now = DateTime.now();
       List<Map<String, dynamic>> weeklyData = [];
-      
+
       for (int i = 6; i >= 0; i--) {
         final date = now.subtract(Duration(days: i));
         final dayDate = DateTime(date.year, date.month, date.day);
         final dayName = DateFormat('EEE', 'id').format(dayDate);
 
         final dayBookings = bookings.where((b) {
-          final bDate = DateTime(b.tanggal.year, b.tanggal.month, b.tanggal.day);
-          return bDate.isAtSameMomentAs(dayDate) && (b.status == 'dikonfirmasi' || b.status == 'selesai');
+          final bDate =
+              DateTime(b.tanggal.year, b.tanggal.month, b.tanggal.day);
+          return bDate.isAtSameMomentAs(dayDate) &&
+              (b.status == 'dikonfirmasi' || b.status == 'selesai');
         });
 
         int dayRevenue = 0;
@@ -281,4 +342,3 @@ final mitraRevenueWeeklyProvider = Provider.family<List<Map<String, dynamic>>, S
     error: (e, s) => [],
   );
 });
-

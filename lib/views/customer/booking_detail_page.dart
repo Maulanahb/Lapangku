@@ -10,6 +10,9 @@ import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/models/booking_status.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
+import 'package:lapangku/controllers/field/field_controller.dart';
+import 'package:lapangku/models/field/field_model.dart';
+
 
 class BookingDetailPage extends ConsumerWidget {
   final String bookingId;
@@ -519,7 +522,7 @@ class BookingDetailPage extends ConsumerWidget {
         ),
       ),
       if ((status == BookingStatus.dikonfirmasi || status == BookingStatus.menungguKonfirmasi) && 
-          !booking.isRescheduleRequested && 
+          booking.rescheduleStatus == null && 
           _isEligibleForReschedule(booking)) ...[
         const SizedBox(height: 12),
         OutlinedButton.icon(
@@ -772,168 +775,539 @@ class BookingDetailPage extends ConsumerWidget {
   }
 
   void _showRescheduleSheet(BuildContext context, WidgetRef ref, BookingModel booking) {
-    DateTime? selectedDate;
-    String? selectedStartTime;
-    String? selectedEndTime;
-    final reasonCtrl = TextEditingController();
-
-    // Helper for simple time slots
-    final times = List.generate(17, (i) => '${(i + 6).toString().padLeft(2, '0')}:00');
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (context, setState) {
-          return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      builder: (_) => RescheduleBottomSheet(booking: booking),
+    );
+  }
+}
+
+class RescheduleBottomSheet extends ConsumerStatefulWidget {
+  final BookingModel booking;
+  const RescheduleBottomSheet({super.key, required this.booking});
+
+  @override
+  ConsumerState<RescheduleBottomSheet> createState() => _RescheduleBottomSheetState();
+}
+
+class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
+  DateTime? _selectedDate;
+  final List<String> _selectedSlots = [];
+  final TextEditingController _reasonCtrl = TextEditingController();
+  final List<Map<String, dynamic>> _quickDates = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Default to tomorrow
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    _selectedDate = DateTime(tomorrow.year, tomorrow.month, tomorrow.day);
+
+    final now = DateTime.now();
+    final dayNames = ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'];
+    for (int i = 0; i < 14; i++) {
+      final d = now.add(Duration(days: i));
+      _quickDates.add({
+        'day': dayNames[d.weekday % 7],
+        'date': DateFormat('dd').format(d),
+        'full': DateFormat('EEEE, dd MMM', 'id_ID').format(d),
+        'iso': DateFormat('yyyy-MM-dd').format(d),
+        'dateTime': DateTime(d.year, d.month, d.day),
+      });
+    }
+
+    _reasonCtrl.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _reasonCtrl.dispose();
+    super.dispose();
+  }
+
+  List<String> _generateSlots(FieldModel field) {
+    int startHour = 8;
+    int endHour = 22;
+
+    try {
+      startHour = int.parse(field.jamBuka.split(':')[0]);
+      endHour = int.parse(field.jamTutup.split(':')[0]);
+    } catch (_) {}
+
+    if (endHour <= startHour) {
+      endHour += 24;
+    }
+
+    final int totalSlots = endHour - startHour;
+    return List.generate(totalSlots, (i) {
+      final h = startHour + i;
+      final nextH = h + 1;
+      
+      final hStr = (h % 24).toString().padLeft(2, '0');
+      final nextHStr = (nextH % 24).toString().padLeft(2, '0');
+      
+      return '$hStr:00 - $nextHStr:00';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fieldDetailAsync = ref.watch(fieldDetailProvider(widget.booking.fieldId));
+    final isoDateStr = DateFormat('yyyy-MM-dd').format(_selectedDate!);
+    final bookedSlotsKey = '${widget.booking.fieldId}|$isoDateStr';
+    final bookedSlotsAsync = ref.watch(bookedSlotsProvider(bookedSlotsKey));
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+              ),
             ),
-            padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Icon(Icons.edit_calendar, color: Colors.orange.shade800, size: 24),
+                const SizedBox(width: 8),
+                const Text('Ajukan Reschedule', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Perubahan jadwal harus diajukan maksimal 2 jam sebelum waktu bermain Anda saat ini.',
+              style: TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            _buildCurrentBookingCard(),
+            const SizedBox(height: 20),
+            const Text('Pilih Tanggal Baru', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 8),
+            _buildDatePickerRow(),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Pilih Jam Baru', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Text(
+                    _selectedSlots.isEmpty ? 'Pilih Jam' : '${_selectedSlots.length} Jam Terpilih',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.orange.shade800),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            fieldDetailAsync.when(
+              loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary))),
+              error: (e, _) => Center(child: Text('Gagal memuat detail lapangan: $e', style: const TextStyle(color: Colors.red))),
+              data: (field) {
+                final allSlots = _generateSlots(field);
+
+                return bookedSlotsAsync.when(
+                  loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary))),
+                  error: (e, _) => Center(child: Text('Gagal memuat slot terbooking: $e', style: const TextStyle(color: Colors.red))),
+                  data: (bookedSlots) {
+                    final isSameDay = _selectedDate!.year == widget.booking.tanggal.year &&
+                        _selectedDate!.month == widget.booking.tanggal.month &&
+                        _selectedDate!.day == widget.booking.tanggal.day;
+
+                    final displayBookedSlots = isSameDay
+                        ? bookedSlots.where((s) => !widget.booking.timeSlots.contains(s)).toList()
+                        : bookedSlots;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: List.generate(allSlots.length, (i) {
+                            final slot = allSlots[i];
+                            final isBooked = displayBookedSlots.contains(slot);
+                            
+                            bool isPassed = false;
+                            final today = DateTime.now();
+                            final isToday = _selectedDate!.year == today.year &&
+                                _selectedDate!.month == today.month &&
+                                _selectedDate!.day == today.day;
+                                
+                            if (isToday) {
+                              final startTimeStr = slot.split(' - ')[0];
+                              final parts = startTimeStr.split(':');
+                              if (parts.length >= 2) {
+                                final hour = int.tryParse(parts[0]) ?? 0;
+                                final minute = int.tryParse(parts[1]) ?? 0;
+                                final startDateTime = DateTime(
+                                  _selectedDate!.year,
+                                  _selectedDate!.month,
+                                  _selectedDate!.day,
+                                  hour,
+                                  minute,
+                                );
+                                if (DateTime.now().isAfter(startDateTime)) {
+                                  isPassed = true;
+                                }
+                              }
+                            }
+
+                            final isUnavailable = isBooked || isPassed;
+                            final isSel = _selectedSlots.contains(slot);
+
+                            Color bg, border, txt;
+                            String sub = '';
+                            if (isBooked) {
+                              bg = AppColors.backgroundPage;
+                              border = Colors.grey.shade200;
+                              txt = Colors.grey.shade400;
+                              sub = 'TERPESAN';
+                            } else if (isPassed) {
+                              bg = AppColors.backgroundPage;
+                              border = Colors.grey.shade200;
+                              txt = Colors.grey.shade400;
+                              sub = 'LEWAT';
+                            } else if (isSel) {
+                              bg = Colors.orange.shade700;
+                              border = Colors.orange.shade700;
+                              txt = Colors.white;
+                              sub = 'TERPILIH';
+                            } else {
+                              bg = Colors.white;
+                              border = Colors.orange.shade700;
+                              txt = Colors.orange.shade700;
+                            }
+
+                            return GestureDetector(
+                              onTap: isUnavailable
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        if (isSel) {
+                                          _selectedSlots.remove(slot);
+                                        } else {
+                                          _selectedSlots.add(slot);
+                                        }
+                                      });
+                                    },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: (MediaQuery.of(context).size.width - 58) / 2,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: bg,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: border),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(slot, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: txt)),
+                                    if (sub.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Text(
+                                          sub,
+                                          style: TextStyle(
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.bold,
+                                            color: isSel ? Colors.white70 : txt.withOpacity(0.7),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Total Jam Terpilih: ${_selectedSlots.length} Jam',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: _selectedSlots.isNotEmpty ? Colors.green.shade800 : Colors.orange.shade800,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            const Text('Alasan Reschedule', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _reasonCtrl,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Tuliskan alasan Anda...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.orange.shade700)),
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildSubmitButton(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCurrentBookingCard() {
+    final originalDateStr = DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(widget.booking.tanggal);
+    final originalTimeStr = widget.booking.timeSlots.length > 1
+        ? '${widget.booking.timeSlots.first.split(' - ')[0]} - ${widget.booking.timeSlots.last.split(' - ')[1]}'
+        : widget.booking.timeSlots.first;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Jadwal Saat Ini:', style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '$originalDateStr • $originalTimeStr',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDatePickerRow() {
+    final isCustomDateSelected = _selectedDate != null &&
+        !_quickDates.any((d) => d['dateTime'] == DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day));
+
+    return SizedBox(
+      height: 72,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          ...List.generate(_quickDates.length, (i) {
+            final qDate = _quickDates[i];
+            final isSel = _selectedDate != null &&
+                _selectedDate!.year == qDate['dateTime'].year &&
+                _selectedDate!.month == qDate['dateTime'].month &&
+                _selectedDate!.day == qDate['dateTime'].day;
+
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedDate = qDate['dateTime'];
+                  _selectedSlots.clear();
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 56,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: isSel ? Colors.orange.shade700 : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isSel ? Colors.orange.shade700 : Colors.grey.shade300),
+                  boxShadow: isSel ? [BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : null,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      qDate['day']!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isSel ? Colors.white70 : AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      qDate['date']!,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: isSel ? Colors.white : AppColors.textDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+
+          if (isCustomDateSelected)
+            GestureDetector(
+              onTap: () => _pickCustomDate(),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade700,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.orange.shade700),
+                  boxShadow: [BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'PILIHAN',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('dd MMM', 'id_ID').format(_selectedDate!),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          GestureDetector(
+            onTap: () => _pickCustomDate(),
+            child: Container(
+              width: 56,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Center(
-                    child: Container(
-                      width: 40, height: 4,
-                      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                  Icon(Icons.calendar_month, color: AppColors.textSecondary, size: 24),
+                  SizedBox(height: 4),
+                  Text(
+                    'Lainnya',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textSecondary,
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text('Ajukan Reschedule', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
-                  const SizedBox(height: 8),
-                  const Text('Perubahan jadwal harus diajukan maksimal 2 jam sebelum waktu bermain Anda saat ini.', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                  const SizedBox(height: 24),
-                  
-                  // Date Picker
-                  const Text('Pilih Tanggal Baru', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDate ?? DateTime.now().add(const Duration(days: 1)),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 30)),
-                      );
-                      if (date != null) setState(() => selectedDate = date);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(12)),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(selectedDate != null ? DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(selectedDate!) : 'Pilih Tanggal', style: TextStyle(color: selectedDate != null ? Colors.black87 : Colors.grey)),
-                          const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Time Picker (Simple Dropdown)
-                  const Text('Pilih Jam Baru', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(12)),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              isExpanded: true,
-                              hint: const Text('Mulai'),
-                              value: selectedStartTime,
-                              items: times.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                              onChanged: (v) => setState(() => selectedStartTime = v),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('-')),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(12)),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              isExpanded: true,
-                              hint: const Text('Selesai'),
-                              value: selectedEndTime,
-                              items: times.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                              onChanged: (v) => setState(() => selectedEndTime = v),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Reason
-                  const Text('Alasan Reschedule', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: reasonCtrl,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'Tuliskan alasan Anda...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Submit Button
-                  ElevatedButton(
-                    onPressed: () async {
-                      if (selectedDate == null || selectedStartTime == null || selectedEndTime == null || reasonCtrl.text.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Harap lengkapi semua data')));
-                        return;
-                      }
-                      
-                      // Cek durasi (harus sama atau lebih besar? Kita asumsikan format durasi tidak diubah total harganya, jadi sebaiknya sama, tapi untuk MVP kita langsung terima)
-                      final timeSlotStr = '$selectedStartTime - $selectedEndTime';
-                      
-                      Navigator.pop(context); // Close sheet
-                      try {
-                        await ref.read(bookingServiceProvider).requestReschedule(
-                          booking.id, 
-                          selectedDate!, 
-                          [timeSlotStr], 
-                          reasonCtrl.text
-                        );
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pengajuan reschedule berhasil dikirim'), backgroundColor: AppColors.primary));
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal: $e'), backgroundColor: AppColors.error));
-                        }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange.shade700, foregroundColor: Colors.white, elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 16), minimumSize: const Size(double.infinity, 0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: const Text('Kirim Pengajuan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ],
               ),
             ),
-          );
-        }
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickCustomDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+    );
+    if (date != null) {
+      setState(() {
+        _selectedDate = DateTime(date.year, date.month, date.day);
+        _selectedSlots.clear();
+      });
+    }
+  }
+
+  Widget _buildSubmitButton(BuildContext context) {
+    final isValid = _selectedDate != null &&
+        _selectedSlots.isNotEmpty &&
+        _reasonCtrl.text.trim().isNotEmpty;
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: isValid
+            ? () async {
+                final orderedSlots = List<String>.from(_selectedSlots)..sort((a, b) => a.compareTo(b));
+                
+                Navigator.pop(context);
+                try {
+                  await ref.read(bookingServiceProvider).requestReschedule(
+                    widget.booking.id, 
+                    _selectedDate!, 
+                    orderedSlots, 
+                    _reasonCtrl.text.trim()
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Pengajuan reschedule berhasil dikirim'),
+                        backgroundColor: AppColors.primary,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Gagal: $e'),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  }
+                }
+              }
+            : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange.shade700,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          disabledBackgroundColor: Colors.grey.shade300,
+          disabledForegroundColor: Colors.grey.shade500,
+        ),
+        child: const Text('Kirim Pengajuan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
       ),
     );
   }
 }
+
 class _PaymentCountdownText extends StatefulWidget {
   final DateTime batasWaktuBayar;
   const _PaymentCountdownText({Key? key, required this.batasWaktuBayar}) : super(key: key);

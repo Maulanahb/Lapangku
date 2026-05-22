@@ -236,7 +236,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
               return status == 'dikonfirmasi' || status == 'aktif';
             }
             if (filterKey == 'menunggu') {
-              return status == 'menunggu_konfirmasi';
+              return status == 'menunggu_konfirmasi' || (b.isRescheduleRequested && b.rescheduleStatus == 'pending');
             }
             return status == filterKey;
           }).toList();
@@ -356,11 +356,17 @@ class _BookingCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Gunakan BookingStatus untuk semua mapping status → UI
-    final status = BookingStatusParsing.fromString(booking.status);
+    final displayStatus = (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending')
+        ? BookingStatus.menungguKonfirmasi.firestoreValue
+        : booking.status;
+    final status = BookingStatusParsing.fromString(displayStatus);
     final dateStr =
         DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
-    final timeStr =
-        booking.timeSlots.isNotEmpty ? booking.timeSlots.first : '-';
+    final timeStr = booking.timeSlots.isEmpty
+        ? '-'
+        : booking.timeSlots.length > 1
+            ? '${booking.timeSlots.first.split(' - ')[0]} - ${booking.timeSlots.last.split(' - ')[1]}'
+            : booking.timeSlots.first;
 
     return GestureDetector(
       onTap: () {

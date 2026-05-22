@@ -507,6 +507,7 @@ class BookingService {
     await _db.collection('bookings').doc(bookingId).update({
       'tanggal': Timestamp.fromDate(booking.rescheduleDate!),
       'timeSlots': booking.rescheduleTimeSlots,
+      'durasi': booking.rescheduleTimeSlots!.length,
       'isRescheduleRequested': false,
       'rescheduleStatus': 'approved',
       'updatedAt': Timestamp.fromDate(DateTime.now()),
