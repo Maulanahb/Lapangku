@@ -112,9 +112,36 @@ class AdminService {
     );
   }
 
+  /// Retrieves a page of users with optional pagination.
+  ///
+  /// [limit] defines the maximum number of documents returned (default 20).
+  /// [startAfter] should be the last document snapshot from the previous page
+  ///   (obtained from a previous query) to continue fetching.
+  Future<List<Map<String, dynamic>>> getUsersPaginated({
+    int limit = 20,
+    DocumentSnapshot? startAfter,
+  }) async {
+    Query query = _firestore.collection('users').limit(limit);
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+    final snap = await query.get();
+    return snap.docs
+        .map((d) => <String, dynamic>{'uid': d.id, ...(d.data() as Map<String, dynamic>)})
+        .toList();
+  }
+
+  // Backward compatible method (returns all users, may be heavy).
   Future<List<Map<String, dynamic>>> getAllUsers() async {
     final snap = await _firestore.collection('users').get();
-    return snap.docs.map((d) => {'uid': d.id, ...d.data()}).toList();
+    return snap.docs
+        .map((d) => <String, dynamic>{'uid': d.id, ...(d.data() as Map<String, dynamic>)})
+        .toList();
+  }
+
+  /// Alias for updateUserStatus — used by AllUsersNotifier.
+  Future<void> updateUserVerifikasi(String uid, String status) async {
+    await updateUserStatus(uid, status);
   }
 
   Future<List<AdminFieldModel>> getAllFields() async {
@@ -149,42 +176,49 @@ class AdminService {
     }
   }
 
-  Future<List<BookingModel>> getAllBookings() async {
-    final snap = await _firestore
-        .collection('bookings')
-        .orderBy('tanggal', descending: true)
-        .get();
+  /// Retrieves bookings with pagination (limit 20)
+  Future<List<BookingModel>> getAllBookings({
+    int limit = 20,
+    DocumentSnapshot? startAfter,
+  }) async {
+    Query query = _firestore.collection('bookings').limit(limit);
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+    final snap = await query.get();
     return snap.docs.map((d) {
-      final data = d.data();
-      
-      String jamMulai = data['jamMulai'] ?? '';
-      String jamSelesai = data['jamSelesai'] ?? '';
-      
-      if (data['timeSlots'] != null && (data['timeSlots'] as List).isNotEmpty) {
-        final slots = List<String>.from(data['timeSlots']);
-        try {
-          jamMulai = slots.first.split(' - ').first.trim();
-          jamSelesai = slots.last.split(' - ').last.trim();
-        } catch (e) {
-          jamMulai = slots.first;
-          jamSelesai = slots.last;
-        }
-      }
-
+      final data = d.data() as Map<String, dynamic>;
       return BookingModel(
         bookingId: d.id,
         namaLapangan: data['fieldName'] ?? data['namaLapangan'] ?? '',
         namaPenyewa: data['userName'] ?? data['namaPenyewa'] ?? '',
         tanggal: (data['tanggal'] as Timestamp).toDate(),
-        jamMulai: jamMulai,
-        jamSelesai: jamSelesai,
+        jamMulai: data['jamMulai'] ?? '',
+        jamSelesai: data['jamSelesai'] ?? '',
         totalHarga: (data['totalBayar'] ?? data['totalHarga'] ?? 0) as int,
         status: data['status'] ?? 'menunggu',
       );
     }).toList();
   }
 
-  Future<void> updateUserVerifikasi(String uid, String status) async {
+  /// Retrieves users with pagination (limit 20)
+  Future<List<Map<String, dynamic>>> getAllUsersPaginated({
+    int limit = 20,
+    DocumentSnapshot? startAfter,
+  }) async {
+    Query query = _firestore.collection('users').limit(limit);
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+    final snap = await query.get();
+    return snap.docs
+        .map((d) => <String, dynamic>{'uid': d.id, ...(d.data() as Map<String, dynamic>)})
+        .toList();
+  }
+
+
+  // Existing methods remain unchanged
+  Future<void> updateUserStatus(String uid, String status) async {
     await _firestore
         .collection('users')
         .doc(uid)
