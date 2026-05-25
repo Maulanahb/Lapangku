@@ -531,22 +531,27 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
           return matchQuery && matchCategory && matchTipe && matchFacilities;
         }).toList();
 
+        // Hitung jarak SEKALI ke Map — dipakai untuk sorting DAN render card.
+        // Menghindari pemanggilan Geolocator.distanceBetween() 2x per lapangan.
+        final Map<String, double> distances = {};
+        if (_currentPosition != null) {
+          for (final f in filtered) {
+            distances[f.id] = Geolocator.distanceBetween(
+              _currentPosition!.latitude, _currentPosition!.longitude,
+              f.latitude, f.longitude,
+            );
+          }
+        }
+
         if (_sortBy == 'Termurah') {
           filtered.sort((a, b) => a.hargaPerJam.compareTo(b.hargaPerJam));
         } else if (_sortBy == 'Harga Tertinggi') {
           filtered.sort((a, b) => b.hargaPerJam.compareTo(a.hargaPerJam));
         } else if (_sortBy == 'Rating Tertinggi') {
           filtered.sort((a, b) => b.ratingAvg.compareTo(a.ratingAvg));
-        } else if (_sortBy == 'Terdekat' && _currentPosition != null) {
-          filtered.sort((a, b) {
-            final distA = Geolocator.distanceBetween(
-                _currentPosition!.latitude, _currentPosition!.longitude,
-                a.latitude, a.longitude);
-            final distB = Geolocator.distanceBetween(
-                _currentPosition!.latitude, _currentPosition!.longitude,
-                b.latitude, b.longitude);
-            return distA.compareTo(distB);
-          });
+        } else if (_sortBy == 'Terdekat' && distances.isNotEmpty) {
+          filtered.sort((a, b) =>
+              (distances[a.id] ?? 0).compareTo(distances[b.id] ?? 0));
         }
 
         if (filtered.isEmpty) {
@@ -572,13 +577,10 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final field = filtered[index];
-                    double? distanceInMeters;
-                    if (_currentPosition != null) {
-                      distanceInMeters = Geolocator.distanceBetween(
-                          _currentPosition!.latitude, _currentPosition!.longitude,
-                          field.latitude, field.longitude);
-                    }
-                    return _HorizontalFieldCard(field: field, distanceInMeters: distanceInMeters);
+                    return _HorizontalFieldCard(
+                      field: field,
+                      distanceInMeters: distances[field.id],
+                    );
                   },
                 ),
               ),

@@ -263,26 +263,19 @@ class MitraService {
 
     final fieldIds = fields.map((e) => e.id).toList();
 
-    List<BookingModel> allBookings = [];
+    // Filter langsung di Firestore (server-side) menggunakan mitraId dan rentang tanggal.
+    // Menghindari mendownload SEMUA riwayat booking mitra sejak awal dibuat.
+    final snap = await _db
+        .collection('bookings')
+        .where('mitraId', isEqualTo: MitraId)
+        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('tanggal', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+        .get();
 
-    for (int i = 0; i < fieldIds.length; i += AppConstants.firestoreWhereInLimit) {
-      final chunk = fieldIds.sublist(
-          i, i + AppConstants.firestoreWhereInLimit > fieldIds.length ? fieldIds.length : i + AppConstants.firestoreWhereInLimit);
-      final snap = await _db
-          .collection('bookings')
-          .where('fieldId', whereIn: chunk)
-          .get();
-
-      allBookings.addAll(snap.docs.map((d) => BookingModel.fromFirestore(d)));
-    }
+    final allBookings = snap.docs.map((d) => BookingModel.fromFirestore(d)).toList();
 
     final validBookings = allBookings.where((b) {
-      final isDateValid =
-          b.tanggal.isAfter(startDate.subtract(const Duration(days: 1))) &&
-              b.tanggal.isBefore(endDate.add(const Duration(days: 1)));
-
-      return isDateValid &&
-          (b.status == 'dikonfirmasi' || b.status == 'selesai');
+      return b.status == 'dikonfirmasi' || b.status == 'selesai';
     }).toList();
 
     int totalRevenue = 0;

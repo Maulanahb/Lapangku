@@ -480,9 +480,13 @@ class BookingLifecycleService {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
+    // Filter tanggal di Firestore (server-side) agar hanya booking pada
+    // tanggal yang diminta yang diambil. Menghindari kebocoran reads yang mahal.
     final snap = await _db
         .collection('bookings')
         .where('fieldId', isEqualTo: fieldId)
+        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('tanggal', isLessThan: Timestamp.fromDate(endOfDay))
         .get();
 
     final bookedSlots = <String>[];
@@ -490,10 +494,6 @@ class BookingLifecycleService {
 
     for (final doc in snap.docs) {
       final data = doc.data();
-
-      final tanggal = (data['tanggal'] as Timestamp?)?.toDate();
-      if (tanggal == null) continue;
-      if (tanggal.isBefore(startOfDay) || tanggal.isAfter(endOfDay)) continue;
 
       final status = data['status'] ?? '';
       // Skip terminal states (tidak memblokir slot)
@@ -546,17 +546,19 @@ class BookingLifecycleService {
     });
   }
 
-  /// Get semua booking milik user (Customer).
-  Future<List<BookingModel>> getUserBookings(String userId) async {
+  /// Get booking milik user (Customer).
+  ///
+  /// Menggunakan orderBy + limit agar tidak mendownload seluruh riwayat
+  /// booking sejak akun dibuat. Default limit 50 booking terbaru.
+  Future<List<BookingModel>> getUserBookings(String userId, {int limit = 50}) async {
     final snap = await _db
         .collection('bookings')
         .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
         .get();
 
-    final bookings =
-        snap.docs.map((doc) => BookingModel.fromFirestore(doc)).toList();
-    bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return bookings;
+    return snap.docs.map((doc) => BookingModel.fromFirestore(doc)).toList();
   }
 
   /// Delete booking (hard delete, hanya untuk Admin atau sistem).

@@ -10,7 +10,6 @@ import 'package:lapangku/standards/widgets/cached_image_widget.dart';
 import 'package:lapangku/standards/widgets/shimmer_loading.dart';
 import 'package:lapangku/controllers/notification/notification_controller.dart';
 import 'package:lapangku/views/customer/notification_page.dart';
-import 'package:geolocator/geolocator.dart';
 
 class CustomerHomePage extends ConsumerStatefulWidget {
   const CustomerHomePage({super.key});
@@ -33,7 +32,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final fieldsAsync = ref.watch(fieldsProvider);
+    final fieldsAsync = ref.watch(sortedFieldsWithDistanceProvider);
     final userAsync = ref.watch(authStateProvider);
     final user = userAsync.value;
 
@@ -58,7 +57,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
               onNotificationTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationPage())),
               onAvatarTap: () {
                 if (hasAvatar) {
-                  _showFullScreenPhoto(context, avatarUrl!);
+                  _showFullScreenPhoto(context, avatarUrl);
                 } else {
                   Navigator.pushNamed(context, '/customer-profile');
                 }
@@ -175,10 +174,11 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
               ),
             ),
             error: (e, _) => SliverFillRemaining(child: Center(child: Text('Terjadi kesalahan:\n$e', textAlign: TextAlign.center))),
-            data: (fields) {
-              final filtered = fields.where((f) {
+            data: (fieldsWithDistance) {
+              // Filter berdasarkan kategori (operasi ringan, aman di build)
+              final filtered = fieldsWithDistance.where((fwd) {
                 final matchCat = _selectedCategory == 'Semua' ||
-                    f.kategori.toLowerCase().trim() == _selectedCategory.toLowerCase().trim();
+                    fwd.field.kategori.toLowerCase().trim() == _selectedCategory.toLowerCase().trim();
                 return matchCat;
               }).toList();
 
@@ -188,40 +188,16 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                 );
               }
 
-              if (user?.alamatLatLng != null) {
-                filtered.sort((a, b) {
-                  final distA = Geolocator.distanceBetween(
-                    user!.alamatLatLng!.latitude,
-                    user.alamatLatLng!.longitude,
-                    a.latitude,
-                    a.longitude,
-                  );
-                  final distB = Geolocator.distanceBetween(
-                    user.alamatLatLng!.latitude,
-                    user.alamatLatLng!.longitude,
-                    b.latitude,
-                    b.longitude,
-                  );
-                  return distA.compareTo(distB);
-                });
-              }
+              // Jarak & sorting sudah dihitung di sortedFieldsWithDistanceProvider,
+              // tidak perlu menghitung ulang di sini.
 
               return SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      final field = filtered[index];
-                      double? distance;
-                      if (user?.alamatLatLng != null) {
-                        distance = Geolocator.distanceBetween(
-                          user!.alamatLatLng!.latitude,
-                          user.alamatLatLng!.longitude,
-                          field.latitude,
-                          field.longitude,
-                        );
-                      }
-                      return _FieldCard(field: field, distanceInMeters: distance);
+                      final fwd = filtered[index];
+                      return _FieldCard(field: fwd.field, distanceInMeters: fwd.distanceInMeters);
                     },
                     childCount: filtered.length,
                   ),

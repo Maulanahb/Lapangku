@@ -228,6 +228,40 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
 
   Widget _headerInfo() {
     final f = widget.field;
+    final now = TimeOfDay.now();
+    bool isOpen = false;
+    try {
+      final openParts = f.jamBuka.split(':');
+      final closeParts = f.jamTutup.split(':');
+      final openHour = int.parse(openParts[0]);
+      final openMin = int.parse(openParts[1]);
+      final closeHour = int.parse(closeParts[0]);
+      final closeMin = int.parse(closeParts[1]);
+
+      final nowMin = now.hour * 60 + now.minute;
+      final startMin = openHour * 60 + openMin;
+      var endMin = closeHour * 60 + closeMin;
+      
+      // Handle cases where closing time is past midnight (e.g., 08:00 - 02:00)
+      if (endMin <= startMin) {
+        endMin += 24 * 60;
+      }
+      
+      // Also adjust nowMin if we are past midnight and closing is past midnight
+      var adjustedNowMin = nowMin;
+      if (endMin > 24 * 60 && nowMin < startMin) {
+         adjustedNowMin += 24 * 60;
+      }
+
+      isOpen = adjustedNowMin >= startMin && adjustedNowMin <= endMin;
+    } catch (_) {
+      isOpen = true; // Fallback
+    }
+
+    final statusColor = isOpen ? AppColors.primary : Colors.red;
+    final statusBgColor = isOpen ? AppColors.primaryLight : Colors.red.shade50;
+    final statusText = isOpen ? 'Buka' : 'Tutup';
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -291,12 +325,11 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
-            decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: statusBgColor, borderRadius: BorderRadius.circular(12)),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.circle, size: 8, color: AppColors.primary),
+              Icon(Icons.circle, size: 8, color: statusColor),
               const SizedBox(width: 4),
-              Text('Buka • ${f.jamBuka}-${f.jamTutup}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+              Text('$statusText • ${f.jamBuka}-${f.jamTutup}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor)),
             ]),
           ),
         ]),

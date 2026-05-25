@@ -110,7 +110,7 @@ class _CustomerInfoPageState extends ConsumerState<CustomerInfoPage> {
     LoadingOverlay.show(context, message: 'Menyimpan profil...');
 
     try {
-      await ref.read(customerInfoControllerProvider).updateCustomerProfile(
+      final result = await ref.read(customerInfoControllerProvider).updateCustomerProfile(
         nama: _nameController.text,
         phone: _phoneController.text,
         birthday: _selectedDate,
@@ -121,9 +121,22 @@ class _CustomerInfoPageState extends ConsumerState<CustomerInfoPage> {
 
       if (mounted) {
         LoadingOverlay.dismiss(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data berhasil disimpan'), backgroundColor: Colors.green),
-        );
+
+        if (result.geocodingFailed) {
+          // Profil tetap tersimpan, tapi geocoding gagal → tampilkan peringatan
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profil disimpan, tapi gagal mendapatkan titik koordinat. Alamat tetap tersimpan.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Data berhasil disimpan'), backgroundColor: Colors.green),
+          );
+        }
+
         Navigator.pop(context);
       }
     } catch (e) {

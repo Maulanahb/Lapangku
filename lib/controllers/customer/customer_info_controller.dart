@@ -5,6 +5,15 @@ import 'package:lapangku/services/geolocation_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 
+/// Hasil dari operasi update profil.
+/// Menyertakan flag [geocodingFailed] agar UI bisa menampilkan
+/// pesan informatif jika geocoding gagal (profil tetap tersimpan).
+class ProfileUpdateResult {
+  final bool geocodingFailed;
+
+  const ProfileUpdateResult({this.geocodingFailed = false});
+}
+
 class CustomerInfoController {
   final Ref _ref;
   final GeolocationService _geolocationService = GeolocationService();
@@ -25,7 +34,12 @@ class CustomerInfoController {
     return filledFields / totalFields;
   }
 
-  Future<void> updateCustomerProfile({
+  /// Menyimpan profil customer ke Firestore.
+  ///
+  /// Geocoding dilakukan dengan fallback: jika API gagal (timeout, limit habis,
+  /// sinyal buruk), profil tetap disimpan dan koordinat lama dipertahankan.
+  /// Mengembalikan [ProfileUpdateResult] agar UI bisa menampilkan toast notifikasi.
+  Future<ProfileUpdateResult> updateCustomerProfile({
     required String nama,
     required String phone,
     String? birthday,
@@ -48,19 +62,34 @@ class CustomerInfoController {
     }
 
     GeoPoint? alamatLatLng;
+    bool geocodingFailed = false;
+
     if (address != null && address.trim().isNotEmpty) {
-      // Jika alamat berubah atau diset, kita geocode
       if (user.address != address || user.alamatLatLng == null) {
-        alamatLatLng = await _geolocationService.getCoordinatesFromAddress(address);
+        // Alamat berubah atau belum pernah di-geocode → coba geocoding
+        try {
+          alamatLatLng = await _geolocationService.getCoordinatesFromAddress(address);
+          if (alamatLatLng == null) {
+            // Geocoding berhasil tapi tidak menemukan lokasi → fallback ke koordinat lama
+            geocodingFailed = true;
+            alamatLatLng = user.alamatLatLng;
+          }
+        } catch (e) {
+          // Geocoding error (timeout, API down, sinyal buruk) →
+          // fallback: tetap simpan profil, pertahankan koordinat lama
+          geocodingFailed = true;
+          alamatLatLng = user.alamatLatLng;
+        }
       } else {
-        // Jika tidak berubah, gunakan yang lama
+        // Alamat tidak berubah → gunakan koordinat yang sudah ada
         alamatLatLng = user.alamatLatLng;
       }
     }
 
+    // Standarisasi: gunakan 'nama' saja sebagai field name di Firestore.
+    // Field 'name' (English) tidak lagi ditulis untuk menghindari redundansi data.
     final updatedData = {
       'nama': nama.trim(),
-      'name': nama.trim(), // keep in sync if both are used
       'phone': phone.trim(),
       'birthday': birthday,
       'gender': gender,
@@ -74,9 +103,12 @@ class CustomerInfoController {
 
     // Refresh auth state to get the latest user data
     _ref.invalidate(authStateProvider);
+
+    return ProfileUpdateResult(geocodingFailed: geocodingFailed);
   }
 }
 
 final customerInfoControllerProvider = Provider<CustomerInfoController>((ref) {
   return CustomerInfoController(ref);
 });
+
