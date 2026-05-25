@@ -15,34 +15,100 @@ class AdminService {
     final startOfDay = DateTime(now.year, now.month, now.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    final results = await Future.wait([
-      _firestore.collection('users').where('role', isEqualTo: 'customer').get(),
-      _firestore.collection('mitra').get(),
-      _firestore
-          .collection('bookings')
-          .where('tanggal',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('tanggal', isLessThan: Timestamp.fromDate(endOfDay))
-          .get(),
-      _firestore
-          .collection('bookings')
-          .where('status', isEqualTo: 'selesai')
-          .get(),
-    ]);
+    // 1. Total users (role: customer) count
+    final usersCountSnap = await _firestore
+        .collection('users')
+        .where('role', isEqualTo: 'customer')
+        .count()
+        .get();
+    final totalUsers = usersCountSnap.count ?? 0;
 
-    final totalPendapatan = (results[3] as QuerySnapshot).docs.fold<int>(
-      0,
-      (total, doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        return total + ((data['totalBayar'] ?? data['totalHarga'] ?? 0) as int);
-      },
-    );
+    // 2. Lapangan aktif (mitra collection count)
+    final mitraCountSnap = await _firestore.collection('mitra').count().get();
+    final lapanganAktif = mitraCountSnap.count ?? 0;
+
+    // 3. Pesanan hari ini
+    final todayBookingsSnap = await _firestore
+        .collection('bookings')
+        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('tanggal', isLessThan: Timestamp.fromDate(endOfDay))
+        .count()
+        .get();
+    final pesananHariIni = todayBookingsSnap.count ?? 0;
+
+    // 4. Total Pendapatan — dibaca dari dokumen counter metadata/stats
+    // Dokumen ini diupdate otomatis oleh Cloud Function onBookingUpdated
+    // saat status booking berubah menjadi 'selesai'.
+    int totalPendapatan = 0;
+    try {
+      final statsDoc = await _firestore
+          .collection('metadata')
+          .doc('stats')
+          .get();
+      if (statsDoc.exists) {
+        totalPendapatan = (statsDoc.data()?['totalPendapatan'] ?? 0) as int;
+      }
+    } catch (_) {
+      // Dokumen belum ada, tetap gunakan 0
+    }
+
+    // 5. Booking Status Counts for Donut Chart
+    final selesaiSnap = await _firestore
+        .collection('bookings')
+        .where('status', isEqualTo: 'selesai')
+        .count()
+        .get();
+    final countSelesai = selesaiSnap.count ?? 0;
+
+    final menungguBayarSnap = await _firestore
+        .collection('bookings')
+        .where('status', isEqualTo: 'menunggu_bayar')
+        .count()
+        .get();
+    final countMenungguBayar = menungguBayarSnap.count ?? 0;
+
+    final menungguKonfirmasiSnap = await _firestore
+        .collection('bookings')
+        .where('status', isEqualTo: 'menunggu_konfirmasi')
+        .count()
+        .get();
+    final countMenungguKonfirmasi = menungguKonfirmasiSnap.count ?? 0;
+
+    final dikonfirmasiSnap = await _firestore
+        .collection('bookings')
+        .where('status', isEqualTo: 'dikonfirmasi')
+        .count()
+        .get();
+    final countDikonfirmasi = dikonfirmasiSnap.count ?? 0;
+
+    // dibatalkan, ditolak, expired are counted under "dibatalkan" in donut chart
+    final dibatalkanSnap = await _firestore
+        .collection('bookings')
+        .where('status', isEqualTo: 'dibatalkan')
+        .count()
+        .get();
+    final ditolakSnap = await _firestore
+        .collection('bookings')
+        .where('status', isEqualTo: 'ditolak')
+        .count()
+        .get();
+    final expiredSnap = await _firestore
+        .collection('bookings')
+        .where('status', isEqualTo: 'expired')
+        .count()
+        .get();
+    final countDibatalkan = (dibatalkanSnap.count ?? 0) + (ditolakSnap.count ?? 0) + (expiredSnap.count ?? 0);
 
     return AdminStats(
-      totalUsers: results[0].size,
-      lapanganAktif: results[1].size,
-      pesananHariIni: results[2].size,
+      totalUsers: totalUsers,
+      lapanganAktif: lapanganAktif,
+      pesananHariIni: pesananHariIni,
       totalPendapatan: totalPendapatan,
+      countSelesai: countSelesai,
+      countMenungguBayar: countMenungguBayar,
+      countMenungguKonfirmasi: countMenungguKonfirmasi,
+      countDikonfirmasi: countDikonfirmasi,
+      countDibatalkan: countDibatalkan,
     );
   }
 
@@ -223,9 +289,10 @@ class AdminService {
           .where('tanggal',
               isGreaterThanOrEqualTo: Timestamp.fromDate(start))
           .where('tanggal', isLessThan: Timestamp.fromDate(end))
+          .count()
           .get();
 
-      hasil.add(snap.size);
+      hasil.add(snap.count ?? 0);
     }
     return hasil;
   }

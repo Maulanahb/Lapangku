@@ -234,8 +234,6 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 800;
-    final bookingsAsync = ref.watch(adminAllBookingsProvider);
-    final fieldsAsync = ref.watch(adminAllFieldsProvider);
     final dashboardStats = ref.watch(adminDashboardStatsProvider);
     
     final chartAsync = ref.watch(bookingsChartProvider);
@@ -246,8 +244,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
       child: RefreshIndicator(
         color: _primary,
         onRefresh: () async {
-          ref.refresh(adminAllBookingsProvider);
-          ref.refresh(adminAllFieldsProvider);
+          ref.read(adminStatsProvider.notifier).load();
           ref.read(bookingsChartProvider.notifier).load();
           ref.read(activitiesProvider.notifier).load();
         },
@@ -260,28 +257,31 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
               _buildHeader(context, authState.user?.nama ?? 'Admin'),
               const SizedBox(height: 32),
               
-              if (bookingsAsync.isLoading || fieldsAsync.isLoading)
-                _buildStatsShimmer(isDesktop)
-              else if (bookingsAsync.hasError || fieldsAsync.hasError)
-                _buildError(bookingsAsync.error?.toString() ?? fieldsAsync.error.toString())
-              else
-                _buildStatsGrid(dashboardStats, isDesktop),
-              const SizedBox(height: 24),
-              
-              if (isDesktop)
-                Row(
+              dashboardStats.when(
+                loading: () => _buildStatsShimmer(isDesktop),
+                error: (error, _) => _buildError(error.toString()),
+                data: (stats) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(flex: 3, child: _buildChartCard(chartAsync)),
-                    const SizedBox(width: 24),
-                    Expanded(flex: 2, child: _buildDonutCardWrap(bookingsAsync)),
+                    _buildStatsGrid(stats, isDesktop),
+                    const SizedBox(height: 24),
+                    if (isDesktop)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 3, child: _buildChartCard(chartAsync)),
+                          const SizedBox(width: 24),
+                          Expanded(flex: 2, child: _buildDonutCard(stats)),
+                        ],
+                      )
+                    else ...[
+                      _buildChartCard(chartAsync),
+                      const SizedBox(height: 24),
+                      _buildDonutCard(stats),
+                    ],
                   ],
-                )
-              else ...[
-                _buildChartCard(chartAsync),
-                const SizedBox(height: 24),
-                _buildDonutCardWrap(bookingsAsync),
-              ],
+                ),
+              ),
               const SizedBox(height: 24),
 
               activitiesAsync.when(
@@ -570,22 +570,13 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
     ));
   }
 
-  Widget _buildDonutCardWrap(AsyncValue bookingsAsync) {
-    return bookingsAsync.when(
-      loading: () => Container(height: 334, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12))),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (bookings) => _buildDonutCard(bookings),
-    );
-  }
-
-  Widget _buildDonutCard(bookings) {
-    final list = bookings as List;
-    final selesai   = list.where((b) => b.status == 'selesai').length;
-    final menungguBayar = list.where((b) => b.status == 'menunggu_bayar').length;
-    final menungguKonfirmasi = list.where((b) => b.status == 'menunggu_konfirmasi').length;
-    final dikonfirmasi = list.where((b) => b.status == 'dikonfirmasi').length;
-    final dibatalkan = list.where((b) => b.status == 'dibatalkan' || b.status == 'ditolak' || b.status == 'expired').length;
-    final total = list.length;
+  Widget _buildDonutCard(AdminDashboardStats stats) {
+    final selesai = stats.countSelesai;
+    final menungguBayar = stats.countMenungguBayar;
+    final menungguKonfirmasi = stats.countMenungguKonfirmasi;
+    final dikonfirmasi = stats.countDikonfirmasi;
+    final dibatalkan = stats.countDibatalkan;
+    final total = selesai + menungguBayar + menungguKonfirmasi + dikonfirmasi + dibatalkan;
 
     double pct(int n) => total == 0 ? 0 : (n / total * 100);
 
