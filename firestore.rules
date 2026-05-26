@@ -63,11 +63,8 @@ service cloud.firestore {
     // KOLEKSI: bookings (Transaksi)
     // ==========================================
     match /bookings/{bookingId} {
-      // Hanya customer yang membooking atau mitra yang memiliki lapangan yang bisa melihat
-      allow read: if isAuthenticated() && (
-        resource.data.customerId == request.auth.uid || 
-        resource.data.mitraId == request.auth.uid
-      );
+      // Siapapun yang login bisa membaca booking (untuk mengecek slot waktu yang sudah dipesan)
+      allow read: if isAuthenticated();
       
       // Customer yang membuat booking (pastikan customerId sesuai)
       allow create: if isAuthenticated() && request.resource.data.customerId == request.auth.uid;
