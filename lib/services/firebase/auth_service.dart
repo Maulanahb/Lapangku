@@ -124,14 +124,6 @@ class AuthService {
     // Bersihkan sesi Auth
     await _auth.signOut();
     
-    try {
-      // SANGAT PENTING: Bersihkan cache Firestore agar tidak bentrok saat login akun lain
-      await _db.terminate();
-      await _db.clearPersistence();
-    } catch (e) {
-      print('DEBUG AUTH: Gagal clear persistence: $e');
-    }
-    
     print('DEBUG AUTH: Logout berhasil.');
   }
 

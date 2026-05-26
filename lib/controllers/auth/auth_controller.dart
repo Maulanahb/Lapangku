@@ -112,6 +112,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState();
   }
 
+  void setLoading(bool isLoading) {
+    state = state.copyWith(isLoading: isLoading);
+  }
+
   Future<void> sendPasswordReset(String email) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
