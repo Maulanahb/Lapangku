@@ -445,7 +445,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
           'ownerName': _ownerNameController.text.trim(),
           'businessName': _businessNameController.text.trim(),
           'namaBisnis': _businessNameController.text.trim(),
-          'mitraName': _businessNameController.text.trim(),
+          'mitraName': _ownerNameController.text.trim(),
           'phone': _phoneController.text.trim(),
           'isVerified': false,
           'statusVerifikasi': 'menunggu',

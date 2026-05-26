@@ -90,6 +90,8 @@ class MitraProfileModel {
       'businessName': businessName,
       'namaBisnis': businessName,
       'MitraName': MitraName,
+      'mitraName': MitraName,
+      'ownerName': MitraName,
       'email': email,
       'phone': phone,
       'alamat': alamat,
@@ -116,7 +118,7 @@ class MitraProfileModel {
     return MitraProfileModel(
       id: id,
       businessName: map['businessName'] ?? map['namaBisnis'] ?? map['nama_tempat'] ?? '',
-      MitraName: map['MitraName'] ?? map['ownerName'] ?? map['nama'] ?? '',
+      MitraName: map['MitraName'] ?? map['mitraName'] ?? map['ownerName'] ?? map['nama'] ?? '',
       email: map['email'] ?? '',
       phone: map['phone'] ?? map['whatsapp'] ?? map['telepon'] ?? '',
       alamat: map['alamat'] ?? '',
