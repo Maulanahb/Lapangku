@@ -102,5 +102,13 @@ service cloud.firestore {
       // Payout di-update/delete oleh Admin atau Cloud Functions (ditolak dari client)
       allow update, delete: if false; 
     }
+    
+    // ==========================================
+    // KOLEKSI: notifikasi
+    // ==========================================
+    match /notifikasi/{notificationId} {
+      // Hanya pemilik notifikasi yang bisa membaca, memperbarui (mark as read), atau menghapusnya
+      allow read, update, delete: if isAuthenticated() && resource.data.customer_id == request.auth.uid;
+    }
   }
 }

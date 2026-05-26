@@ -48,8 +48,16 @@ class PushNotificationService {
     _setupNotificationTapHandler();
     _onTokenRefresh();
 
-    // Dapatkan dan simpan token awal
+    // Dapatkan dan simpan token awal jika user sudah logged in
     await _getFCMTokenAndSave();
+
+    // Setup listener agar token disimpan saat user login/register/session restore
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        debugPrint('🔔 [FCM] AuthState changed: User is logged in (${user.uid}), saving FCM token...');
+        _getFCMTokenAndSave();
+      }
+    });
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

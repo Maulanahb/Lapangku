@@ -9,13 +9,6 @@
       ]
     },
     {
-      "collectionGroup": "bookings",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "tanggal", "order": "ASCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "notifikasi",
       "queryScope": "COLLECTION",
       "fields": [
