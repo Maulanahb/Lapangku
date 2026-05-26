@@ -297,64 +297,29 @@ class _ManageFieldsPageState extends ConsumerState<ManageFieldsPage> {
               const SizedBox(height: 20),
               Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(children: [
-                    Expanded(
-                        child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      EditFieldPage(field: field),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.edit_outlined, size: 18),
-                            label: const Text('Edit'),
-                            style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.black87,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                                side: BorderSide(
-                                    color: Colors.grey[200]!, width: 1.5),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12))))),
-                    const SizedBox(width: 12),
-                    // Mengubah Tombol Jadwal menjadi Tombol Hapus Lapangan
-                    Expanded(
-                        child: ElevatedButton.icon(
-                            onPressed: () async {
-                              final confirm = await ConfirmationDialog.show(
-                                context: context,
-                                title: 'Hapus Lapangan',
-                                message:
-                                    'Apakah Anda yakin ingin menghapus lapangan ini?',
-                                confirmText: 'Hapus',
-                                isDestructive: true,
-                              );
-                              if (confirm == true) {
-                                await ref
-                                    .read(mitraFieldProvider.notifier)
-                                    .deleteField(field.id);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text('Lapangan berhasil dihapus')),
-                                  );
-                                }
-                              }
-                            },
-                            icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                            label: const Text('Hapus'),
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFEE8E7),
-                                foregroundColor: const Color(0xFFE04443),
-                                elevation: 0,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12))))),
-                  ])),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  EditFieldPage(field: field),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        label: const Text('Edit'),
+                        style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.black87,
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 12),
+                            side: BorderSide(
+                                color: Colors.grey[200]!, width: 1.5),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)))),
+                  )),
             ])),
       ]),
     );

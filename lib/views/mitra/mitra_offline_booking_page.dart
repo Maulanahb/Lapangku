@@ -110,7 +110,7 @@ class _MitraOfflineBookingPageState
 
   @override
   Widget build(BuildContext context) {
-    final fieldsAsync = ref.watch(MitraFieldListProvider);
+    final fieldsAsync = ref.watch(mitraFieldListProvider);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPage,
