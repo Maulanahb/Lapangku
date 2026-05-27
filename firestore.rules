@@ -26,10 +26,8 @@ service cloud.firestore {
     // KOLEKSI: users (Customer / Admin)
     // ==========================================
     match /users/{userId} {
-      // Semua user terautentikasi boleh READ (admin panel perlu query & count seluruh koleksi)
-      // Keamanan akses admin dijaga di sisi Flutter (pengecekan role saat login)
-      allow read: if isAuthenticated();
-      allow update: if isOwner(userId) || isAdmin();
+      // User bisa baca dan update profilnya sendiri
+      allow read, update: if isOwner(userId);
       // Create diizinkan saat register
       allow create: if (isAuthenticated() && request.auth.uid == userId) || isAdmin();
       allow delete: if isAdmin(); // Admin diperbolehkan delete dari client

@@ -69,7 +69,7 @@ class MitraService {
         final ref = _storage.ref().child('fields/$fieldId/${sfx}_$index.jpg');
 
         final uploadTask = await ref.putFile(file);
-        return await uploadTask.ref.getDownloadURL();
+        return uploadTask.ref.getDownloadURL();
       }).toList();
 
       // Tunggu semua selesai barengan

@@ -337,11 +337,11 @@ class BookingLifecycleService {
     // Hitung total pendapatan dari booking selesai + dikonfirmasi
     int totalPendapatan = 0;
     for (final doc in selesaiDocs.docs) {
-      final data = doc.data() as Map<String, dynamic>;
+      final data = doc.data()! as Map<String, dynamic>;
       totalPendapatan += (data['totalBayar'] ?? data['totalHarga'] ?? 0) as int;
     }
     for (final doc in dikonfirmasiDocs.docs) {
-      final data = doc.data() as Map<String, dynamic>;
+      final data = doc.data()! as Map<String, dynamic>;
       totalPendapatan += (data['totalBayar'] ?? data['totalHarga'] ?? 0) as int;
     }
 

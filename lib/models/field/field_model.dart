@@ -56,7 +56,7 @@ class FieldModel extends BaseFieldModel {
   String get idLapangan => fieldId;
 
   factory FieldModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data()! as Map<String, dynamic>;
     final fotoLapangan = List<String>.from(data['foto_lapangan'] ?? []);
 
     double lat = 0.0;

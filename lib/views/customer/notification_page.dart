@@ -157,7 +157,7 @@ class _NotificationCard extends ConsumerWidget {
       key: Key(notification.id),
       direction: DismissDirection.horizontal,
       confirmDismiss: (direction) async {
-        return await ConfirmationDialog.show(
+        return ConfirmationDialog.show(
           context: context,
           title: 'Hapus Notifikasi',
           message: 'Yakin ingin menghapus notifikasi ini?',

@@ -87,8 +87,9 @@ class BookingModel {
   final String fieldImageUrl;
   final String userId;
   final String userName;
+  final String? userAvatarUrl;
   final DateTime tanggal;
-  final List<String> timeSlots; // ["19:00 - 20:00", "20:00 - 21:00"]
+  final List<String> timeSlots;
   final int durasi; // in hours
   final int hargaLapangan;
   final int biayaLayanan;
@@ -121,6 +122,7 @@ class BookingModel {
     required this.fieldImageUrl,
     required this.userId,
     required this.userName,
+    this.userAvatarUrl,
     required this.tanggal,
     required this.timeSlots,
     required this.durasi,
@@ -190,7 +192,7 @@ class BookingModel {
   // ─── Factory: fromFirestore ───────────────────────────────────────────────
 
   factory BookingModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data()! as Map<String, dynamic>;
 
     // Parse timeSlots — fallback ke format lama (jamMulai/jamSelesai)
     List<String> slots = [];
@@ -220,6 +222,7 @@ class BookingModel {
       fieldImageUrl: data['fieldImageUrl'] ?? '',
       userId: data['userId'] ?? '',
       userName: data['userName'] ?? data['namaPenyewa'] ?? '',
+      userAvatarUrl: data['userAvatarUrl'],
       tanggal: (data['tanggal'] as Timestamp?)?.toDate() ?? DateTime.now(),
       timeSlots: slots,
       durasi: data['durasi'] ?? slots.length,
@@ -271,6 +274,7 @@ class BookingModel {
       'fieldImageUrl': fieldImageUrl,
       'userId': userId,
       'userName': userName,
+      if (userAvatarUrl != null) 'userAvatarUrl': userAvatarUrl,
       'tanggal': Timestamp.fromDate(tanggal),
       'timeSlots': timeSlots,
       'durasi': durasi,
@@ -308,6 +312,7 @@ class BookingModel {
     String? fieldImageUrl,
     String? userId,
     String? userName,
+    String? userAvatarUrl,
     DateTime? tanggal,
     List<String>? timeSlots,
     int? durasi,
@@ -340,6 +345,7 @@ class BookingModel {
       fieldImageUrl: fieldImageUrl ?? this.fieldImageUrl,
       userId: userId ?? this.userId,
       userName: userName ?? this.userName,
+      userAvatarUrl: userAvatarUrl ?? this.userAvatarUrl,
       tanggal: tanggal ?? this.tanggal,
       timeSlots: timeSlots ?? this.timeSlots,
       durasi: durasi ?? this.durasi,

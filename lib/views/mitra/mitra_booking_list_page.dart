@@ -285,13 +285,21 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
   }
 }
 
-final _userAvatarProvider = FutureProvider.family<String?, String>((ref, userId) async {
-  final doc = await FirestoreService.instance.collection('users').doc(userId).get();
-  if (doc.exists) {
-    final data = doc.data();
-    if (data != null) {
-      return data['avatarUrl']?.toString() ?? data['photoUrl']?.toString();
+final _userAvatarProvider = FutureProvider.autoDispose.family<String?, String>((ref, userId) async {
+  if (userId.isEmpty) return null;
+  try {
+    final doc = await FirestoreService.instance.collection('users').doc(userId).get();
+    if (doc.exists) {
+      final data = doc.data();
+      if (data != null) {
+        final url = data['avatarUrl']?.toString() ?? data['photoUrl']?.toString();
+        if (url != null && url.isNotEmpty) {
+          return url;
+        }
+      }
     }
+  } catch (e) {
+    debugPrint('🚨 ERROR FETCH AVATAR (Mungkin masalah Rules/CORS) untuk $userId: $e');
   }
   return null;
 });
@@ -399,17 +407,49 @@ class _BookingCard extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: avatarAsync.when(
-                        data: (avatarUrl) => ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: avatarUrl != null && avatarUrl.isNotEmpty
-                              ? Image.network(
-                                  avatarUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Image.network('https://i.pravatar.cc/150', fit: BoxFit.cover),
-                                )
-                              : Image.network('https://i.pravatar.cc/150', fit: BoxFit.cover),
-                        ),
+                        data: (avatarUrl) {
+                          final initials = booking.userName.trim().isNotEmpty
+                              ? booking.userName
+                                  .trim()
+                                  .split(' ')
+                                  .where((l) => l.isNotEmpty)
+                                  .map((l) => l[0])
+                                  .take(2)
+                                  .join()
+                                  .toUpperCase()
+                              : 'U';
+                          Widget buildPlaceholder() => Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEBF5FF),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  initials,
+                                  style: const TextStyle(
+                                    color: Color(0xFF1E40AF),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              );
+
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: avatarUrl != null && avatarUrl.isNotEmpty
+                                ? Image.network(
+                                    avatarUrl,
+                                    fit: BoxFit.cover,
+                                    width: 48,
+                                    height: 48,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      debugPrint('🚨 ERROR RENDER IMAGE NETWORK: $error');
+                                      return buildPlaceholder();
+                                    },
+                                  )
+                                : buildPlaceholder(),
+                          );
+                        },
                         loading: () => const Center(
                           child: SizedBox(
                             width: 20,
@@ -417,10 +457,33 @@ class _BookingCard extends ConsumerWidget {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         ),
-                        error: (_, __) => ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.network('https://i.pravatar.cc/150', fit: BoxFit.cover),
-                        ),
+                        error: (_, __) {
+                          final initials = booking.userName.trim().isNotEmpty
+                              ? booking.userName
+                                  .trim()
+                                  .split(' ')
+                                  .where((l) => l.isNotEmpty)
+                                  .map((l) => l[0])
+                                  .take(2)
+                                  .join()
+                                  .toUpperCase()
+                              : 'U';
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEBF5FF),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              initials,
+                              style: const TextStyle(
+                                color: Color(0xFF1E40AF),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),

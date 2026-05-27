@@ -155,11 +155,11 @@ class MyApp extends StatelessWidget {
         '/search': (context) => const CustomerSearchPage(),
         '/field-detail': (context) {
           final field =
-              ModalRoute.of(context)!.settings.arguments as FieldModel;
+              ModalRoute.of(context)!.settings.arguments! as FieldModel;
           return CustomerFieldDetailPage(field: field);
         },
         '/booking-confirmation': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments
+          final args = ModalRoute.of(context)!.settings.arguments!
               as Map<String, dynamic>;
           return BookingConfirmationPage(
             field: args['field'] as FieldModel,
@@ -169,12 +169,12 @@ class MyApp extends StatelessWidget {
         },
         '/payment-upload': (context) {
           final booking =
-              ModalRoute.of(context)!.settings.arguments as BookingModel;
+              ModalRoute.of(context)!.settings.arguments! as BookingModel;
           return PaymentUploadPage(booking: booking);
         },
         '/booking-detail': (context) {
           final bookingId =
-              ModalRoute.of(context)!.settings.arguments as String;
+              ModalRoute.of(context)!.settings.arguments! as String;
           return BookingDetailPage(bookingId: bookingId);
         },
       },

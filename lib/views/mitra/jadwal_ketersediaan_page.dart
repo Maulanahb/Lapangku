@@ -230,7 +230,7 @@ class _JadwalKetersediaanPageState extends State<JadwalKetersediaanPage> {
                 // Create a map for quick lookup
                 final firestoreData = <String, Map<String, dynamic>>{};
                 for (var doc in docs) {
-                  final data = doc.data() as Map<String, dynamic>;
+                  final data = doc.data()! as Map<String, dynamic>;
                   firestoreData[data['jam']] = data;
                 }
 
