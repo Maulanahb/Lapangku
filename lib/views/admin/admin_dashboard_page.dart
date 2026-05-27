@@ -400,14 +400,31 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
       ),
     ];
 
-    return GridView.count(
-      crossAxisCount: isDesktop ? 4 : 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      childAspectRatio: isDesktop ? 2.2 : 1.8,
-      children: cards.map((c) => _buildStatCard(c)).toList(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        int crossAxisCount = 4;
+        if (width < 600) {
+          crossAxisCount = 1;
+        } else if (width < 900) {
+          crossAxisCount = 2;
+        } else if (width < 1200) {
+          crossAxisCount = 2; // Can be 2 or 3 depending on preference, 2 is safer for long text
+        }
+
+        // Account for spacing (crossAxisCount - 1) * 16
+        // Small tolerance subtraction to prevent wrap due to rounding
+        final cardWidth = (width - ((crossAxisCount - 1) * 16)) / crossAxisCount - 0.1;
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: cards.map((c) => SizedBox(
+            width: cardWidth,
+            child: _buildStatCard(c),
+          )).toList(),
+        );
+      },
     );
   }
 
@@ -423,7 +440,6 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
@@ -433,6 +449,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
             ),
             child: Icon(data.icon, color: data.isGreen ? Colors.white : data.color, size: 22),
           ),
+          const SizedBox(height: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -462,14 +479,32 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
   }
 
   Widget _buildStatsShimmer(bool isDesktop) {
-    return GridView.count(
-      crossAxisCount: isDesktop ? 4 : 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      childAspectRatio: isDesktop ? 2.2 : 1.8,
-      children: List.generate(4, (_) => Container(decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12)))),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        int crossAxisCount = 4;
+        if (width < 600) {
+          crossAxisCount = 1;
+        } else if (width < 900) {
+          crossAxisCount = 2;
+        } else if (width < 1200) {
+          crossAxisCount = 2;
+        }
+        final cardWidth = (width - ((crossAxisCount - 1) * 16)) / crossAxisCount - 0.1;
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: List.generate(4, (_) => Container(
+            width: cardWidth,
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200, 
+              borderRadius: BorderRadius.circular(12)
+            ),
+          )),
+        );
+      },
     );
   }
 
