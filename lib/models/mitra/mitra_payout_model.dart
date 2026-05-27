@@ -28,7 +28,7 @@ class MitraPayoutModel {
   });
 
   factory MitraPayoutModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data()! as Map<String, dynamic>;
     return MitraPayoutModel(
       id: doc.id,
       mitraId: data['mitraId'] ?? '',

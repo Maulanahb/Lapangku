@@ -431,11 +431,11 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: allItems[0]['type'] == 'url'
-                            ? Image.network(allItems[0]['value'] as String,
+                            ? Image.network(allItems[0]['value']! as String,
                                 width: double.infinity,
                                 height: 180,
                                 fit: BoxFit.cover)
-                            : Image.file(allItems[0]['value'] as File,
+                            : Image.file(allItems[0]['value']! as File,
                                 width: double.infinity,
                                 height: 180,
                                 fit: BoxFit.cover),
@@ -506,11 +506,11 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
                           borderRadius: BorderRadius.circular(12),
                           child: allItems[itemIndex]['type'] == 'url'
                               ? Image.network(
-                                  allItems[itemIndex]['value'] as String,
+                                  allItems[itemIndex]['value']! as String,
                                   width: 70,
                                   height: 70,
                                   fit: BoxFit.cover)
-                              : Image.file(allItems[itemIndex]['value'] as File,
+                              : Image.file(allItems[itemIndex]['value']! as File,
                                   width: 70, height: 70, fit: BoxFit.cover),
                         ),
                         FieldFormWidgets.buildPositionDetector(onTap: () {

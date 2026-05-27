@@ -7,7 +7,6 @@ import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/views/mitra/add_field_page.dart';
 import 'package:lapangku/views/mitra/edit_field_page.dart';
 import 'package:intl/intl.dart';
-import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 
 class ManageFieldsPage extends ConsumerStatefulWidget {
   const ManageFieldsPage({super.key});

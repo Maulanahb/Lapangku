@@ -44,7 +44,7 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
   // Foto lama (dari URL network Firebase)
   List<String> _existingPhotos = [];
   // Foto baru (dari lokal berkas galeri/kamera)
-  List<File> _newPhotos = [];
+  final List<File> _newPhotos = [];
 
   final ImagePicker _picker = ImagePicker();
 

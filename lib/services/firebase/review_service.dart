@@ -7,13 +7,13 @@ final reviewServiceProvider = Provider((ref) => ReviewService());
 final userReviewsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, userId) async {
   ref.keepAlive();
   final service = ref.watch(reviewServiceProvider);
-  return await service.getUserReviews(userId);
+  return service.getUserReviews(userId);
 });
 
 final fieldReviewsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, fieldId) async {
   ref.keepAlive();
   final service = ref.watch(reviewServiceProvider);
-  return await service.getFieldReviews(fieldId);
+  return service.getFieldReviews(fieldId);
 });
 
 class ReviewService {

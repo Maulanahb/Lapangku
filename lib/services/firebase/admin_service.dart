@@ -127,7 +127,7 @@ class AdminService {
     }
     final snap = await query.get();
     return snap.docs
-        .map((d) => <String, dynamic>{'uid': d.id, ...(d.data() as Map<String, dynamic>)})
+        .map((d) => <String, dynamic>{'uid': d.id, ...(d.data()! as Map<String, dynamic>)})
         .toList();
   }
 
@@ -135,7 +135,7 @@ class AdminService {
   Future<List<Map<String, dynamic>>> getAllUsers() async {
     final snap = await _firestore.collection('users').get();
     return snap.docs
-        .map((d) => <String, dynamic>{'uid': d.id, ...(d.data() as Map<String, dynamic>)})
+        .map((d) => <String, dynamic>{'uid': d.id, ...d.data()})
         .toList();
   }
 
@@ -187,7 +187,7 @@ class AdminService {
     }
     final snap = await query.get();
     return snap.docs.map((d) {
-      final data = d.data() as Map<String, dynamic>;
+      final data = d.data()! as Map<String, dynamic>;
       return BookingModel(
         bookingId: d.id,
         namaLapangan: data['fieldName'] ?? data['namaLapangan'] ?? '',
@@ -212,7 +212,7 @@ class AdminService {
     }
     final snap = await query.get();
     return snap.docs
-        .map((d) => <String, dynamic>{'uid': d.id, ...(d.data() as Map<String, dynamic>)})
+        .map((d) => <String, dynamic>{'uid': d.id, ...(d.data()! as Map<String, dynamic>)})
         .toList();
   }
 
@@ -350,7 +350,7 @@ class AdminService {
       // Bookings
       final bookingsSnap = results[0] as QuerySnapshot;
       for (var doc in bookingsSnap.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data()! as Map<String, dynamic>;
         final dynamic t = data['tanggal'];
         DateTime time = DateTime.now();
         if (t is Timestamp) {
@@ -370,7 +370,7 @@ class AdminService {
       // New Owners (Mitra)
       final ownersSnap = results[1] as QuerySnapshot;
       for (var doc in ownersSnap.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data()! as Map<String, dynamic>;
         final dynamic t = data['createdAt'];
         DateTime time = DateTime.now().subtract(const Duration(days: 365)); // Default old
         
