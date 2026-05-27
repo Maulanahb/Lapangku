@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:lapangku/controllers/admin/admin_controller.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:printing/printing.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
 
 class AdminReportsPage extends ConsumerStatefulWidget {
   const AdminReportsPage({super.key});
@@ -34,12 +35,11 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(),
-        _buildTabs(),
         Expanded(
           child: Container(
-            color: const Color(0xFFF5F6FA),
+            color: AppColors.backgroundPage,
             child: bookingsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator(color: _primary)),
+              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
               error: (e, _) => Center(child: Text('Error: $e')),
               data: (bookings) => _buildReportContent(bookings),
             ),
@@ -50,79 +50,117 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
   }
 
   Widget _buildHeader() {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(24, 24, 24, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Laporan Analistik',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF1A1A2E),
-              letterSpacing: -0.5,
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            'Analisis performa platform dan statistik transaksi.',
-            style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabs() {
     final bookingsAsync = ref.read(adminAllBookingsProvider);
     final allBookings = bookingsAsync.value ?? [];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Title row
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildTabItem('Laporan Booking', 'Booking'),
-              const SizedBox(width: 12),
-              _buildTabItem('Laporan Penghasilan', 'Penghasilan'),
-            ],
-          ),
-          Row(
-            children: [
-              OutlinedButton.icon(
-                onPressed: _pickDateRange,
-                icon: const Icon(Icons.calendar_today_outlined, size: 16),
-                label: Text(_selectedDateRange == null 
-                  ? 'Pilih Rentang Waktu' 
-                  : '${DateFormat('dd MMM yy').format(_selectedDateRange!.start)} - ${DateFormat('dd MMM yy').format(_selectedDateRange!.end)}'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.grey.shade700,
-                  side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Laporan Analitik',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textHeading,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Analisis performa platform dan statistik transaksi.',
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+              TextButton.icon(
+                onPressed: () => ref.refresh(adminAllBookingsProvider),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Refresh', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                style: ButtonStyle(
+                  padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+                  backgroundColor: WidgetStateProperty.resolveWith((states) =>
+                      states.contains(WidgetState.hovered) ? AppColors.primary : Colors.grey.shade100),
+                  foregroundColor: WidgetStateProperty.resolveWith((states) =>
+                      states.contains(WidgetState.hovered) ? Colors.white : AppColors.primary),
+                  shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+                  overlayColor: WidgetStateProperty.all(Colors.transparent),
                 ),
               ),
-              if (_selectedDateRange != null)
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.red, size: 18),
-                  onPressed: () => setState(() => _selectedDateRange = null),
-                ),
-              const SizedBox(width: 12),
-              ElevatedButton.icon(
-                onPressed: _isExporting ? null : () => _showExportDialog(allBookings),
-                icon: _isExporting 
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                  : const Icon(Icons.download_rounded, size: 16, color: Colors.white),
-                label: const Text('Ekspor', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Divider
+          Divider(height: 1, color: Colors.grey.shade200),
+          const SizedBox(height: 16),
+          // Tabs + actions row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  _buildTabItem('Laporan Booking', 'Booking'),
+                  const SizedBox(width: 12),
+                  _buildTabItem('Laporan Penghasilan', 'Penghasilan'),
+                ],
+              ),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _pickDateRange,
+                    icon: const Icon(Icons.calendar_today_outlined, size: 16),
+                    label: Text(
+                      _selectedDateRange == null
+                          ? 'Pilih Rentang Waktu'
+                          : '${DateFormat('dd MMM yy').format(_selectedDateRange!.start)} - ${DateFormat('dd MMM yy').format(_selectedDateRange!.end)}',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.grey.shade700,
+                      side: BorderSide(color: Colors.grey.shade300),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    ),
+                  ),
+                  if (_selectedDateRange != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: IconButton(
+                        icon: Icon(Icons.close_rounded, color: Colors.red.shade400, size: 18),
+                        onPressed: () => setState(() => _selectedDateRange = null),
+                        splashRadius: 16,
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(4),
+                      ),
+                    ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: _isExporting ? null : () => _showExportDialog(allBookings),
+                    icon: _isExporting
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.download_rounded, size: 16, color: Colors.white),
+                    label: const Text('Ekspor', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      elevation: 0,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -239,9 +277,9 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
         children: [
           Icon(icon, color: color, size: 24),
           const SizedBox(height: 16),
-          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+          Text(title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E))),
+          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textHeading)),
         ],
       ),
     );
@@ -335,11 +373,11 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
               children: [
                 Text(
                   isRevenue ? 'Rincian Transaksi Selesai' : 'Rincian Booking Terbaru',
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF1A1A2E)),
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textHeading),
                 ),
                 Text(
                   '${bookings.length} Data',
-                  style: const TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.w600),
+                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
                 )
               ],
             ),

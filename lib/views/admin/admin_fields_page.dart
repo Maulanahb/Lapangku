@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/controllers/admin/admin_controller.dart';
 import 'package:lapangku/models/admin/admin_field_model.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
 
 class AdminFieldsPage extends ConsumerStatefulWidget {
   const AdminFieldsPage({super.key});
@@ -12,10 +13,10 @@ class AdminFieldsPage extends ConsumerStatefulWidget {
 }
 
 class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
-  static const _primary = Color(0xFF1B6B3A);
+  static const _primary = AppColors.primary;
   static const _secondary = Color(0xFFE0E7FF);
-  static const _textDark = Color(0xFF1A1A2E);
-  static const _textGrey = Color(0xFF6B7280);
+  static const _textDark = AppColors.textHeading;
+  static const _textGrey = AppColors.textSecondary;
 
   String _filterStatus = 'menunggu';
   String _searchQuery = '';
@@ -32,7 +33,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     final mitrasAsync = ref.watch(adminAllMitrasProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.backgroundPage,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -40,7 +41,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
           Expanded(
             child: mitrasAsync.when(
               loading: () => const Center(
-                  child: CircularProgressIndicator(color: _primary)),
+                  child: CircularProgressIndicator(color: AppColors.primary)),
               error: (e, _) => Center(child: Text('Error: $e')),
               data: (mitras) => _buildContent(mitras),
             ),
@@ -58,12 +59,13 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
 
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
@@ -74,9 +76,10 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                         const Text(
                           'Verifikasi Mitra',
                           style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: _textDark,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.textHeading,
+                            letterSpacing: -0.5,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -100,34 +103,23 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                     const SizedBox(height: 4),
                     const Text(
                       'Tinjau dan setujui pengajuan mitra baru untuk aktif di platform.',
-                      style: TextStyle(fontSize: 14, color: _textGrey),
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
               ),
-              InkWell(
-                onTap: () => ref.read(adminFieldsProvider.notifier).load(),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.refresh, size: 16, color: Color(0xFF166534)),
-                      SizedBox(width: 8),
-                      Text(
-                        'Refresh',
-                        style: TextStyle(
-                          color: Color(0xFF166534),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
+              TextButton.icon(
+                onPressed: () => ref.read(adminFieldsProvider.notifier).load(),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Refresh', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                style: ButtonStyle(
+                  padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+                  backgroundColor: WidgetStateProperty.resolveWith((states) =>
+                      states.contains(WidgetState.hovered) ? AppColors.primary : Colors.grey.shade100),
+                  foregroundColor: WidgetStateProperty.resolveWith((states) =>
+                      states.contains(WidgetState.hovered) ? Colors.white : AppColors.primary),
+                  shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+                  overlayColor: WidgetStateProperty.all(Colors.transparent),
                 ),
               ),
             ],
@@ -137,7 +129,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
           Container(
             height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
+              color: AppColors.backgroundInput,
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextField(
@@ -145,10 +137,10 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: const InputDecoration(
                 hintText: 'Cari mitra...',
-                hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
-                prefixIcon: Icon(Icons.search, color: Color(0xFF9CA3AF), size: 20),
+                hintStyle: TextStyle(color: AppColors.hint, fontSize: 13),
+                prefixIcon: Icon(Icons.search, color: AppColors.hint, size: 20),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 14),
+                contentPadding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
               ),
             ),
           ),
@@ -191,9 +183,9 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : _textGrey,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            fontSize: 13,
+            color: isSelected ? Colors.white : AppColors.textSecondary,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            fontSize: 12,
           ),
         ),
       ),

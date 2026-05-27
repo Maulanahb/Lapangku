@@ -9,6 +9,7 @@ import 'package:lapangku/views/admin/admin_bookings_page.dart';
 import 'package:lapangku/views/admin/admin_users_page.dart';
 import 'package:lapangku/views/admin/admin_reports_page.dart';
 import 'package:lapangku/views/admin/admin_payouts_page.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
 
 class AdminDashboardPage extends ConsumerStatefulWidget {
   const AdminDashboardPage({super.key});
@@ -35,7 +36,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
 
     if (isDesktop) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F6FA),
+        backgroundColor: AppColors.backgroundPage,
         body: Row(
           children: [
             _buildSidebar(),
@@ -51,7 +52,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: AppColors.backgroundPage,
       appBar: AppBar(
         title: const Text('LapangKu Panel Admin'),
         backgroundColor: Colors.white,
@@ -327,9 +328,9 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Dashboard',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF1A1A2E), letterSpacing: -0.3)),
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.textHeading, letterSpacing: -0.5)),
                   const SizedBox(height: 2),
-                  Text(dateStr, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                  Text(dateStr, style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
                 ],
               )
             else
@@ -468,7 +469,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: data.isGreen ? Colors.white : const Color(0xFF1A1A2E),
+                  color: data.isGreen ? Colors.white : AppColors.textHeading,
                 ),
               ),
             ],
@@ -647,7 +648,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                     ],
                 )),
                 Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text('$total', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 26, color: Color(0xFF1A1A2E))),
+                  Text('$total', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 26, color: AppColors.textHeading)),
                   const Text('TOTAL', style: TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1)),
                 ]),
               ]),
@@ -845,7 +846,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Semua Aktivitas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1A1A2E))),
+                  const Text('Semua Aktivitas', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textHeading)),
                   IconButton(
                     onPressed: () => Navigator.pop(ctx),
                     icon: Icon(Icons.close_rounded, color: Colors.grey.shade500),
@@ -1014,7 +1015,7 @@ class _ProfileMenu extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(adminName,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF1A1A2E))),
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textHeading)),
                 Text('Administrator',
                     style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
               ],
@@ -1044,7 +1045,7 @@ class _ProfileMenu extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(adminName,
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF1A1A2E))),
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textHeading)),
                       Text('admin@lapangku.id',
                           style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                     ],

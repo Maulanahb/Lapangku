@@ -28,7 +28,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
         _buildSearchFilter(),
         Expanded(
           child: Container(
-            color: AppColors.backgroundInput,
+            color: AppColors.backgroundPage,
             child: RefreshIndicator(
               color: AppColors.primary,
               onRefresh: () async =>
@@ -70,35 +70,23 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                 'Pantau seluruh transaksi dan status booking.',
                 style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey,
+                    color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500),
               ),
             ],
           ),
-          InkWell(
-            onTap: () => ref.refresh(adminAllBookingsProvider),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.refresh_rounded, color: AppColors.primary, size: 18),
-                  SizedBox(width: 6),
-                  Text(
-                    'Refresh',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
+          TextButton.icon(
+            onPressed: () => ref.refresh(adminAllBookingsProvider),
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Refresh', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            style: ButtonStyle(
+              padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+              backgroundColor: WidgetStateProperty.resolveWith((states) =>
+                  states.contains(WidgetState.hovered) ? AppColors.primary : Colors.grey.shade100),
+              foregroundColor: WidgetStateProperty.resolveWith((states) =>
+                  states.contains(WidgetState.hovered) ? Colors.white : AppColors.primary),
+              shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+              overlayColor: WidgetStateProperty.all(Colors.transparent),
             ),
           ),
         ],

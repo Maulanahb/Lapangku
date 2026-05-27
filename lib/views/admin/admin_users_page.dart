@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/admin/admin_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
 
 class AdminUsersPage extends ConsumerStatefulWidget {
   const AdminUsersPage({super.key});
@@ -25,9 +26,9 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
         _buildSearchFilter(),
         Expanded(
           child: Container(
-            color: const Color(0xFFF5F6FA),
+            color: AppColors.backgroundPage,
             child: RefreshIndicator(
-              color: _primary,
+              color: AppColors.primary,
               onRefresh: () async =>
                   ref.read(allUsersProvider.notifier).load(),
               child: usersAsync.when(
@@ -54,7 +55,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -62,14 +63,14 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF1A1A2E),
+                  color: AppColors.textHeading,
                   letterSpacing: -0.5,
                 ),
               ),
               SizedBox(height: 4),
               Text(
                 'Manajemen akun customer, mitra, dan admin.',
-                style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -90,16 +91,18 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                 ),
                 const SizedBox(width: 12),
               ],
-              ElevatedButton.icon(
+              TextButton.icon(
                 onPressed: () => ref.read(allUsersProvider.notifier).load(),
                 icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Refresh', style: TextStyle(fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey.shade100,
-                  foregroundColor: _primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+                label: const Text('Refresh', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                style: ButtonStyle(
+                  padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+                  backgroundColor: WidgetStateProperty.resolveWith((states) =>
+                      states.contains(WidgetState.hovered) ? AppColors.primary : Colors.grey.shade100),
+                  foregroundColor: WidgetStateProperty.resolveWith((states) =>
+                      states.contains(WidgetState.hovered) ? Colors.white : AppColors.primary),
+                  shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+                  overlayColor: WidgetStateProperty.all(Colors.transparent),
                 ),
               ),
             ],
@@ -119,11 +122,11 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
             onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
             decoration: InputDecoration(
               hintText: 'Cari pengguna...',
-              hintStyle: const TextStyle(color: Color(0xFFADB5BD), fontSize: 13),
+              hintStyle: TextStyle(color: AppColors.hint, fontSize: 13),
               prefixIcon:
-                  const Icon(Icons.search, color: Color(0xFFADB5BD), size: 20),
+                  Icon(Icons.search, color: AppColors.hint, size: 20),
               filled: true,
-              fillColor: const Color(0xFFF0F2F5),
+              fillColor: AppColors.backgroundInput,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               border: OutlineInputBorder(
@@ -146,7 +149,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 7),
                       decoration: BoxDecoration(
-                        color: selected ? _primary : const Color(0xFFF0F2F5),
+                        color: selected ? AppColors.primary : AppColors.backgroundInput,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -154,7 +157,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: selected ? Colors.white : const Color(0xFF718096),
+                          color: selected ? Colors.white : AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -270,10 +273,10 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
-                      color: Color(0xFF1A1A2E),
+                      color: AppColors.textHeading,
                       letterSpacing: -0.3),
                 ),
                 const SizedBox(height: 4),
@@ -283,8 +286,8 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                     const SizedBox(width: 4),
                     Text(
                       email,
-                      style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF718096), fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
