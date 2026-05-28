@@ -2,10 +2,7 @@ import * as admin from "firebase-admin";
 import {
   onDocumentUpdated,
 } from "firebase-functions/v2/firestore";
-import { sendNotification, getUserFcmToken } from "../utils/fcm-sender";
-
-const db = admin.firestore();
-const STATS_DOC = db.collection("metadata").doc("stats");
+import { sendNotification, getUserFcmToken, getDb } from "../utils/fcm-sender";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // BOOKING TRIGGERS
@@ -170,6 +167,8 @@ export const onBookingUpdated = onDocumentUpdated(
     }
     // Update totalPendapatan stats when booking is completed
     if (after.status === 'selesai') {
+      const db = getDb();
+      const STATS_DOC = db.collection("metadata").doc("stats");
       await STATS_DOC.set({
         totalPendapatan: admin.firestore.FieldValue.increment(after.totalBayar ?? 0)
       }, { merge: true });

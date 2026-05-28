@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
+import { getApp } from "firebase-admin/app";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // KONFIGURASI DATABASE
@@ -14,7 +15,7 @@ const DATABASE_ID = "lapangku-db";
  * (bookings, lapangan, mitra, payouts, dll).
  */
 export function getDb(): admin.firestore.Firestore {
-  return getFirestore(DATABASE_ID);
+  return getFirestore(getApp(), DATABASE_ID);
 }
 
 /**
