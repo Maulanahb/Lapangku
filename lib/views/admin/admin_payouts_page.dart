@@ -175,18 +175,19 @@ class _AdminPayoutsPageState extends ConsumerState<AdminPayoutsPage> {
                     onTap: () => setState(() => _selectedStatus = f['value']!),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 7),
+                          horizontal: 20, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.backgroundInput,
-                        borderRadius: BorderRadius.circular(20),
+                        color: isSelected ? AppColors.primary : Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                        ),
                       ),
                       child: Text(
                         f['label']!,
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                           color: isSelected
                               ? Colors.white
                               : AppColors.textSecondary,

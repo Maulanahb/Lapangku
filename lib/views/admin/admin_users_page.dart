@@ -147,16 +147,19 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                     onTap: () => setState(() => _filterRole = role),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 7),
+                          horizontal: 20, vertical: 8),
                       decoration: BoxDecoration(
-                        color: selected ? AppColors.primary : AppColors.backgroundInput,
-                        borderRadius: BorderRadius.circular(20),
+                        color: selected ? AppColors.primary : Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: selected ? AppColors.primary : Colors.grey.shade300,
+                        ),
                       ),
                       child: Text(
                         _roleLabel(role),
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                           color: selected ? Colors.white : AppColors.textSecondary,
                         ),
                       ),
