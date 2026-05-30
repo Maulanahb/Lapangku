@@ -22,6 +22,7 @@ import 'mitra_revenue_page.dart';
 import 'mitra_reviews_page.dart';
 import 'statistik_booking_page.dart'; // FIX: Tambahkan import halaman statistik
 import 'jadwal_ketersediaan_page.dart';
+import 'mitra_security_page.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 
 class MitraProfilePage extends ConsumerWidget {
@@ -158,7 +159,10 @@ class MitraProfilePage extends ConsumerWidget {
                     icon: Icons.lock_outlined,
                     title: "Keamanan",
                     subtitle: "Kata sandi & PIN",
-                    onTap: () {}, // Kosong dulu
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MitraSecurityPage()),
+                    ),
                   ),
                   _buildMenuItem(
                     context,

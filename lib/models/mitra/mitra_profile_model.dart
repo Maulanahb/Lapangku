@@ -7,8 +7,10 @@ class MitraProfileModel {
   final String alamat;
   final String? logoUrl;
   final String? ktpUrl;
+  final String? nomorKtp;
   final String? npwpUrl;
   final String description;
+  final DateTime? joinedAt;
   final bool isVerified;
   final int totalFields;
   final int totalOrders;
@@ -28,8 +30,10 @@ class MitraProfileModel {
     this.alamat = '',
     this.logoUrl,
     this.ktpUrl,
+    this.nomorKtp,
     this.npwpUrl,
     this.description = '',
+    this.joinedAt,
     required this.isVerified,
     required this.totalFields,
     required this.totalOrders,
@@ -50,8 +54,10 @@ class MitraProfileModel {
     String? alamat,
     String? logoUrl,
     String? ktpUrl,
+    String? nomorKtp,
     String? npwpUrl,
     String? description,
+    DateTime? joinedAt,
     bool? isVerified,
     int? totalFields,
     int? totalOrders,
@@ -71,8 +77,10 @@ class MitraProfileModel {
       alamat: alamat ?? this.alamat,
       logoUrl: logoUrl ?? this.logoUrl,
       ktpUrl: ktpUrl ?? this.ktpUrl,
+      nomorKtp: nomorKtp ?? this.nomorKtp,
       npwpUrl: npwpUrl ?? this.npwpUrl,
       description: description ?? this.description,
+      joinedAt: joinedAt ?? this.joinedAt,
       isVerified: isVerified ?? this.isVerified,
       totalFields: totalFields ?? this.totalFields,
       totalOrders: totalOrders ?? this.totalOrders,
@@ -99,9 +107,11 @@ class MitraProfileModel {
       'fotoLogo': logoUrl,
       'ktpUrl': ktpUrl,
       'dokumenKTP': ktpUrl,
+      'nomorKtp': nomorKtp,
       'npwpUrl': npwpUrl,
       'dokumenNPWP': npwpUrl,
       'description': description,
+      'joinedAt': joinedAt?.toIso8601String(),
       'isVerified': isVerified,
       'totalFields': totalFields,
       'totalOrders': totalOrders,
@@ -124,8 +134,14 @@ class MitraProfileModel {
       alamat: map['alamat'] ?? '',
       logoUrl: map['logoUrl'] ?? map['fotoLogo'],
       ktpUrl: map['ktpUrl'] ?? map['dokumenKTP'],
+      nomorKtp: map['nomorKtp'],
       npwpUrl: map['npwpUrl'] ?? map['dokumenNPWP'],
       description: map['description'] ?? map['deskripsi'] ?? '',
+      joinedAt: map['joinedAt'] != null 
+          ? (map['joinedAt'] is String 
+              ? DateTime.tryParse(map['joinedAt']) 
+              : (map['joinedAt'].toDate() as DateTime))
+          : null,
       isVerified: map['isVerified'] ?? (map['statusVerifikasi'] == 'aktif'),
       totalFields: (map['totalFields'] ?? 0) as int,
       totalOrders: (map['totalOrders'] ?? 0) as int,
@@ -171,8 +187,10 @@ class MitraProfileModel {
           alamat == other.alamat &&
           logoUrl == other.logoUrl &&
           ktpUrl == other.ktpUrl &&
+          nomorKtp == other.nomorKtp &&
           npwpUrl == other.npwpUrl &&
           description == other.description &&
+          joinedAt == other.joinedAt &&
           isVerified == other.isVerified &&
           totalFields == other.totalFields &&
           totalOrders == other.totalOrders &&
@@ -193,8 +211,10 @@ class MitraProfileModel {
       alamat.hashCode ^
       logoUrl.hashCode ^
       ktpUrl.hashCode ^
+      nomorKtp.hashCode ^
       npwpUrl.hashCode ^
       description.hashCode ^
+      joinedAt.hashCode ^
       isVerified.hashCode ^
       totalFields.hashCode ^
       totalOrders.hashCode ^
