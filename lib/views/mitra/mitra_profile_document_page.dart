@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
+import 'package:lapangku/standards/constants/app_colors.dart'; // Pastikan import ini ada
 
 class MitraProfileDocumentPage extends ConsumerStatefulWidget {
   const MitraProfileDocumentPage({super.key});
@@ -68,6 +69,9 @@ class _MitraProfileDocumentPageState
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // UX: Tutup keyboard saat loading
+    FocusScope.of(context).unfocus();
+
     setState(() => _isLoading = true);
     try {
       await ref.read(mitraProfileProvider.notifier).updateProfile(
@@ -99,13 +103,17 @@ class _MitraProfileDocumentPageState
   }
 
   Future<void> _pickAndUploadLogo() async {
-    final picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final picked =
+        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (picked == null) return;
-    
+
     setState(() => _isLoading = true);
     try {
-      await ref.read(mitraProfileProvider.notifier).uploadLogo(File(picked.path));
-      if (mounted) SnackbarHelper.showSuccess(context, 'Logo berhasil diupload');
+      await ref
+          .read(mitraProfileProvider.notifier)
+          .uploadLogo(File(picked.path));
+      if (mounted)
+        SnackbarHelper.showSuccess(context, 'Logo berhasil diupload');
     } catch (e) {
       if (mounted) SnackbarHelper.showError(context, 'Gagal upload logo: $e');
     } finally {
@@ -114,15 +122,22 @@ class _MitraProfileDocumentPageState
   }
 
   Future<void> _pickAndUploadDoc(String docType) async {
-    final picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final picked =
+        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (picked == null) return;
-    
+
     setState(() => _isLoading = true);
     try {
-      await ref.read(mitraProfileProvider.notifier).uploadDocument(docType, File(picked.path));
-      if (mounted) SnackbarHelper.showSuccess(context, 'Dokumen berhasil diupload');
+      await ref
+          .read(mitraProfileProvider.notifier)
+          .uploadDocument(docType, File(picked.path));
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'Dokumen berhasil diupload');
+      }
     } catch (e) {
-      if (mounted) SnackbarHelper.showError(context, 'Gagal upload dokumen: $e');
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Gagal upload dokumen: $e');
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -133,192 +148,313 @@ class _MitraProfileDocumentPageState
     final profileAsync = ref.watch(mitraProfileProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: AppColors.backgroundPage,
       appBar: AppBar(
         title: const Text('Profil & Dokumen',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF1B6B3A),
+            style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18)),
+        centerTitle: true,
+        backgroundColor: AppColors.primary,
+        elevation: 0, // Dibuat flat dengan body
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: profileAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF1B6B3A))),
+        loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primary)),
         error: (e, _) => Center(child: Text('Gagal memuat: $e')),
         data: (profile) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Logo Bisnis
-                  Center(
-                    child: Stack(
-                      children: [
-                        Container(
-                          key: ValueKey(profile.logoUrl),
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 4),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 8)
-                            ],
-                            image: profile.logoUrl != null &&
-                                    profile.logoUrl!.isNotEmpty
-                                ? DecorationImage(
-                                    image: NetworkImage(profile.logoUrl!),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
+          return Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // ─── HERO SECTION (AVATAR LOGO) ───
+                      Container(
+                        width: double.infinity,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(32),
+                            bottomRight: Radius.circular(32),
                           ),
-                          child: profile.logoUrl == null || profile.logoUrl!.isEmpty
-                              ? const Icon(Icons.store, size: 40, color: Colors.grey)
-                              : null,
                         ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
+                        padding: const EdgeInsets.only(bottom: 40, top: 16),
+                        child: Center(
                           child: GestureDetector(
                             onTap: _isLoading ? null : _pickAndUploadLogo,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF1B6B3A),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                            child: Stack(
+                              children: [
+                                Container(
+                                  key: ValueKey(profile.logoUrl),
+                                  width: 110,
+                                  height: 110,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: Colors.white, width: 4),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                          color: Colors.black12,
+                                          blurRadius: 8,
+                                          offset: Offset(0, 4))
+                                    ],
+                                    image: profile.logoUrl != null &&
+                                            profile.logoUrl!.isNotEmpty
+                                        ? DecorationImage(
+                                            image:
+                                                NetworkImage(profile.logoUrl!),
+                                            fit: BoxFit.cover,
+                                          )
+                                        : null,
+                                  ),
+                                  child: profile.logoUrl == null ||
+                                          profile.logoUrl!.isEmpty
+                                      ? const Icon(Icons.storefront_rounded,
+                                          size: 50, color: Colors.grey)
+                                      : null,
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryLight,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                          color: Colors.white, width: 2),
+                                    ),
+                                    child: const Icon(Icons.camera_alt_rounded,
+                                        color: AppColors.primary, size: 20),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+
+                      // ─── FORM SECTION ───
+                      Transform.translate(
+                        offset: const Offset(0, -20),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: AppColors.backgroundPage,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(24),
+                              topRight: Radius.circular(24),
+                            ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 8),
+                          child: Form(
+                            key: _formKey,
+                            autovalidateMode:
+                                AutovalidateMode.onUserInteraction,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // ── INFORMASI BISNIS ──
+                                const SizedBox(height: 16),
+                                const Text('Informasi Bisnis',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: AppColors.textHeading)),
+                                const SizedBox(height: 16),
+
+                                _buildModernTextField(
+                                  controller: _businessNameController,
+                                  label: 'Nama Bisnis / Lapangan',
+                                  hint: 'Contoh: Lapangku Futsal',
+                                  icon: Icons.store_rounded,
+                                  validator: (v) =>
+                                      v!.isEmpty ? 'Wajib diisi' : null,
+                                ),
+                                const SizedBox(height: 16),
+
+                                _buildModernTextField(
+                                  controller: _descriptionController,
+                                  label: 'Deskripsi Singkat',
+                                  hint:
+                                      'Ceritakan sedikit tentang lapangan Anda',
+                                  icon: Icons.description_outlined,
+                                  maxLines: 3,
+                                ),
+                                const SizedBox(height: 16),
+
+                                _buildModernTextField(
+                                  controller: _MitraNameController,
+                                  label: 'Nama Pemilik',
+                                  hint: 'Nama lengkap pemilik',
+                                  icon: Icons.person_outline_rounded,
+                                  validator: (v) =>
+                                      v!.isEmpty ? 'Wajib diisi' : null,
+                                ),
+                                const SizedBox(height: 16),
+
+                                _buildModernTextField(
+                                  controller: _emailController,
+                                  label: 'Email Bisnis',
+                                  hint: 'contoh@email.com',
+                                  icon: Icons.email_outlined,
+                                  keyboardType: TextInputType.emailAddress,
+                                  validator: (v) =>
+                                      v!.isEmpty ? 'Wajib diisi' : null,
+                                ),
+                                const SizedBox(height: 16),
+
+                                _buildModernTextField(
+                                  controller: _phoneController,
+                                  label: 'Nomor WhatsApp',
+                                  hint: 'Contoh: 0812...',
+                                  icon: Icons.phone_outlined,
+                                  keyboardType: TextInputType.phone,
+                                  validator: (v) =>
+                                      v!.isEmpty ? 'Wajib diisi' : null,
+                                ),
+                                const SizedBox(height: 16),
+
+                                _buildModernTextField(
+                                  controller: _addressController,
+                                  label: 'Alamat Lengkap',
+                                  hint: 'Masukkan alamat lengkap lapangan',
+                                  icon: Icons.location_on_outlined,
+                                  maxLines: 2,
+                                ),
+
+                                // ── INFORMASI REKENING ──
+                                const SizedBox(height: 32),
+                                const Text('Informasi Rekening',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: AppColors.textHeading)),
+                                const SizedBox(height: 16),
+
+                                _buildModernTextField(
+                                  controller: _bankNameController,
+                                  label: 'Nama Bank',
+                                  hint: 'Contoh: BCA, Mandiri, BRI',
+                                  icon: Icons.account_balance_rounded,
+                                ),
+                                const SizedBox(height: 16),
+
+                                _buildModernTextField(
+                                  controller: _bankAccountController,
+                                  label: 'Nomor Rekening',
+                                  hint: 'Masukkan nomor rekening',
+                                  icon: Icons.numbers_rounded,
+                                  keyboardType: TextInputType.number,
+                                ),
+                                const SizedBox(height: 16),
+
+                                _buildModernTextField(
+                                  controller: _bankAccountNameController,
+                                  label: 'Atas Nama Rekening',
+                                  hint: 'Nama pemilik rekening',
+                                  icon: Icons.account_box_outlined,
+                                ),
+
+                                // ── DOKUMEN VERIFIKASI ──
+                                const SizedBox(height: 32),
+                                const Text('Dokumen Verifikasi',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: AppColors.textHeading)),
+                                const SizedBox(height: 12),
+
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: Colors.blue.withOpacity(0.2))),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(Icons.info_outline_rounded,
+                                          color: Colors.blue, size: 20),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          profile.isVerified
+                                              ? 'Dokumen Anda sudah diverifikasi oleh admin LapangKu.'
+                                              : 'Dokumen sedang menunggu verifikasi oleh tim admin.',
+                                          style: const TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.black87,
+                                              height: 1.4),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+
+                                _buildDocUploadCard(
+                                  title: 'Foto KTP Pemilik',
+                                  url: profile.ktpUrl,
+                                  onTap: () => _pickAndUploadDoc('ktp'),
+                                ),
+                                const SizedBox(height: 12),
+
+                                _buildDocUploadCard(
+                                  title: 'Foto NPWP Bisnis (Opsional)',
+                                  url: profile.npwpUrl,
+                                  onTap: () => _pickAndUploadDoc('npwp'),
+                                ),
+                                const SizedBox(
+                                    height:
+                                        40), // Spacing bawah sebelum sticky button
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 32),
-                  const Text('Informasi Bisnis',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 16),
-                  _buildTextField(
-                    controller: _businessNameController,
-                    label: 'Nama Bisnis / Lapangan',
-                    icon: Icons.store,
-                    validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _descriptionController,
-                    label: 'Deskripsi Singkat',
-                    icon: Icons.description,
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _MitraNameController,
-                    label: 'Nama Pemilik',
-                    icon: Icons.person,
-                    validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _emailController,
-                    label: 'Email Bisnis',
-                    icon: Icons.email,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _phoneController,
-                    label: 'Nomor WhatsApp',
-                    icon: Icons.phone,
-                    keyboardType: TextInputType.phone,
-                    validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _addressController,
-                    label: 'Alamat Lengkap',
-                    icon: Icons.location_on,
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 32),
-                  const Text('Informasi Rekening',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 16),
-                  _buildTextField(
-                    controller: _bankNameController,
-                    label: 'Nama Bank (contoh: BCA, Mandiri)',
-                    icon: Icons.account_balance,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _bankAccountController,
-                    label: 'Nomor Rekening',
-                    icon: Icons.numbers,
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _bankAccountNameController,
-                    label: 'Atas Nama (Nama Pemilik Rekening)',
-                    icon: Icons.person_outline,
-                  ),
-                  const SizedBox(height: 32),
-                  const Text('Dokumen Verifikasi',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                        color: Colors.blue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8)),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                            child: Text(
-                                profile.isVerified
-                                    ? 'Dokumen Anda sudah diverifikasi oleh admin LapangKu.'
-                                    : 'Dokumen sedang menunggu verifikasi.',
-                                style: const TextStyle(fontSize: 12))),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDocUploadCard(
-                    title: 'Foto KTP Pemilik',
-                    url: profile.ktpUrl,
-                    onTap: () => _pickAndUploadDoc('ktp'),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildDocUploadCard(
-                    title: 'Foto NPWP Bisnis (Opsional)',
-                    url: profile.npwpUrl,
-                    onTap: () => _pickAndUploadDoc('npwp'),
-                  ),
-                  const SizedBox(height: 40),
-                  SizedBox(
+                ),
+              ),
+
+              // ─── STICKY BOTTOM BUTTON ───
+              Container(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, -4)),
+                  ],
+                ),
+                child: SafeArea(
+                  child: SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: 52,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1B6B3A),
+                        backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(14)),
+                        elevation: 0,
                       ),
                       onPressed: _isLoading ? null : _submit,
                       child: _isLoading
                           ? const SizedBox(
-                              height: 20,
-                              width: 20,
+                              height: 24,
+                              width: 24,
                               child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2))
+                                  color: Colors.white, strokeWidth: 2.5),
+                            )
                           : const Text('Simpan Perubahan',
                               style: TextStyle(
                                   color: Colors.white,
@@ -326,12 +462,79 @@ class _MitraProfileDocumentPageState
                                   fontSize: 16)),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           );
         },
       ),
+    );
+  }
+
+  // ─── WIDGET BANTUAN DENGAN UI BARU ───
+
+  Widget _buildModernTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textHeading),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          validator: validator,
+          maxLines: maxLines,
+          textInputAction:
+              maxLines > 1 ? TextInputAction.newline : TextInputAction.next,
+          style: const TextStyle(fontSize: 14, color: AppColors.textHeading),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+            prefixIcon: Padding(
+              padding: EdgeInsets.only(
+                  bottom: maxLines > 1
+                      ? (maxLines * 12.0)
+                      : 0), // Adjust icon for multiline
+              child: Icon(icon, color: AppColors.textSecondary, size: 22),
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.borderLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.borderLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -347,11 +550,14 @@ class _MitraProfileDocumentPageState
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: hasDoc
+                  ? AppColors.primary.withOpacity(0.5)
+                  : AppColors.borderLight),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
+                color: Colors.black.withOpacity(0.02),
                 blurRadius: 4,
                 offset: const Offset(0, 2)),
           ],
@@ -362,15 +568,17 @@ class _MitraProfileDocumentPageState
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: hasDoc ? Colors.green.shade50 : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-                image: hasDoc 
-                    ? DecorationImage(image: NetworkImage(url), fit: BoxFit.cover)
+                color: hasDoc ? AppColors.primaryLight : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+                image: hasDoc
+                    ? DecorationImage(
+                        image: NetworkImage(url), fit: BoxFit.cover)
                     : null,
               ),
-              child: hasDoc 
-                  ? null 
-                  : Icon(Icons.upload_file, color: Colors.grey.shade500),
+              child: hasDoc
+                  ? null
+                  : Icon(Icons.upload_file_rounded,
+                      color: Colors.grey.shade400, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -379,50 +587,26 @@ class _MitraProfileDocumentPageState
                 children: [
                   Text(title,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14)),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: AppColors.textHeading)),
                   const SizedBox(height: 4),
-                  Text(hasDoc ? 'Dokumen terupload' : 'Ketuk untuk upload',
+                  Text(hasDoc ? 'Dokumen terupload' : 'Ketuk untuk upload file',
                       style: TextStyle(
-                          color: hasDoc ? Colors.green : Colors.grey.shade500,
+                          color: hasDoc
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
                           fontSize: 12)),
                 ],
               ),
             ),
-            Icon(hasDoc ? Icons.check_circle : Icons.chevron_right,
-                color: hasDoc ? Colors.green : Colors.grey.shade400),
+            Icon(
+                hasDoc
+                    ? Icons.check_circle_rounded
+                    : Icons.chevron_right_rounded,
+                color: hasDoc ? AppColors.primary : Colors.grey.shade400),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-    int maxLines = 1,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      validator: validator,
-      maxLines: maxLines,
-      textInputAction: maxLines > 1 ? TextInputAction.newline : TextInputAction.next,
-      decoration: InputDecoration(
-        labelText: label,
-        alignLabelWithHint: maxLines > 1,
-        prefixIcon: Icon(icon, color: Colors.grey),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300)),
-        focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF1B6B3A))),
-        filled: true,
-        fillColor: Colors.white,
       ),
     );
   }
