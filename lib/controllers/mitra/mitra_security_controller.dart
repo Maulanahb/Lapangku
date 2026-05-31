@@ -1,4 +1,3 @@
-// Controller untuk Keamanan Mitra
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -128,7 +127,8 @@ class MitraSecurityController extends StateNotifier<MitraSecurityState> {
       }, SetOptions(merge: true));
 
       // Log aktivitas
-      await _addSecurityLog(SecurityLogType.pinChange, 'PIN keamanan diperbarui');
+      await _addSecurityLog(
+          SecurityLogType.pinChange, 'PIN keamanan diperbarui');
 
       state = state.copyWith(isLoading: false, pinEnabled: true);
     } catch (e) {
@@ -277,8 +277,8 @@ class MitraSecurityController extends StateNotifier<MitraSecurityState> {
     try {
       await _firestore.collection('mitra_security_logs').add({
         'mitraId': uid,
-        'type': type.name
-            .replaceAllMapped(RegExp(r'[A-Z]'), (m) => '_${m.group(0)!.toLowerCase()}'),
+        'type': type.name.replaceAllMapped(
+            RegExp(r'[A-Z]'), (m) => '_${m.group(0)!.toLowerCase()}'),
         'deviceName': 'Perangkat Saat Ini',
         'location': '',
         'timestamp': FieldValue.serverTimestamp(),
@@ -297,8 +297,48 @@ class MitraSecurityController extends StateNotifier<MitraSecurityState> {
       'lastPasswordChange': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    await _addSecurityLog(SecurityLogType.passwordChange, 'Password berhasil diperbarui');
+    await _addSecurityLog(
+        SecurityLogType.passwordChange, 'Password berhasil diperbarui');
 
     state = state.copyWith(lastPasswordChange: DateTime.now());
   }
-}
+
+  // ─── Ubah Password ────────────────────────────────────────────────────────
+
+  Future<void> changePassword(String oldPassword, String newPassword) async {
+    final user = _currentUser;
+    if (user == null || user.email == null)
+      throw Exception('User tidak ditemukan.');
+
+    try {
+      state = state.copyWith(isLoading: true, clearError: true);
+
+      // 1. Re-autentikasi (Cek password lama)
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: oldPassword,
+      );
+      await user.reauthenticateWithCredential(credential);
+
+      // 2. Update ke password baru
+      await user.updatePassword(newPassword);
+
+      // 3. Catat ke Firestore & Log (Menggunakan fungsi yang sudah ada)
+      await markPasswordChanged();
+
+      state = state.copyWith(isLoading: false);
+    } on FirebaseAuthException catch (e) {
+      state = state.copyWith(isLoading: false, error: e.message);
+      if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
+        throw Exception('Password lama yang Anda masukkan salah.');
+      } else if (e.code == 'weak-password') {
+        throw Exception(
+            'Password baru terlalu lemah, gunakan kombinasi yang lebih kuat.');
+      }
+      throw Exception(e.message ?? 'Terjadi kesalahan pada server Firebase.');
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+} // <--- PERHATIKAN: Kurung kurawal penutup class sekarang ada di paling bawah sini
