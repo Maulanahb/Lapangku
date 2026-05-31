@@ -20,36 +20,6 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
   String _searchQuery = '';
   String _filterStatus = 'semua';
 
-  // ─── Summary counts ────────────────────────────────────────────────────────
-  Map<String, int> _buildCounts(List<BookingModel> bookings) {
-    int menunggu = 0, dikonfirmasi = 0, selesai = 0, dibatalkan = 0;
-    for (final b in bookings) {
-      switch (b.status) {
-        case BookingStatusHelper.menungguBayar:
-        case BookingStatusHelper.menungguKonfirmasi:
-          menunggu++;
-          break;
-        case BookingStatusHelper.dikonfirmasi:
-          dikonfirmasi++;
-          break;
-        case BookingStatusHelper.selesai:
-          selesai++;
-          break;
-        case BookingStatusHelper.dibatalkan:
-        case BookingStatusHelper.ditolak:
-        case BookingStatusHelper.expired:
-          dibatalkan++;
-          break;
-      }
-    }
-    return {
-      'semua': bookings.length,
-      'menunggu': menunggu,
-      'dikonfirmasi': dikonfirmasi,
-      'selesai': selesai,
-      'dibatalkan': dibatalkan,
-    };
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,14 +106,12 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
 
   // ─── Search + Filter ───────────────────────────────────────────────────────
   Widget _buildSearchFilter(AsyncValue<List<BookingModel>> bookingsAsync) {
-    final counts = bookingsAsync.whenOrNull(data: _buildCounts) ?? {};
-
     final filters = [
-      {'value': 'semua', 'label': 'Semua', 'countKey': 'semua'},
-      {'value': 'menunggu_bayar', 'label': 'Menunggu', 'countKey': 'menunggu'},
-      {'value': 'dikonfirmasi', 'label': 'Dikonfirmasi', 'countKey': 'dikonfirmasi'},
-      {'value': 'selesai', 'label': 'Selesai', 'countKey': 'selesai'},
-      {'value': 'dibatalkan', 'label': 'Dibatalkan', 'countKey': 'dibatalkan'},
+      {'value': 'semua', 'label': 'Semua'},
+      {'value': 'menunggu_bayar', 'label': 'Menunggu'},
+      {'value': 'dikonfirmasi', 'label': 'Dikonfirmasi'},
+      {'value': 'selesai', 'label': 'Selesai'},
+      {'value': 'dibatalkan', 'label': 'Dibatalkan'},
     ];
 
     return Container(
@@ -176,9 +144,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
               children: filters.map((f) {
                 final val = f['value']!;
                 final label = f['label']!;
-                final countKey = f['countKey']!;
                 final isSelected = _filterStatus == val;
-                final count = counts[countKey];
 
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -211,29 +177,6 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                                   : AppColors.textSecondary,
                             ),
                           ),
-                          if (count != null && count > 0) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? Colors.white.withOpacity(0.25)
-                                    : Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '$count',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                          ],
                         ],
                       ),
                     ),

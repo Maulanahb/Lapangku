@@ -128,16 +128,24 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _sidebarItem(0, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Dashboard'),
-                _sidebarItem(1, Icons.people_outline_rounded, Icons.people_rounded, 'Kelola Pengguna'),
-                _sidebarItem(2, Icons.domain_verification_rounded, Icons.domain_verification_rounded, 'Verifikasi Mitra'),
-                _sidebarItem(3, Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Daftar Pesanan'),
-                _sidebarItem(4, Icons.analytics_outlined, Icons.analytics_rounded, 'Laporan Analistik'),
-                _sidebarItem(5, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded, 'Pencairan Dana'),
-              ],
+            child: Consumer(
+              builder: (context, ref, _) {
+                final mitrasAsync = ref.watch(adminAllMitrasProvider);
+                final pendingCount = mitrasAsync.value
+                    ?.where((m) => m.statusVerifikasi == 'menunggu')
+                    .length ?? 0;
+                return ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    _sidebarItem(0, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Dashboard'),
+                    _sidebarItem(1, Icons.people_outline_rounded, Icons.people_rounded, 'Kelola Pengguna'),
+                    _sidebarItem(2, Icons.domain_verification_rounded, Icons.domain_verification_rounded, 'Verifikasi Mitra', badge: pendingCount),
+                    _sidebarItem(3, Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Daftar Pesanan'),
+                    _sidebarItem(4, Icons.analytics_outlined, Icons.analytics_rounded, 'Laporan Analistik'),
+                    _sidebarItem(5, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded, 'Pencairan Dana'),
+                  ],
+                );
+              },
             ),
           ),
           Padding(
@@ -167,7 +175,13 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
     );
   }
 
-  Widget _sidebarItem(int index, IconData iconOutlined, IconData iconFilled, String label) {
+  Widget _sidebarItem(
+    int index,
+    IconData iconOutlined,
+    IconData iconFilled,
+    String label, {
+    int badge = 0,
+  }) {
     final isSelected = _selectedNav == index;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -190,22 +204,78 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
           ),
           child: Row(
             children: [
-              Icon(isSelected ? iconFilled : iconOutlined,
-                  color: isSelected ? _primary : Colors.grey.shade500,
-                  size: 22),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    isSelected ? iconFilled : iconOutlined,
+                    color: isSelected ? _primary : Colors.grey.shade500,
+                    size: 22,
+                  ),
+                  if (badge > 0)
+                    Positioned(
+                      top: -6,
+                      right: -8,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                            minWidth: 16, minHeight: 16),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.4),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          badge > 99 ? '99+' : '$badge',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   label,
                   style: TextStyle(
                     color: isSelected ? _primary : Colors.grey.shade600,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                    fontWeight:
+                        isSelected ? FontWeight.w800 : FontWeight.w500,
                     fontSize: 14,
                     letterSpacing: isSelected ? 0.2 : 0,
                   ),
                 ),
               ),
-              if (isSelected)
+              if (badge > 0 && !isSelected)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$badge baru',
+                    style: const TextStyle(
+                      color: Color(0xFF92400E),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                )
+              else if (isSelected)
                 Container(
                   width: 6,
                   height: 6,
@@ -213,7 +283,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                     color: _primary,
                     shape: BoxShape.circle,
                   ),
-                )
+                ),
             ],
           ),
         ),

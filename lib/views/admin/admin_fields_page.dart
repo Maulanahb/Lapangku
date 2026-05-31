@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/controllers/admin/admin_controller.dart';
@@ -484,163 +485,457 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
   }
 
   void _showMitraDetails(AdminFieldModel mitra) {
+    final statusVerifikasi = mitra.statusVerifikasi.toLowerCase().trim();
+
+    Color statusColor;
+    Color statusBg;
+    String statusLabel;
+
+    switch (statusVerifikasi) {
+      case 'aktif':
+        statusColor = const Color(0xFF059669);
+        statusBg = const Color(0xFFD1FAE5);
+        statusLabel = 'Terverifikasi';
+        break;
+      case 'ditolak':
+        statusColor = const Color(0xFFDC2626);
+        statusBg = const Color(0xFFFEE2E2);
+        statusLabel = 'Ditolak';
+        break;
+      default:
+        statusColor = const Color(0xFFD97706);
+        statusBg = const Color(0xFFFEF3C7);
+        statusLabel = 'Menunggu Verifikasi';
+    }
+
     showDialog(
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          insetPadding: const EdgeInsets.all(24),
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
-            child: Column(
-              children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 40,
+                    offset: const Offset(0, 16),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Detail Pengajuan Mitra',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textDark),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                ),
-                // Body
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildDetailSectionTitle('Data Pemilik & Bisnis'),
-                        _buildDetailRow('Nama Pemilik', mitra.namaMitra),
-                        _buildDetailRow('Email', mitra.emailPemilik),
-                        _buildDetailRow('No. Telepon', mitra.phone),
-                        _buildDetailRow('Nama Bisnis', mitra.namaLapangan),
-                        
-                        const SizedBox(height: 16),
-                        const Text('Dokumen Identitas', style: TextStyle(fontWeight: FontWeight.w600, color: _textDark)),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            if (mitra.ktpUrl != null)
-                              Expanded(child: _buildImageCard('Foto KTP', mitra.ktpUrl!)),
-                            if (mitra.ktpUrl != null && mitra.selfieUrl != null)
-                              const SizedBox(width: 16),
-                            if (mitra.selfieUrl != null)
-                              Expanded(child: _buildImageCard('Selfie KTP', mitra.selfieUrl!)),
-                          ],
-                        ),
-                        
-                        const Divider(height: 32),
-                        
-                        _buildDetailSectionTitle('Informasi Lapangan'),
-                        _buildDetailRow('Jenis Olahraga', mitra.jenis),
-                        _buildDetailRow('Tipe Lapangan', mitra.tipeLapangan),
-                        _buildDetailRow('Harga Per Jam', NumberFormat.currency(locale: 'id', symbol: 'Rp', decimalDigits: 0).format(mitra.hargaPerJam)),
-                        
-                        const SizedBox(height: 8),
-                        const Text('Fasilitas', style: TextStyle(fontWeight: FontWeight.w600, color: _textDark)),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: mitra.fasilitas.map((f) => Chip(
-                            label: Text(f, style: const TextStyle(fontSize: 12)),
-                            backgroundColor: Colors.grey.shade100,
-                            side: BorderSide(color: Colors.grey.shade300),
-                          )).toList(),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        const Text('Deskripsi', style: TextStyle(fontWeight: FontWeight.w600, color: _textDark)),
-                        const SizedBox(height: 4),
-                        Text(mitra.deskripsi.isEmpty ? '-' : mitra.deskripsi, style: const TextStyle(color: _textGrey)),
-                        
-                        const Divider(height: 32),
-                        
-                        _buildDetailSectionTitle('Lokasi & Operasional'),
-                        _buildDetailRow('Alamat', mitra.lokasi),
-                        _buildDetailRow('Jam Operasional', mitra.jamOperasional),
-                        _buildDetailRow('Hari Operasional', mitra.hariOperasional.join(', ')),
-                        
-                        const Divider(height: 32),
-                        
-                        _buildDetailSectionTitle('Foto Lapangan'),
-                        if (mitra.photoUrls != null && mitra.photoUrls!.isNotEmpty)
-                          SizedBox(
-                            height: 120,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: mitra.photoUrls!.length,
-                              separatorBuilder: (_, __) => const SizedBox(width: 12),
-                              itemBuilder: (context, index) {
-                                return ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.network(
-                                    mitra.photoUrls![index],
-                                    width: 160,
-                                    height: 120,
-                                    fit: BoxFit.cover,
-                                  ),
-                                );
-                              },
-                            ),
-                          )
-                        else
-                          const Text('Tidak ada foto', style: TextStyle(color: _textGrey)),
-                      ],
-                    ),
-                  ),
-                ),
-                // Footer
-                if (mitra.statusVerifikasi == 'menunggu')
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ── Premium Header ──────────────────────────────────
                   Container(
                     padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-                      border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF1B6B3A), Color(0xFF2D9052)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(24)),
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _updateStatus(mitra, 'ditolak');
-                          },
-                          child: const Text('Tolak Pengajuan', style: TextStyle(color: Color(0xFFDC2626))),
+                        // Avatar / Photo
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1.5),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: (mitra.photoUrls != null &&
+                                    mitra.photoUrls!.isNotEmpty)
+                                ? Image.network(
+                                    mitra.photoUrls!.first,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.store_rounded,
+                                        color: Colors.white,
+                                        size: 28),
+                                  )
+                                : const Icon(Icons.store_rounded,
+                                    color: Colors.white, size: 28),
+                          ),
                         ),
                         const SizedBox(width: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _updateStatus(mitra, 'aktif');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1B6B3A),
-                            foregroundColor: Colors.white,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                mitra.namaLapangan,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 18,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.person_outline_rounded,
+                                      color: Colors.white.withOpacity(0.7),
+                                      size: 13),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    mitra.namaMitra,
+                                    style: TextStyle(
+                                        color: Colors.white.withOpacity(0.85),
+                                        fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: statusBg,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  statusLabel,
+                                  style: TextStyle(
+                                    color: statusColor,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          child: const Text('Verifikasi Mitra'),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded,
+                              color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.white.withOpacity(0.15),
+                          ),
                         ),
                       ],
                     ),
                   ),
-              ],
+
+                  // ── Scrollable Body ─────────────────────────────────
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Section: Info Pemilik
+                          _premiumSection(
+                            icon: Icons.person_rounded,
+                            title: 'Data Pemilik & Bisnis',
+                            color: const Color(0xFF6366F1),
+                            child: Column(
+                              children: [
+                                _infoRow(Icons.person_outline_rounded,
+                                    'Nama Pemilik', mitra.namaMitra),
+                                _infoRow(Icons.email_outlined, 'Email',
+                                    mitra.emailPemilik),
+                                _infoRow(Icons.phone_outlined, 'Telepon',
+                                    mitra.phone.isEmpty ? '-' : mitra.phone),
+                                _infoRow(Icons.store_outlined, 'Nama Bisnis',
+                                    mitra.namaLapangan),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Section: Dokumen Identitas
+                          _premiumSection(
+                            icon: Icons.badge_rounded,
+                            title: 'Dokumen Identitas',
+                            color: const Color(0xFF0EA5E9),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (mitra.ktpUrl == null &&
+                                    mitra.selfieUrl == null)
+                                  Text(
+                                    'Tidak ada dokumen diunggah',
+                                    style:
+                                        TextStyle(color: Colors.grey.shade500),
+                                  )
+                                else
+                                  Row(
+                                    children: [
+                                      if (mitra.ktpUrl != null)
+                                        Expanded(
+                                            child: _premiumImageCard(
+                                                'Foto KTP', mitra.ktpUrl!)),
+                                      if (mitra.ktpUrl != null &&
+                                          mitra.selfieUrl != null)
+                                        const SizedBox(width: 12),
+                                      if (mitra.selfieUrl != null)
+                                        Expanded(
+                                            child: _premiumImageCard(
+                                                'Selfie dengan KTP',
+                                                mitra.selfieUrl!)),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Section: Informasi Lapangan
+                          _premiumSection(
+                            icon: Icons.sports_soccer_rounded,
+                            title: 'Informasi Lapangan',
+                            color: const Color(0xFF10B981),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _infoRow(Icons.sports_rounded, 'Jenis Olahraga',
+                                    mitra.jenis.isEmpty ? '-' : mitra.jenis),
+                                _infoRow(Icons.category_outlined,
+                                    'Tipe Lapangan',
+                                    mitra.tipeLapangan.isEmpty
+                                        ? '-'
+                                        : mitra.tipeLapangan),
+                                _infoRow(
+                                    Icons.attach_money_rounded,
+                                    'Harga Per Jam',
+                                    NumberFormat.currency(
+                                            locale: 'id',
+                                            symbol: 'Rp',
+                                            decimalDigits: 0)
+                                        .format(mitra.hargaPerJam)),
+                                if (mitra.fasilitas.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(
+                                        width: 140,
+                                        child: Text(
+                                          'Fasilitas',
+                                          style: TextStyle(
+                                              color: _textGrey,
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 13),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Wrap(
+                                          spacing: 6,
+                                          runSpacing: 6,
+                                          children: mitra.fasilitas
+                                              .map((f) => Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 4),
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          const Color(0xFFF0FDF4),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              6),
+                                                      border: Border.all(
+                                                          color: const Color(
+                                                              0xFFBBF7D0)),
+                                                    ),
+                                                    child: Text(
+                                                      f,
+                                                      style: const TextStyle(
+                                                          fontSize: 11,
+                                                          color:
+                                                              Color(0xFF065F46),
+                                                          fontWeight:
+                                                              FontWeight.w600),
+                                                    ),
+                                                  ))
+                                              .toList(),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                if (mitra.deskripsi.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(
+                                        width: 140,
+                                        child: Text(
+                                          'Deskripsi',
+                                          style: TextStyle(
+                                              color: _textGrey,
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 13),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(mitra.deskripsi,
+                                            style: const TextStyle(
+                                                color: _textDark,
+                                                fontSize: 13)),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Section: Lokasi & Operasional
+                          _premiumSection(
+                            icon: Icons.location_on_rounded,
+                            title: 'Lokasi & Operasional',
+                            color: const Color(0xFFF59E0B),
+                            child: Column(
+                              children: [
+                                _infoRow(Icons.map_outlined, 'Alamat',
+                                    mitra.lokasi.isEmpty ? '-' : mitra.lokasi),
+                                _infoRow(
+                                    Icons.access_time_rounded,
+                                    'Jam Operasional',
+                                    mitra.jamOperasional.isEmpty
+                                        ? '-'
+                                        : mitra.jamOperasional),
+                                _infoRow(
+                                    Icons.calendar_month_outlined,
+                                    'Hari Operasional',
+                                    mitra.hariOperasional.isEmpty
+                                        ? '-'
+                                        : mitra.hariOperasional.join(', ')),
+                              ],
+                            ),
+                          ),
+
+                          // Section: Foto Lapangan
+                          if (mitra.photoUrls != null &&
+                              mitra.photoUrls!.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            _premiumSection(
+                              icon: Icons.photo_library_rounded,
+                              title: 'Foto Lapangan',
+                              color: const Color(0xFFEC4899),
+                              child: SizedBox(
+                                height: 130,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: mitra.photoUrls!.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(width: 10),
+                                  itemBuilder: (context, index) {
+                                    return GestureDetector(
+                                      onTap: () {
+                                        // Copy URL to clipboard
+                                        Clipboard.setData(ClipboardData(
+                                            text: mitra.photoUrls![index]));
+                                      },
+                                      child: ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        child: Image.network(
+                                          mitra.photoUrls![index],
+                                          width: 180,
+                                          height: 130,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              Container(
+                                            width: 180,
+                                            height: 130,
+                                            color: Colors.grey.shade100,
+                                            child: const Icon(
+                                                Icons.broken_image_rounded,
+                                                color: Colors.grey),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // ── Footer Actions ──────────────────────────────────
+                  if (statusVerifikasi == 'menunggu')
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: const BorderRadius.vertical(
+                            bottom: Radius.circular(24)),
+                        border: Border(
+                            top: BorderSide(color: Colors.grey.shade200)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _updateStatus(mitra, 'ditolak');
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFDC2626),
+                              side: const BorderSide(color: Color(0xFFFCA5A5)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: const Text('Tolak Pengajuan',
+                                style: TextStyle(fontWeight: FontWeight.w700)),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _updateStatus(mitra, 'aktif');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1B6B3A),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            child: const Text('Verifikasi Mitra',
+                                style: TextStyle(fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         );
@@ -648,33 +943,75 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     );
   }
 
-  Widget _buildDetailSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _primary),
+  Widget _premiumSection({
+    required IconData icon,
+    required String title,
+    required Color color,
+    required Widget child,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.08),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+              border:
+                  Border(bottom: BorderSide(color: color.withOpacity(0.15))),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: child,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _infoRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(icon, size: 16, color: Colors.grey.shade400),
+          const SizedBox(width: 8),
           SizedBox(
-            width: 140,
+            width: 120,
             child: Text(
               label,
-              style: const TextStyle(color: _textGrey, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                  color: _textGrey, fontWeight: FontWeight.w500, fontSize: 13),
             ),
           ),
           Expanded(
             child: Text(
-              value.isEmpty ? '-' : value,
-              style: const TextStyle(color: _textDark, fontWeight: FontWeight.w600),
+              value,
+              style: const TextStyle(
+                  color: _textDark, fontWeight: FontWeight.w600, fontSize: 13),
             ),
           ),
         ],
@@ -682,24 +1019,26 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     );
   }
 
-  Widget _buildImageCard(String title, String url) {
+  Widget _premiumImageCard(String title, String url) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontSize: 12, color: _textGrey)),
+        Text(title,
+            style: const TextStyle(
+                fontSize: 12, color: _textGrey, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           child: Image.network(
             url,
-            height: 120,
+            height: 110,
             width: double.infinity,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
-              height: 120,
-              color: Colors.grey.shade200,
+              height: 110,
+              color: Colors.grey.shade100,
               alignment: Alignment.center,
-              child: const Icon(Icons.error, color: Colors.grey),
+              child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
             ),
           ),
         ),

@@ -341,7 +341,7 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                         ),
                       ),
                     ],
-                    if (statusVerifikasi.isNotEmpty && !isSuperAdminAccount) ...[
+                    if (role.toLowerCase() == 'mitra' && statusVerifikasi.isNotEmpty && !isSuperAdminAccount) ...[
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
