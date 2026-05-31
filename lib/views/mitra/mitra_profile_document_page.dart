@@ -102,9 +102,127 @@ class _MitraProfileDocumentPageState
     }
   }
 
-  Future<void> _pickAndUploadLogo() async {
+  /// Menampilkan Bottom Sheet modern untuk opsi perubahan foto profil.
+  void _showLogoBottomSheet(String? logoUrl) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                'Ubah Foto Profil',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textHeading,
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Opsi: Ambil dari Kamera
+              _buildBottomSheetOption(
+                icon: Icons.camera_alt_rounded,
+                label: 'Ambil dari Kamera',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAndUploadLogoFromSource(ImageSource.camera);
+                },
+              ),
+              // Opsi: Pilih dari Galeri
+              _buildBottomSheetOption(
+                icon: Icons.photo_library_rounded,
+                label: 'Pilih dari Galeri',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAndUploadLogoFromSource(ImageSource.gallery);
+                },
+              ),
+              // Opsi: Hapus Foto (hanya jika logo ada)
+              if (logoUrl != null && logoUrl.isNotEmpty)
+                _buildBottomSheetOption(
+                  icon: Icons.delete_outline_rounded,
+                  label: 'Hapus Foto',
+                  isDestructive: true,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _deleteLogo();
+                  },
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Widget builder untuk setiap opsi di dalam Bottom Sheet.
+  Widget _buildBottomSheetOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isDestructive
+                    ? Colors.red.withOpacity(0.1)
+                    : AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isDestructive ? Colors.red : AppColors.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: isDestructive ? Colors.red : AppColors.textHeading,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Mengambil gambar dari sumber (kamera/galeri) lalu upload sebagai logo.
+  Future<void> _pickAndUploadLogoFromSource(ImageSource source) async {
     final picked =
-        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+        await _picker.pickImage(source: source, imageQuality: 70);
     if (picked == null) return;
 
     setState(() => _isLoading = true);
@@ -112,10 +230,30 @@ class _MitraProfileDocumentPageState
       await ref
           .read(mitraProfileProvider.notifier)
           .uploadLogo(File(picked.path));
-      if (mounted)
+      if (mounted) {
         SnackbarHelper.showSuccess(context, 'Logo berhasil diupload');
+      }
     } catch (e) {
-      if (mounted) SnackbarHelper.showError(context, 'Gagal upload logo: $e');
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Gagal upload logo: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// Menghapus foto profil (logo).
+  Future<void> _deleteLogo() async {
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(mitraProfileProvider.notifier).deleteLogo();
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'Foto profil berhasil dihapus');
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Gagal menghapus foto: $e');
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -184,7 +322,9 @@ class _MitraProfileDocumentPageState
                         padding: const EdgeInsets.only(bottom: 40, top: 16),
                         child: Center(
                           child: GestureDetector(
-                            onTap: _isLoading ? null : _pickAndUploadLogo,
+                            onTap: _isLoading
+                                ? null
+                                : () => _showLogoBottomSheet(profile.logoUrl),
                             child: Stack(
                               children: [
                                 Container(

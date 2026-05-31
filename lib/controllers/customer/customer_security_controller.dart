@@ -1,7 +1,4 @@
-import 'dart:math';
-import 'dart:typed_data';
-import 'package:otp/otp.dart';
-import 'package:base32/base32.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -168,46 +165,5 @@ class CustomerSecurityController extends StateNotifier<AsyncValue<void>> {
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
-  // 5. 2FA TOTP
-  String generateSecretKey() {
-    final random = Random.secure();
-    final bytes = List<int>.generate(20, (i) => random.nextInt(256));
-    return base32.encode(Uint8List.fromList(bytes)).replaceAll('=', '');
-  }
 
-  String generateQrCodeUri({required String email, required String secret}) {
-    return 'otpauth://totp/LapangKu:$email?secret=$secret&issuer=LapangKu';
-  }
-
-  bool verifyTOTPCode(String secret, String code) {
-    try {
-      final generatedCode = OTP.generateTOTPCodeString(
-        secret,
-        DateTime.now().millisecondsSinceEpoch,
-        algorithm: Algorithm.SHA1,
-        isGoogle: true,
-      );
-      return generatedCode == code;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  Future<void> updateTwoFactorStatus({
-    required String uid,
-    required bool enabled,
-    required String secret,
-  }) async {
-    try {
-      state = const AsyncLoading();
-      await _firestore.collection('users').doc(uid).update({
-        'twoFactorEnabled': enabled,
-        'twoFactorSecret': enabled ? secret : null,
-      });
-      state = const AsyncData(null);
-    } catch (e) {
-      state = AsyncError(e, StackTrace.current);
-      throw Exception('Gagal memperbarui status 2FA');
-    }
-  }
 }

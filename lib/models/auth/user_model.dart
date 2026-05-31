@@ -21,7 +21,7 @@ class UserModel {
   
   // Security Fields
   final DateTime? lastPasswordChange;
-  final bool twoFactorEnabled;
+
   final bool emailVerified;
   final bool phoneVerified;
   final Map<String, bool> notificationSettings;
@@ -45,7 +45,7 @@ class UserModel {
     this.alamatLatLng,
     this.birthday,
     this.lastPasswordChange,
-    this.twoFactorEnabled = false,
+
     this.emailVerified = false,
     this.phoneVerified = false,
     this.notificationSettings = const {
@@ -86,7 +86,7 @@ class UserModel {
       alamatLatLng: data['alamatLatLng'] is GeoPoint ? data['alamatLatLng'] as GeoPoint : null,
       birthday: data['birthday']?.toString(),
       lastPasswordChange: lastPwd,
-      twoFactorEnabled: data['twoFactorEnabled'] == true,
+
       emailVerified: data['emailVerified'] == true,
       phoneVerified: data['phoneVerified'] == true,
       notificationSettings: data['notificationSettings'] != null
@@ -121,7 +121,7 @@ class UserModel {
       if (alamatLatLng != null) 'alamatLatLng': alamatLatLng,
       'birthday': birthday,
       'lastPasswordChange': lastPasswordChange != null ? Timestamp.fromDate(lastPasswordChange!) : null,
-      'twoFactorEnabled': twoFactorEnabled,
+
       'emailVerified': emailVerified,
       'phoneVerified': phoneVerified,
       'notificationSettings': notificationSettings,

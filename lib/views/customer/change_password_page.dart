@@ -42,14 +42,20 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password berhasil diubah')),
+          const SnackBar(
+            content: Text('Password berhasil diubah'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -70,85 +76,124 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
         ),
         backgroundColor: AppColors.primary,
         iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Buat Password Baru',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textHeading,
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Icon
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.lock_reset_rounded,
+                          size: 48,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Buat Password Baru',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textHeading,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Pastikan password baru Anda terdiri dari minimal 6 karakter demi keamanan akun Anda.',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildPasswordField(
+                      controller: _oldPasswordController,
+                      label: 'Password Lama',
+                      obscureText: _obscureOld,
+                      textInputAction: TextInputAction.next,
+                      onToggleVisibility: () => setState(() => _obscureOld = !_obscureOld),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Password lama wajib diisi';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _buildPasswordField(
+                      controller: _newPasswordController,
+                      label: 'Password Baru',
+                      obscureText: _obscureNew,
+                      textInputAction: TextInputAction.next,
+                      onToggleVisibility: () => setState(() => _obscureNew = !_obscureNew),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Password baru wajib diisi';
+                        }
+                        if (value.length < 6) {
+                          return 'Password minimal 6 karakter';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _buildPasswordField(
+                      controller: _confirmPasswordController,
+                      label: 'Konfirmasi Password Baru',
+                      obscureText: _obscureConfirm,
+                      textInputAction: TextInputAction.done,
+                      onToggleVisibility: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Konfirmasi password wajib diisi';
+                        }
+                        if (value != _newPasswordController.text) {
+                          return 'Password tidak cocok';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Pastikan password baru Anda terdiri dari minimal 8 karakter demi keamanan akun Anda.',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-              ),
-              const SizedBox(height: 24),
-              _buildPasswordField(
-                controller: _oldPasswordController,
-                label: 'Password Lama',
-                obscureText: _obscureOld,
-                textInputAction: TextInputAction.next,
-                onToggleVisibility: () => setState(() => _obscureOld = !_obscureOld),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password lama wajib diisi';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildPasswordField(
-                controller: _newPasswordController,
-                label: 'Password Baru',
-                obscureText: _obscureNew,
-                textInputAction: TextInputAction.next,
-                onToggleVisibility: () => setState(() => _obscureNew = !_obscureNew),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password baru wajib diisi';
-                  }
-                  if (value.length < 8) {
-                    return 'Password minimal 8 karakter';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildPasswordField(
-                controller: _confirmPasswordController,
-                label: 'Konfirmasi Password Baru',
-                obscureText: _obscureConfirm,
-                textInputAction: TextInputAction.done,
-                onToggleVisibility: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Konfirmasi password wajib diisi';
-                  }
-                  if (value != _newPasswordController.text) {
-                    return 'Password tidak cocok';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 40),
-              SizedBox(
+            ),
+          ),
+          // Sticky Bottom Button
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 52,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
+                    elevation: 0,
                   ),
                   onPressed: _isLoading ? null : _submit,
                   child: _isLoading
@@ -157,11 +202,11 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                           width: 24,
                           child: CircularProgressIndicator(
                             color: Colors.white,
-                            strokeWidth: 2,
+                            strokeWidth: 2.5,
                           ),
                         )
                       : const Text(
-                          'Simpan Password',
+                          'Simpan',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -170,9 +215,9 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                         ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -185,35 +230,58 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
     TextInputAction? textInputAction,
     String? Function(String?)? validator,
   }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      textInputAction: textInputAction,
-      validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
-        suffixIcon: IconButton(
-          icon: Icon(
-            obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-            color: AppColors.hint,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textHeading,
           ),
-          onPressed: onToggleVisibility,
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          obscureText: obscureText,
+          textInputAction: textInputAction,
+          validator: validator,
+          style: const TextStyle(fontSize: 14, color: AppColors.textHeading),
+          decoration: InputDecoration(
+            hintText: 'Masukkan $label',
+            hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+            prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.textSecondary, size: 22),
+            suffixIcon: IconButton(
+              icon: Icon(
+                obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                color: AppColors.textSecondary,
+                size: 22,
+              ),
+              onPressed: onToggleVisibility,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
+          ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-      ),
+      ],
     );
   }
 }

@@ -195,11 +195,7 @@ class AuthService {
     }
   }
 
-  Future<void> updateTwoFactor(String uid, bool enabled) async {
-    await _db.collection('users').doc(uid).update({
-      'twoFactorEnabled': enabled,
-    });
-  }
+
 
   Future<void> updateNotificationSettings(
       String uid, Map<String, bool> settings) async {
