@@ -545,26 +545,202 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
   void _showExportDialog(List<BookingModel> allBookings) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Ekspor Laporan', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('Pilih format laporan yang ingin diunduh:'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _exportReport(allBookings, isPdf: true);
-            },
-            child: const Text('PDF', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+      barrierColor: Colors.black.withOpacity(0.35),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _exportReport(allBookings, isPdf: false);
-            },
-            child: const Text('Excel', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header ──────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 20, 0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1B6B3A).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.sim_card_download_rounded,
+                          color: Color(0xFF1B6B3A), size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Ekspor Laporan',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                  color: AppColors.textHeading,
+                                  letterSpacing: -0.3)),
+                          SizedBox(height: 2),
+                          Text('Pilih format file yang ingin diunduh',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => Navigator.pop(ctx),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.close_rounded,
+                            color: Colors.grey.shade500, size: 18),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Divider ──────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Divider(height: 1, color: Colors.grey.shade100),
+              ),
+
+              // ── Format Options ───────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _exportFormatCard(
+                        icon: Icons.picture_as_pdf_rounded,
+                        label: 'PDF',
+                        description: 'Siap cetak & dibagikan',
+                        iconColor: const Color(0xFFDC2626),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _exportReport(allBookings, isPdf: true);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _exportFormatCard(
+                        icon: Icons.table_chart_rounded,
+                        label: 'Excel',
+                        description: 'Mudah diedit & dianalisis',
+                        iconColor: const Color(0xFF16A34A),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _exportReport(allBookings, isPdf: false);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Cancel ───────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 40,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey.shade600,
+                      backgroundColor: Colors.grey.shade50,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                    ),
+                    child: const Text('Batal',
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _exportFormatCard({
+    required IconData icon,
+    required String label,
+    required String description,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          color: iconColor)),
+                  const SizedBox(height: 2),
+                  Text(description,
+                      style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade500,
+                          height: 1.3)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: Colors.grey.shade300, size: 18),
+          ],
+        ),
       ),
     );
   }
