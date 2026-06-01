@@ -600,7 +600,7 @@ class _BookingCard extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: isLoading ? null : () => _onReject(ref),
+                      onPressed: isLoading ? null : () => _onReject(context, ref),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFFFDA4AF)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -756,18 +756,32 @@ class _BookingCard extends ConsumerWidget {
             await ref
                 .read(MitraBookingActionsProvider.notifier)
                 .confirmBooking(booking.id);
-          } catch (_) {}
+            if (context.mounted) {
+              SnackbarHelper.showSuccess(context, 'Booking berhasil dikonfirmasi');
+            }
+          } catch (e) {
+            if (context.mounted) {
+              SnackbarHelper.showError(context, 'Gagal mengkonfirmasi: $e');
+            }
+          }
         },
       ),
     );
   }
 
-  void _onReject(WidgetRef ref) async {
+  void _onReject(BuildContext context, WidgetRef ref) async {
     try {
       await ref
           .read(MitraBookingActionsProvider.notifier)
           .rejectBooking(booking.id);
-    } catch (_) {}
+      if (context.mounted) {
+        SnackbarHelper.showSuccess(context, 'Booking berhasil ditolak');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        SnackbarHelper.showError(context, 'Gagal menolak: $e');
+      }
+    }
   }
 
   void _onDelete(BuildContext context, WidgetRef ref) async {

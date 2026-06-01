@@ -43,6 +43,8 @@ interface SendNotificationOptions {
   saveToFirestore?: boolean;
   /** User ID target — wajib jika saveToFirestore = true */
   targetUserId?: string;
+  /** Tipe target pengguna: 'customer' atau 'mitra' (Wajib ditambahkan!) */
+  targetUserType?: "customer" | "mitra";
   /** Tipe notifikasi: booking, payment, payout, review, system */
   notificationType?: string;
 }
@@ -109,20 +111,35 @@ export async function sendNotification(
   }
 
   // ─── Simpan ke Firestore (koleksi notifikasi) ───
+  // ─── Simpan ke Firestore (koleksi notifikasi) ───
   if (saveToFirestore && targetUserId) {
     try {
       const db = getDb();
-      await db.collection("notifikasi").add({
-        customer_id: targetUserId,
+      
+      // 1. Siapkan struktur data dasar notifikasi
+      const notificationPayload: Record<string, any> = {
         title,
         message: body,
         type: notificationType,
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         data: data,
-      });
+      };
+
+      // 2. LOGIKA DINAMIS: Cek tipe target untuk menentukan nama field database
+      // Jika dikirim ke Mitra, gunakan field 'mitra_id'. Jika ke Customer, gunakan 'customer_id'
+      if (options.targetUserType === "mitra") {
+        notificationPayload.mitra_id = targetUserId;
+      } else {
+        notificationPayload.customer_id = targetUserId;
+      }
+
+      // 3. Masukkan payload data ke koleksi 'notifikasi'
+      await db.collection("notifikasi").add(notificationPayload);
+      console.log(`✅ Notifikasi disimpan di Firestore untuk target tipe: ${options.targetUserType || "customer"}`);
+      
     } catch (error) {
-      console.error(`❌ Failed to save notification to Firestore:`, error);
+      console.error(`❌ Gagal menyimpan notifikasi ke Firestore:`, error);
     }
   }
 
