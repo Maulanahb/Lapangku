@@ -21,6 +21,7 @@ export const onBookingUpdated = onDocumentUpdated(
     document: "bookings/{bookingId}",
     database: "lapangku-db",
     region: "asia-southeast2",
+    minInstances: 1,
   },
   async (event) => {
     const before = event.data?.before.data();
