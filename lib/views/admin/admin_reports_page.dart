@@ -220,7 +220,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
             ],
           ),
           const SizedBox(height: 24),
-          _buildChartSection('Tren Booking (Bulanan)', _getMonthlyBookingData(bookings), 'Total Booking'),
+          _buildChartSection('Tren Booking (Bulanan)', _getMonthlyBookingData(bookings), 'Total Booking', isRevenue: false),
           const SizedBox(height: 24),
           _buildDetailTable(bookings, isRevenue: false),
         ],
@@ -250,7 +250,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
             ],
           ),
           const SizedBox(height: 24),
-          _buildChartSection('Tren Penghasilan (Bulanan)', _getMonthlyRevenueData(bookings), 'Penghasilan (dalam Juta)'),
+          _buildChartSection('Tren Penghasilan (Bulanan)', _getMonthlyRevenueData(bookings), 'Penghasilan (dalam Juta)', isRevenue: true),
           const SizedBox(height: 24),
           _buildDetailTable(completedBookings, isRevenue: true),
         ],
@@ -285,7 +285,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
     );
   }
 
-  Widget _buildChartSection(String title, List<double> data, String yAxisLabel) {
+  Widget _buildChartSection(String title, List<double> data, String yAxisLabel, {bool isRevenue = false}) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -312,13 +312,49 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
                 titlesData: FlTitlesData(
                   rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: isRevenue ? 68 : 40,
+                      getTitlesWidget: (value, meta) {
+                        if (value == meta.min || value == meta.max) return const SizedBox();
+                        String label;
+                        if (isRevenue) {
+                          // Data dalam Rupiah asli
+                          if (value >= 1000000) {
+                            final jt = value / 1000000;
+                            label = 'Rp ${jt % 1 == 0 ? jt.toInt() : jt.toStringAsFixed(1)} Jt';
+                          } else if (value >= 1000) {
+                            final rb = value / 1000;
+                            label = 'Rp ${rb % 1 == 0 ? rb.toInt() : rb.toStringAsFixed(0)} Rb';
+                          } else if (value > 0) {
+                            label = 'Rp ${value.toInt()}';
+                          } else {
+                            label = 'Rp 0';
+                          }
+                        } else {
+                          label = value.toInt().toString();
+                        }
+                        return SideTitleWidget(
+                          meta: meta,
+                          child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                        );
+                      },
+                    ),
+                  ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      interval: 1,
+                      reservedSize: 28,
                       getTitlesWidget: (value, meta) {
                         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-                        if (value.toInt() >= 0 && value.toInt() < 12) {
-                          return Text(months[value.toInt()], style: const TextStyle(color: Colors.grey, fontSize: 10));
+                        final idx = value.toInt();
+                        if (value == value.roundToDouble() && idx >= 0 && idx < 12) {
+                          return SideTitleWidget(
+                            meta: meta,
+                            child: Text(months[idx], style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                          );
                         }
                         return const SizedBox();
                       },
@@ -476,7 +512,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
     for (var b in bookings) {
       if (b.status == 'selesai') {
         final month = b.tanggal.month - 1;
-        if (month >= 0 && month < 12) revenue[month] += (b.totalBayar / 1000000); // In millions for chart
+        if (month >= 0 && month < 12) revenue[month] += b.totalBayar.toDouble();
       }
     }
     return revenue;

@@ -6,6 +6,7 @@ import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/admin/admin_field_model.dart';
 import 'package:lapangku/models/admin/booking_model.dart';
 import 'package:lapangku/models/admin/admin_stats.dart';
+import 'package:lapangku/models/booking/booking_model.dart' as global_booking;
 
 class AdminService {
   final FirebaseFirestore _firestore = FirestoreService.instance;
@@ -52,52 +53,37 @@ class AdminService {
       // Dokumen belum ada, tetap gunakan 0
     }
 
-    // 5. Booking Status Counts for Donut Chart
-    final selesaiSnap = await _firestore
-        .collection('bookings')
-        .where('status', isEqualTo: 'selesai')
-        .count()
-        .get();
-    final countSelesai = selesaiSnap.count ?? 0;
+    // 5. Booking Status Counts for Donut Chart (Apply client-side auto-expire logic by parsing them via BookingModel)
+    final allBookingsSnap = await _firestore.collection('bookings').get();
+    int countSelesai = 0;
+    int countMenungguBayar = 0;
+    int countMenungguKonfirmasi = 0;
+    int countDikonfirmasi = 0;
+    int countDibatalkan = 0;
 
-    final menungguBayarSnap = await _firestore
-        .collection('bookings')
-        .where('status', isEqualTo: 'menunggu_bayar')
-        .count()
-        .get();
-    final countMenungguBayar = menungguBayarSnap.count ?? 0;
-
-    final menungguKonfirmasiSnap = await _firestore
-        .collection('bookings')
-        .where('status', isEqualTo: 'menunggu_konfirmasi')
-        .count()
-        .get();
-    final countMenungguKonfirmasi = menungguKonfirmasiSnap.count ?? 0;
-
-    final dikonfirmasiSnap = await _firestore
-        .collection('bookings')
-        .where('status', isEqualTo: 'dikonfirmasi')
-        .count()
-        .get();
-    final countDikonfirmasi = dikonfirmasiSnap.count ?? 0;
-
-    // dibatalkan, ditolak, expired are counted under "dibatalkan" in donut chart
-    final dibatalkanSnap = await _firestore
-        .collection('bookings')
-        .where('status', isEqualTo: 'dibatalkan')
-        .count()
-        .get();
-    final ditolakSnap = await _firestore
-        .collection('bookings')
-        .where('status', isEqualTo: 'ditolak')
-        .count()
-        .get();
-    final expiredSnap = await _firestore
-        .collection('bookings')
-        .where('status', isEqualTo: 'expired')
-        .count()
-        .get();
-    final countDibatalkan = (dibatalkanSnap.count ?? 0) + (ditolakSnap.count ?? 0) + (expiredSnap.count ?? 0);
+    for (var doc in allBookingsSnap.docs) {
+      // Use global_booking.BookingModel to apply the exact same logic (auto-expire, fallbacks) used in the UI
+      final booking = global_booking.BookingModel.fromFirestore(doc);
+      switch (booking.status) {
+        case 'selesai':
+          countSelesai++;
+          break;
+        case 'menunggu_bayar':
+          countMenungguBayar++;
+          break;
+        case 'menunggu_konfirmasi':
+          countMenungguKonfirmasi++;
+          break;
+        case 'dikonfirmasi':
+          countDikonfirmasi++;
+          break;
+        case 'dibatalkan':
+        case 'ditolak':
+        case 'expired':
+          countDibatalkan++;
+          break;
+      }
+    }
 
     return AdminStats(
       totalUsers: totalUsers,
@@ -350,7 +336,8 @@ class AdminService {
       // Bookings
       final bookingsSnap = results[0] as QuerySnapshot;
       for (var doc in bookingsSnap.docs) {
-        final data = doc.data()! as Map<String, dynamic>;
+        final booking = global_booking.BookingModel.fromFirestore(doc);
+        final data = doc.data() as Map<String, dynamic>? ?? {};
         final dynamic t = data['tanggal'];
         DateTime time = DateTime.now();
         if (t is Timestamp) {
@@ -359,10 +346,10 @@ class AdminService {
 
         activities.add({
           'time': time,
-          'user': data['userName'] ?? data['namaPenyewa'] ?? 'Penyewa',
+          'user': booking.userName.isNotEmpty ? booking.userName : 'Penyewa',
           'action': 'New Booking',
-          'detail': data['fieldName'] ?? data['namaLapangan'] ?? '',
-          'status': data['status'] ?? 'menunggu',
+          'detail': booking.fieldName.isNotEmpty ? booking.fieldName : 'Tanpa Keterangan',
+          'status': booking.status,
           'type': 'booking',
         });
       }
