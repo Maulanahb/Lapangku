@@ -32,6 +32,7 @@ class ReviewService {
     String? userPhotoUrl,
     String? reviewImageUrl,
   }) async {
+    // 1. Memastikan dokumen ulasan masuk ke SUB-KOLEKSI dari lapangan terkait
     final reviewRef = _db.collection('lapangan').doc(fieldId).collection('reviews').doc();
     final bookingRef = _db.collection('bookings').doc(bookingId);
 
@@ -51,16 +52,18 @@ class ReviewService {
       final newTotal = currentTotal + 1;
       final newAvg = ((currentAvg * currentTotal) + rating) / newTotal;
 
+      // Update akumulasi rating di dokumen lapangan utama
       transaction.update(fieldRef, {
         'avg_rating': double.parse(newAvg.toStringAsFixed(1)),
         'total_ulasan': newTotal,
       });
       
+      // Simpan data ulasan ke sub-koleksi dengan field 'userId' yang konsisten untuk Firebase Rules
       transaction.set(reviewRef, {
         'bookingId': bookingId,
         'fieldId': fieldId,
         'mitraId': mitraId,
-        'userId': userId,
+        'userId': userId, // Digunakan untuk memvalidasi kepemilikan ulasan di Firebase Rules
         'userName': userName,
         'userPhotoUrl': userPhotoUrl,
         'reviewImageUrl': reviewImageUrl,
@@ -72,6 +75,7 @@ class ReviewService {
             ? (data['foto_lapangan'] as List).first 
             : data['fotoUtama'] ?? data['fieldImageUrl'] ?? '',
       });
+
       transaction.update(bookingRef, {
         'isReviewed': true,
       });
@@ -79,6 +83,7 @@ class ReviewService {
   }
 
   Future<List<Map<String, dynamic>>> getUserReviews(String userId) async {
+    // Menggunakan collectionGroup karena ulasan tersebar di dalam sub-koleksi lapangan yang berbeda-beda
     final querySnapshot = await _db
         .collectionGroup('reviews')
         .where('userId', isEqualTo: userId)
@@ -114,7 +119,7 @@ class ReviewService {
 
     return querySnapshot.docs.map((doc) {
       final data = doc.data();
-      data['id'] = doc.id;
+      data['id'] = doc.id; // Menyisipkan ID dokumen asli agar bisa dipakai saat memanggil aksi Hapus
       return data;
     }).toList();
   }
@@ -125,6 +130,11 @@ class ReviewService {
     required int rating,
     String? bookingId,
   }) async {
+    // Validasi parameter untuk menghindari kegagalan query transaksi
+    if (fieldId.isEmpty || reviewId.isEmpty) {
+      throw Exception('ID Lapangan atau ID Ulasan tidak boleh kosong');
+    }
+
     final reviewRef = _db.collection('lapangan').doc(fieldId).collection('reviews').doc(reviewId);
     final fieldRef = _db.collection('lapangan').doc(fieldId);
 
@@ -141,13 +151,14 @@ class ReviewService {
 
         transaction.update(fieldRef, {
           'avg_rating': double.parse(newAvg.toStringAsFixed(1)),
-          'total_ulasan': newTotal,
+          'total_ulasan': newTotal < 0 ? 0 : newTotal,
         });
       }
 
+      // Jalankan proses penghapusan dokumen ulasan dari sub-koleksi
       transaction.delete(reviewRef);
 
-      // Reset isReviewed on the booking so user can re-review if they want
+      // Kembalikan status booking menjadi belum di-review agar customer bisa menulis ulang
       if (bookingId != null && bookingId.isNotEmpty) {
         final bookingRef = _db.collection('bookings').doc(bookingId);
         transaction.update(bookingRef, {'isReviewed': false});
