@@ -47,7 +47,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
           SliverPersistentHeader(
             pinned: true,
             delegate: _HeaderDelegate(
-              expandedHeight: 180.0,
+              expandedHeight: MediaQuery.of(context).padding.top + 150.0,
               collapsedHeight: MediaQuery.of(context).padding.top + 76.0,
               user: user,
               avatarUrl: avatarUrl,
