@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
@@ -18,7 +18,6 @@ import 'package:lapangku/services/firebase_storage_service.dart';
 /// - **System**: auto-expire batas waktu bayar
 class BookingService {
   final FirebaseFirestore _db = FirestoreService.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PRIVATE HELPERS
@@ -177,16 +176,16 @@ class BookingService {
       createdAt: now,
       updatedAt: now,
     );
-    print('=========================================');
-    print('📋 CREATE BOOKING');
-    print('   fieldId: ${field.id}');
-    print('   mitraId param: $mitraId');
-    print('   field.mitraId: ${field.mitraId}');
-    print('   field.idPemilik: ${field.idPemilik}');
-    print('=========================================');
+    debugPrint('=========================================');
+    debugPrint('📋 CREATE BOOKING');
+    debugPrint('   fieldId: ${field.id}');
+    debugPrint('   mitraId param: $mitraId');
+    debugPrint('   field.mitraId: ${field.mitraId}');
+    debugPrint('   field.idPemilik: ${field.idPemilik}');
+    debugPrint('=========================================');
 
     await docRef.set(booking.toFirestore());
-    print('✅ Booking saved: ${booking.bookingId} | mitraId in doc: ${booking.mitraId}');
+    debugPrint('✅ Booking saved: ${booking.bookingId} | mitraId in doc: ${booking.mitraId}');
     return booking;
   }
 
@@ -428,11 +427,11 @@ class BookingService {
     String mitraId, {
     String? statusFilter,
   }) {
-    print('=========================================');
-    print('🔍 STREAM MITRA BOOKINGS');
-    print('   mitraId: "$mitraId"');
-    print('   statusFilter: $statusFilter');
-    print('=========================================');
+    debugPrint('=========================================');
+    debugPrint('🔍 STREAM MITRA BOOKINGS');
+    debugPrint('   mitraId: "$mitraId"');
+    debugPrint('   statusFilter: $statusFilter');
+    debugPrint('=========================================');
 
     Query query = _db
         .collection('bookings')
