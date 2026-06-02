@@ -26,12 +26,21 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
   final TextEditingController _searchController = TextEditingController();
   String _selectedSort = 'Terbaru';
   final List<String> _sortOptions = ['Terbaru', 'Terlama', 'Nilai Tertinggi'];
+  
+  // Pagination state
+  int _currentPage = 1;
+  final int _itemsPerPage = 15;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(
         length: 4, vsync: this, initialIndex: widget.initialIndex);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        setState(() => _currentPage = 1);
+      }
+    });
   }
 
   @override
@@ -165,7 +174,7 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
             ),
             child: TextField(
               controller: _searchController,
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) => setState(() => _currentPage = 1),
               style: const TextStyle(fontSize: 14),
               decoration: const InputDecoration(
                 hintText: 'Cari nama pelanggan atau ID...',
@@ -188,7 +197,10 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: GestureDetector(
-                    onTap: () => setState(() => _selectedSort = sort),
+                    onTap: () => setState(() {
+                      _selectedSort = sort;
+                      _currentPage = 1;
+                    }),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -218,7 +230,7 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
     );
   }
 
-  Widget _buildBookingList(String filterKey) {
+ Widget _buildBookingList(String filterKey) {
     // Selalu fetch semua booking, lalu filter di lokal agar efisien & mendukung logika OR
     final bookingsAsync = ref.watch(MitraBookingStreamProvider(null));
 
@@ -271,11 +283,25 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
           );
         }
 
+        final int totalPages = (filteredBookings.length / _itemsPerPage).ceil();
+        
+        // Safety check if search reduces items such that currentPage is out of bounds
+        final safePage = (_currentPage > totalPages && totalPages > 0) ? 1 : _currentPage;
+
+        final paginatedBookings = filteredBookings
+            .skip((safePage - 1) * _itemsPerPage)
+            .take(_itemsPerPage)
+            .toList();
+
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          itemCount: filteredBookings.length,
-          itemBuilder: (context, index) =>
-              _BookingCard(booking: filteredBookings[index]),
+          padding: const EdgeInsets.only(top: 16, bottom: 100),
+          itemCount: paginatedBookings.length + (totalPages > 1 ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == paginatedBookings.length) {
+              return _buildPaginationControls(totalPages, safePage);
+            }
+            return _BookingCard(booking: paginatedBookings[index]);
+          },
         );
       },
       loading: () => const Center(
@@ -283,23 +309,82 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
       error: (e, st) => Center(child: Text('Error: $e')),
     );
   }
+
+  Widget _buildPaginationControls(int totalPages, int currentPage) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          GestureDetector(
+            onTap: currentPage > 1 ? () => setState(() => _currentPage = currentPage - 1) : null,
+            child: Icon(Icons.chevron_left_rounded, color: currentPage > 1 ? AppColors.primary : Colors.grey.shade300),
+          ),
+          const SizedBox(width: 8),
+          ...List.generate(totalPages, (index) {
+            final page = index + 1;
+
+            if (totalPages > 5) {
+              if (page != 1 && page != totalPages && (page < currentPage - 1 || page > currentPage + 1)) {
+                if (page == currentPage - 2 || page == currentPage + 2) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: Text('···', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 14)),
+                  );
+                }
+                return const SizedBox.shrink();
+              }
+            }
+
+            final isSelected = page == currentPage;
+            return GestureDetector(
+              onTap: () => setState(() => _currentPage = page),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
+                  ),
+                  boxShadow: isSelected
+                      ? [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2))]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '$page',
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : const Color(0xFF64748B),
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            );
+          }),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: currentPage < totalPages ? () => setState(() => _currentPage = currentPage + 1) : null,
+            child: Icon(Icons.chevron_right_rounded, color: currentPage < totalPages ? AppColors.primary : Colors.grey.shade300),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-final _userAvatarProvider = FutureProvider.autoDispose.family<String?, String>((ref, userId) async {
-  if (userId.isEmpty) return null;
+final _userInfoProvider = FutureProvider.autoDispose.family<Map<String, dynamic>?, String>((ref, userId) async {
+  if (userId.isEmpty || userId.startsWith('offline_')) return null;
   try {
     final doc = await FirestoreService.instance.collection('users').doc(userId).get();
     if (doc.exists) {
-      final data = doc.data();
-      if (data != null) {
-        final url = data['avatarUrl']?.toString() ?? data['photoUrl']?.toString();
-        if (url != null && url.isNotEmpty) {
-          return url;
-        }
-      }
+      return doc.data();
     }
   } catch (e) {
-    debugPrint('🚨 ERROR FETCH AVATAR (Mungkin masalah Rules/CORS) untuk $userId: $e');
+    debugPrint('🚨 ERROR FETCH USER INFO untuk $userId: $e');
   }
   return null;
 });
@@ -312,7 +397,7 @@ class _BookingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLoading = ref.watch(MitraBookingActionsProvider).contains(booking.id);
     final status = BookingStatusParsing.fromString(booking.status);
-    final avatarAsync = ref.watch(_userAvatarProvider(booking.userId));
+    final userInfoAsync = ref.watch(_userInfoProvider(booking.userId));
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -406,8 +491,9 @@ class _BookingCard extends ConsumerWidget {
                         color: const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: avatarAsync.when(
-                        data: (avatarUrl) {
+                      child: userInfoAsync.when(
+                        data: (userInfo) {
+                          final avatarUrl = userInfo?['avatarUrl']?.toString() ?? userInfo?['photoUrl']?.toString();
                           final initials = booking.userName.trim().isNotEmpty
                               ? booking.userName
                                   .trim()
@@ -493,7 +579,17 @@ class _BookingCard extends ConsumerWidget {
                         children: [
                           Text(booking.userName, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF1E293B))),
                           const SizedBox(height: 2),
-                          const Text('+62 812-3456-7890', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                          userInfoAsync.when(
+                            data: (userInfo) {
+                              final phone = userInfo?['phone']?.toString();
+                              if (phone != null && phone.isNotEmpty) {
+                                return Text(phone, style: const TextStyle(color: Color(0xFF64748B), fontSize: 12));
+                              }
+                              return const SizedBox.shrink();
+                            },
+                            loading: () => const Text('Memuat...', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+                            error: (_, __) => const SizedBox.shrink(),
+                          ),
                         ],
                       ),
                     ),

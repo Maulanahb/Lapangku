@@ -402,6 +402,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
   Widget _ulasanTab() {
     final f = widget.field;
     final reviewsAsync = ref.watch(fieldReviewsProvider(f.id));
+    final currentUser = ref.watch(authStateProvider).value;
 
     return Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       reviewsAsync.when(
@@ -433,6 +434,10 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
             else if (rating == 1) c1++;
           }
           int t = reviews.length;
+
+          final myReviews = reviews.where((r) => currentUser != null && r['userId'] == currentUser.uid).toList();
+          final otherReviews = reviews.where((r) => currentUser == null || r['userId'] != currentUser.uid).toList();
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -445,28 +450,86 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
                 ))
               else
                 Column(
-                  children: reviews.map((review) {
-                    final n = review['userName'] ?? 'Pengguna';
-                    final s = review['rating'] ?? 5;
-                    final t = review['comment'] ?? '';
-                    final reviewImageUrl = review['reviewImageUrl'] ?? '';
-                    DateTime date = DateTime.now();
-                    if (review['createdAt'] != null) {
-                      if (review['createdAt'] is DateTime) {
-                        date = review['createdAt'] as DateTime;
-                      } else {
-                        date = review['createdAt'].toDate();
-                      }
-                    }
-                    final time = DateFormat('dd MMM yyyy').format(date);
-                    return _rc(n, s, t, time, reviewImageUrl);
-                  }).toList(),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (myReviews.isNotEmpty) ...[
+                      const Text('Ulasan Anda', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 12),
+                      ...myReviews.map((review) => _buildReviewItem(review, isMine: true)),
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 16),
+                      if (otherReviews.isNotEmpty) ...[
+                        const Text('Ulasan Lainnya', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 12),
+                      ],
+                    ],
+                    ...otherReviews.map((review) => _buildReviewItem(review, isMine: false)),
+                  ],
                 ),
             ],
           );
         },
       ),
     ]));
+  }
+
+  Widget _buildReviewItem(Map<String, dynamic> review, {bool isMine = false}) {
+    final n = review['userName'] ?? 'Pengguna';
+    final s = review['rating'] ?? 5;
+    final t = review['comment'] ?? '';
+    final reviewImageUrl = review['reviewImageUrl'] ?? '';
+    DateTime date = DateTime.now();
+    if (review['createdAt'] != null) {
+      if (review['createdAt'] is DateTime) {
+        date = review['createdAt'] as DateTime;
+      } else {
+        date = review['createdAt'].toDate();
+      }
+    }
+    final time = DateFormat('dd MMM yyyy').format(date);
+    
+    return _rc(
+      n: n, 
+      s: s, 
+      t: t, 
+      time: time, 
+      reviewImageUrl: reviewImageUrl,
+      isMine: isMine,
+      onDelete: isMine ? () => _deleteReview(review) : null,
+    );
+  }
+
+  void _deleteReview(Map<String, dynamic> review) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Ulasan?'),
+        content: const Text('Apakah Anda yakin ingin menghapus ulasan ini?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true), 
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await ref.read(reviewServiceProvider).deleteReview(
+          fieldId: widget.field.id,
+          reviewId: review['id'],
+          rating: review['rating'] ?? 5,
+          bookingId: review['bookingId'],
+        );
+        ref.invalidate(fieldReviewsProvider(widget.field.id));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ulasan berhasil dihapus')));
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menghapus ulasan: $e'), backgroundColor: Colors.red));
+      }
+    }
   }
 
   Widget _buildSummaryBox(FieldModel f, double p5, double p4, double p3, double p2, double p1) {
@@ -486,7 +549,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
     Text(s, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)), const SizedBox(width: 8),
     Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: p, backgroundColor: Colors.grey.shade200, color: Colors.amber, minHeight: 6)))]));
 
-  Widget _rc(String n, int s, String t, String time, String reviewImageUrl) => Container(margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(14),
+  Widget _rc({required String n, required int s, required String t, required String time, required String reviewImageUrl, bool isMine = false, VoidCallback? onDelete}) => Container(margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(14)),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
@@ -494,7 +557,15 @@ class _State extends ConsumerState<CustomerFieldDetailPage> with SingleTickerPro
         const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(n, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
           Row(children: [...List.generate(s, (_) => const Icon(Icons.star_rounded, size: 12, color: Colors.amber)), const SizedBox(width: 6),
-            Text(time, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary))])]))]),
+            Text(time, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary))])])),
+        if (isMine && onDelete != null)
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+            onPressed: onDelete,
+            constraints: const BoxConstraints(),
+            padding: EdgeInsets.zero,
+          ),
+      ]),
       if (t.isNotEmpty) ...[
         const SizedBox(height: 8),
         Text(t, style: const TextStyle(fontSize: 13, color: AppColors.textBody)),
