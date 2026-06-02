@@ -156,6 +156,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
         appName: "LapangKu Mitra",
         otpType: OTPType.numeric,
         otpLength: 6,
+        appEmail: 'lapangku1@gmail.com',
       );
 
       EmailOTP.setTemplate(

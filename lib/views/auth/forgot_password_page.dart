@@ -47,6 +47,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         appName: 'LapangKu',
         otpType: OTPType.numeric,
         otpLength: 6,
+        appEmail: 'lapangku1@gmail.com',
       );
 
       final success = await EmailOTP.sendOTP(email: email);

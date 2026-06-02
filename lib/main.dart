@@ -63,6 +63,7 @@ void main() async {
     EmailOTP.config(
       appName: 'LapangKu Mitra',
       otpType: OTPType.numeric,
+      appEmail: dotenv.env['SMTP_USERNAME'] ?? 'lapangku1@gmail.com',
     );
 
     EmailOTP.setTemplate(

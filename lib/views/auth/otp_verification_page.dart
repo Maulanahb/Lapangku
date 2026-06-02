@@ -146,6 +146,7 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
         appName: 'LapangKu',
         otpType: OTPType.numeric,
         otpLength: 6,
+        appEmail: 'lapangku1@gmail.com',
       );
       final success = await EmailOTP.sendOTP(email: _email);
 
