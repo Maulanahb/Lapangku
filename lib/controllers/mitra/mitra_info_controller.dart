@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
 
 final mitraInfoControllerProvider = StateNotifierProvider<MitraInfoController, AsyncValue<void>>((ref) {
   return MitraInfoController();
@@ -11,7 +12,7 @@ final mitraInfoControllerProvider = StateNotifierProvider<MitraInfoController, A
 
 class MitraInfoController extends StateNotifier<AsyncValue<void>> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirestoreService.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   MitraInfoController() : super(const AsyncData(null));

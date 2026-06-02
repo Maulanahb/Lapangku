@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/mitra/mitra_device_model.dart';
 import 'package:lapangku/models/mitra/mitra_security_log_model.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -58,7 +59,7 @@ final mitraSecurityControllerProvider =
 
 class MitraSecurityController extends StateNotifier<MitraSecurityState> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirestoreService.instance;
 
   MitraSecurityController() : super(const MitraSecurityState()) {
     _loadSecurityData();

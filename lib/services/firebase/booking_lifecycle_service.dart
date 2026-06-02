@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/models/field/field_model.dart';
@@ -524,6 +525,34 @@ class BookingLifecycleService {
         }
       }
     }
+
+    // Ambil slot yang ditutup secara manual oleh Mitra dari koleksi 'jadwal'
+    try {
+      final dateStr = DateFormat('yyyy-MM-dd').format(date);
+      final jadwalSnap = await _db
+          .collection('jadwal')
+          .where('lapangan_id', isEqualTo: fieldId)
+          .where('tanggal', isEqualTo: dateStr)
+          .where('status', isEqualTo: 'ditutup')
+          .get();
+
+      for (final doc in jadwalSnap.docs) {
+        final data = doc.data();
+        final jam = data['jam'] as String?;
+        if (jam != null && jam.isNotEmpty) {
+          final parts = jam.split(':');
+          final hour = int.parse(parts[0]);
+          final nextHour = hour + 1;
+          final startSlot = '${hour.toString().padLeft(2, '0')}:00';
+          final endSlot = '${nextHour.toString().padLeft(2, '0')}:00';
+          bookedSlots.add('$startSlot - $endSlot');
+        }
+      }
+    } catch (e) {
+      // Fail-safe jika ada error parsing atau query
+      debugPrint('Error fetching/parsing manual closed slots: $e');
+    }
+
     return bookedSlots;
   }
 

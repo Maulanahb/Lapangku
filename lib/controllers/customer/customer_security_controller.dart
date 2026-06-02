@@ -2,6 +2,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
 
 final customerSecurityControllerProvider = StateNotifierProvider<CustomerSecurityController, AsyncValue<void>>((ref) {
   return CustomerSecurityController();
@@ -9,7 +10,7 @@ final customerSecurityControllerProvider = StateNotifierProvider<CustomerSecurit
 
 class CustomerSecurityController extends StateNotifier<AsyncValue<void>> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirestoreService.instance;
 
   CustomerSecurityController() : super(const AsyncData(null));
 
