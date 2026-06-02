@@ -118,4 +118,40 @@ class ReviewService {
       return data;
     }).toList();
   }
+
+  Future<void> deleteReview({
+    required String fieldId,
+    required String reviewId,
+    required int rating,
+    String? bookingId,
+  }) async {
+    final reviewRef = _db.collection('lapangan').doc(fieldId).collection('reviews').doc(reviewId);
+    final fieldRef = _db.collection('lapangan').doc(fieldId);
+
+    await _db.runTransaction((transaction) async {
+      final fieldSnap = await transaction.get(fieldRef);
+
+      if (fieldSnap.exists) {
+        final data = fieldSnap.data()!;
+        final currentAvg = (data['avg_rating'] ?? data['ratingAvg'] ?? 0.0) as num;
+        final currentTotal = (data['total_ulasan'] ?? data['totalUlasan'] ?? 0) as int;
+
+        final newTotal = currentTotal - 1;
+        final newAvg = newTotal > 0 ? ((currentAvg * currentTotal) - rating) / newTotal : 0.0;
+
+        transaction.update(fieldRef, {
+          'avg_rating': double.parse(newAvg.toStringAsFixed(1)),
+          'total_ulasan': newTotal,
+        });
+      }
+
+      transaction.delete(reviewRef);
+
+      // Reset isReviewed on the booking so user can re-review if they want
+      if (bookingId != null && bookingId.isNotEmpty) {
+        final bookingRef = _db.collection('bookings').doc(bookingId);
+        transaction.update(bookingRef, {'isReviewed': false});
+      }
+    });
+  }
 }
