@@ -370,6 +370,18 @@ class BookingService {
     return snap.docs.map((doc) => BookingModel.fromFirestore(doc)).toList();
   }
 
+  /// [Customer] Stream booking milik user tertentu secara real-time.
+  Stream<List<BookingModel>> streamUserBookings(String userId, {int limit = 50}) {
+    return _db
+        .collection('bookings')
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((doc) => BookingModel.fromFirestore(doc)).toList());
+  }
+
   /// [Customer] Membatalkan booking.
   /// Valid dari: menunggu_bayar
   Future<void> cancelBooking(String bookingId) async {

@@ -39,6 +39,14 @@ final userBookingsProvider =
   return service.getUserBookings(userId);
 });
 
+/// [Customer] StreamProvider: semua booking milik user tertentu secara real-time.
+/// Usage: ref.watch(userBookingsStreamProvider('userId123'))
+final userBookingsStreamProvider =
+    StreamProvider.autoDispose.family<List<BookingModel>, String>((ref, userId) {
+  final service = ref.watch(bookingServiceProvider);
+  return service.streamUserBookings(userId);
+});
+
 /// [Customer] FutureProvider: detail booking tunggal.
 /// Usage: ref.watch(bookingDetailProvider('bookingDocId'))
 final bookingDetailProvider =

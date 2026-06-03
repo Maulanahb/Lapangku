@@ -84,7 +84,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
       final futures = _selectedIds.map((id) => service.deleteBooking(id));
       await Future.wait(futures);
 
-      ref.invalidate(userBookingsProvider(userId));
+      ref.invalidate(userBookingsStreamProvider(userId));
 
       if (mounted) {
         LoadingOverlay.dismiss(context);
@@ -117,7 +117,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
     final user = userAsync.value;
     if (user == null) return _loginPrompt();
 
-    final bookingsAsync = ref.watch(userBookingsProvider(user.uid));
+    final bookingsAsync = ref.watch(userBookingsStreamProvider(user.uid));
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPage,
@@ -147,7 +147,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () => ref.invalidate(userBookingsProvider(user.uid)),
+            onPressed: () => ref.invalidate(userBookingsStreamProvider(user.uid)),
           ),
         ],
       ),
@@ -242,12 +242,29 @@ class _State extends ConsumerState<CustomerOrdersPage> {
           }).toList();
 
     if (filtered.isEmpty) {
-      return EmptyStateWidget(
-        icon: Icons.receipt_long_outlined,
-        title: 'Belum ada pesanan',
-        subtitle: _filter == 'Semua'
-            ? 'Pesanan Anda akan muncul di sini'
-            : 'Tidak ada pesanan dengan status "$_filter"',
+      return RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(userBookingsStreamProvider(userId));
+          try {
+            await ref.read(userBookingsStreamProvider(userId).future);
+          } catch (_) {}
+        },
+        color: AppColors.primary,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.6,
+              child: EmptyStateWidget(
+                icon: Icons.receipt_long_outlined,
+                title: 'Belum ada pesanan',
+                subtitle: _filter == 'Semua'
+                    ? 'Pesanan Anda akan muncul di sini'
+                    : 'Tidak ada pesanan dengan status "$_filter"',
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -284,21 +301,31 @@ class _State extends ConsumerState<CustomerOrdersPage> {
             ),
           ),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: filtered.length,
-            itemBuilder: (_, i) {
-              final booking = filtered[i];
-              return _BookingCard(
-                booking: booking,
-                onCancel: () => _cancelBooking(booking.id, userId),
-                onRefresh: () =>
-                    ref.invalidate(userBookingsProvider(userId)),
-                isSelectionMode: _isSelectionMode,
-                isSelected: _selectedIds.contains(booking.id),
-                onSelect: () => _toggleSelection(booking.id),
-              );
+          child: RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(userBookingsStreamProvider(userId));
+              try {
+                await ref.read(userBookingsStreamProvider(userId).future);
+              } catch (_) {}
             },
+            color: AppColors.primary,
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              itemCount: filtered.length,
+              itemBuilder: (_, i) {
+                final booking = filtered[i];
+                return _BookingCard(
+                  booking: booking,
+                  onCancel: () => _cancelBooking(booking.id, userId),
+                  onRefresh: () =>
+                      ref.invalidate(userBookingsStreamProvider(userId)),
+                  isSelectionMode: _isSelectionMode,
+                  isSelected: _selectedIds.contains(booking.id),
+                  onSelect: () => _toggleSelection(booking.id),
+                );
+              },
+            ),
           ),
         ),
       ],
@@ -318,7 +345,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
     try {
       final service = ref.read(bookingServiceProvider);
       await service.cancelBooking(bookingId);
-      ref.invalidate(userBookingsProvider(userId));
+      ref.invalidate(userBookingsStreamProvider(userId));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Pesanan berhasil dibatalkan'),
