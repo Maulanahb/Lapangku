@@ -125,6 +125,7 @@ class BookingLifecycleService {
       fieldImageUrl: field.fotoUtama,
       userId: user.uid,
       userName: user.nama,
+      userAvatarUrl: user.avatarUrl,
       tanggal: DateTime(date.year, date.month, date.day),
       timeSlots: timeSlots,
       durasi: durasi,

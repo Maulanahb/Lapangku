@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -32,6 +33,9 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
   late TabController _tabController;
   final List<Map<String, String>> _dates = [];
   List<String> _allSlots = [];
+
+  StreamSubscription? _schedulesSubscription;
+  List<String> _closedByMitraSlots = [];
 
   void _generateDynamicSlots() {
     int startHour = 8;
@@ -68,13 +72,49 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
     final imgsCount = widget.field.fotoGaleri.length;
     _pageController =
         PageController(initialPage: imgsCount > 0 ? imgsCount * 1000 : 0);
+
+    _listenToMitraSchedules(_selectedDate);
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _schedulesSubscription?.cancel();
     _tabController.dispose();
+    _pageController.dispose();
     super.dispose();
+  }
+
+  void _listenToMitraSchedules(DateTime selectedDate) {
+    _schedulesSubscription?.cancel();
+    final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+    
+    _schedulesSubscription = FirebaseFirestore.instance
+        .collection('schedules')
+        .where('fieldId', isEqualTo: widget.field.id)
+        .where('tanggal', isEqualTo: dateStr)
+        .snapshots()
+        .listen((snapshot) {
+          final List<String> closed = [];
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            if (data['status'] == 'ditutup') {
+              final jam = data['jam'] as String?;
+              if (jam != null) {
+                try {
+                  final hour = int.parse(jam.split(':')[0]);
+                  closed.add("$jam - ${((hour + 1).toString().padLeft(2, '0'))}:00");
+                } catch (_) {}
+              }
+            }
+          }
+          if (mounted) {
+            setState(() {
+              _closedByMitraSlots = closed;
+            });
+          }
+        }, onError: (e) {
+          debugPrint("Error loading schedules: $e");
+        });
   }
 
   void _generateDates() {
@@ -982,10 +1022,13 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
               itemBuilder: (_, i) {
                 final sel = i == _selectedDateIndex;
                 return GestureDetector(
-                  onTap: () => setState(() {
-                    _selectedDateIndex = i;
-                    _selectedTimeIndices.clear();
-                  }),
+                  onTap: () {
+                    setState(() {
+                      _selectedDateIndex = i;
+                      _selectedTimeIndices.clear();
+                    });
+                    _listenToMitraSchedules(_selectedDate);
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: 56,
@@ -1048,6 +1091,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
               children: List.generate(_allSlots.length, (i) {
                 final slot = _allSlots[i];
                 final isBooked = bookedSlots.contains(slot);
+                final isClosedByMitra = _closedByMitraSlots.contains(slot);
 
                 // Tambahkan validasi untuk mendisable waktu yang sudah lewat (khusus hari ini)
                 bool isPassed = false;
@@ -1071,12 +1115,17 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
                   }
                 }
 
-                final isUnavailable = isBooked || isPassed;
+                final isUnavailable = isBooked || isPassed || isClosedByMitra;
                 final isSel = _selectedTimeIndices.contains(i);
 
                 Color bg, border, txt;
                 String sub = '';
-                if (isBooked) {
+                if (isClosedByMitra) {
+                  bg = Colors.red.shade50;
+                  border = Colors.red.shade200;
+                  txt = Colors.red.shade400;
+                  sub = 'MAINTENANCE';
+                } else if (isBooked) {
                   bg = AppColors.backgroundPage;
                   border = Colors.grey.shade200;
                   txt = Colors.grey.shade400;

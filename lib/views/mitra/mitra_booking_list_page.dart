@@ -491,9 +491,11 @@ class _BookingCard extends ConsumerWidget {
                         color: const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: userInfoAsync.when(
-                        data: (userInfo) {
-                          final avatarUrl = userInfo?['avatarUrl']?.toString() ?? userInfo?['photoUrl']?.toString();
+                      child: Builder(
+                        builder: (context) {
+                          final fetchedAvatar = userInfoAsync.asData?.value?['avatarUrl']?.toString() ?? userInfoAsync.asData?.value?['photoUrl']?.toString();
+                          final avatarUrl = fetchedAvatar ?? booking.userAvatarUrl;
+                          
                           final initials = booking.userName.trim().isNotEmpty
                               ? booking.userName
                                   .trim()
@@ -504,6 +506,7 @@ class _BookingCard extends ConsumerWidget {
                                   .join()
                                   .toUpperCase()
                               : 'U';
+
                           Widget buildPlaceholder() => Container(
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFEBF5FF),
@@ -520,55 +523,33 @@ class _BookingCard extends ConsumerWidget {
                                 ),
                               );
 
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: avatarUrl != null && avatarUrl.isNotEmpty
-                                ? Image.network(
-                                    avatarUrl,
-                                    fit: BoxFit.cover,
-                                    width: 48,
-                                    height: 48,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      debugPrint('🚨 ERROR RENDER IMAGE NETWORK: $error');
-                                      return buildPlaceholder();
-                                    },
-                                  )
-                                : buildPlaceholder(),
-                          );
-                        },
-                        loading: () => const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                        error: (_, __) {
-                          final initials = booking.userName.trim().isNotEmpty
-                              ? booking.userName
-                                  .trim()
-                                  .split(' ')
-                                  .where((l) => l.isNotEmpty)
-                                  .map((l) => l[0])
-                                  .take(2)
-                                  .join()
-                                  .toUpperCase()
-                              : 'U';
-                          return Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEBF5FF),
+                          if (avatarUrl != null && avatarUrl.isNotEmpty) {
+                            return ClipRRect(
                               borderRadius: BorderRadius.circular(16),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              initials,
-                              style: const TextStyle(
-                                color: Color(0xFF1E40AF),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                              child: Image.network(
+                                avatarUrl,
+                                fit: BoxFit.cover,
+                                width: 48,
+                                height: 48,
+                                errorBuilder: (context, error, stackTrace) {
+                                  debugPrint('🚨 ERROR RENDER IMAGE NETWORK: $error');
+                                  return buildPlaceholder();
+                                },
                               ),
-                            ),
-                          );
+                            );
+                          }
+
+                          if (userInfoAsync.isLoading) {
+                            return const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            );
+                          }
+
+                          return buildPlaceholder();
                         },
                       ),
                     ),
