@@ -157,6 +157,7 @@ class BookingService {
       fieldImageUrl: field.fotoUtama,
       userId: user.uid,
       userName: user.nama,
+      userAvatarUrl: user.avatarUrl,
       tanggal: DateTime(date.year, date.month, date.day),
       timeSlots: timeSlots,
       durasi: durasi,
@@ -271,6 +272,8 @@ class BookingService {
       // Fail-safe jika ada error parsing atau query
       debugPrint('Error fetching/parsing manual closed slots: $e');
     }
+
+    
 
     return bookedSlots;
   }

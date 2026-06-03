@@ -6,6 +6,7 @@ import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/views/mitra/add_field_page.dart';
 import 'package:lapangku/views/mitra/edit_field_page.dart';
+import 'package:lapangku/views/mitra/jadwal_lapangan.dart';
 import 'package:intl/intl.dart';
 
 class ManageFieldsPage extends ConsumerStatefulWidget {
@@ -186,7 +187,6 @@ class _ManageFieldsPageState extends ConsumerState<ManageFieldsPage> {
             padding: const EdgeInsets.all(20),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // Bagian Judul: Titik 3 (PopupMenuButton) sudah dihapus dari sini
               Text(field.namaLapangan,
                   style: const TextStyle(
                       fontSize: 18,
@@ -294,31 +294,63 @@ class _ManageFieldsPageState extends ConsumerState<ManageFieldsPage> {
                     inactiveTrackColor: const Color(0xFFD1D5DB)),
               ]),
               const SizedBox(height: 20),
+              // UPDATE: Baris tombol diubah menjadi dua tombol
               Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    // Tombol Edit
+                    Expanded(
+                      child: OutlinedButton.icon(
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  EditFieldPage(field: field),
+                              builder: (context) => EditFieldPage(field: field),
                             ),
                           );
                         },
                         icon: const Icon(Icons.edit_outlined, size: 18),
-                        label: const Text('Edit'),
+                        label: const Text('Edit Lapangan'),
                         style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.black87,
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 12),
-                            side: BorderSide(
-                                color: Colors.grey[200]!, width: 1.5),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)))),
-                  )),
+                          foregroundColor: Colors.black87,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: BorderSide(color: Colors.grey[200]!, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12), // Spasi antar tombol
+                    // Tombol Kelola Jadwal
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => JadwalLapanganPage(lapangan: field),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.calendar_month_outlined,
+                            size: 18, color: Colors.white),
+                        label: const Text('Kelola Jadwal'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _primaryGreen,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ])),
       ]),
     );
