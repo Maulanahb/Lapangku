@@ -1,4 +1,4 @@
-
+import 'dart:developer' as developer;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,7 +60,7 @@ class CustomerSecurityController extends StateNotifier<AsyncValue<void>> {
       throw Exception(message);
     } catch (e) {
       state = AsyncError(e, StackTrace.current);
-      throw Exception(e.toString());
+      throw Exception('Terjadi kesalahan yang tidak terduga.');
     }
   }
 
@@ -82,13 +82,15 @@ class CustomerSecurityController extends StateNotifier<AsyncValue<void>> {
       
       state = const AsyncData(null);
     } on FirebaseAuthException catch (e) {
+      String message = 'Gagal mengirim email verifikasi. Coba lagi nanti.';
       if (e.code == 'too-many-requests') {
-        throw Exception('Terlalu banyak permintaan. Coba lagi nanti.');
+        message = 'Terlalu banyak permintaan. Coba lagi nanti.';
       }
-      throw Exception('Gagal mengirim email verifikasi: ${e.message}');
+      state = AsyncError(message, StackTrace.current);
+      throw Exception(message);
     } catch (e) {
       state = AsyncError(e, StackTrace.current);
-      throw Exception(e.toString());
+      throw Exception('Terjadi kesalahan yang tidak terduga.');
     }
   }
 
@@ -107,6 +109,7 @@ class CustomerSecurityController extends StateNotifier<AsyncValue<void>> {
       }
     } catch (e) {
       // Ignore background reload errors
+      developer.log('Error refreshing email verification status: $e');
     }
   }
 
@@ -134,10 +137,13 @@ class CustomerSecurityController extends StateNotifier<AsyncValue<void>> {
       // Let's assume we link it if not already linked, or just check validity.
       try {
         await user.linkWithCredential(credential);
-      } catch (e) {
+      } on FirebaseAuthException catch (e) {
         // If already linked or credential already in use by same user, it might fail.
-        // In real app, handle 'credential-already-in-use' etc.
-        // For now, if we can create the credential, OTP is valid.
+        if (e.code == 'credential-already-in-use') {
+          // Already linked, we can consider it verified
+        } else {
+          rethrow;
+        }
       }
 
       await _firestore.collection('users').doc(user.uid).update({
@@ -149,6 +155,7 @@ class CustomerSecurityController extends StateNotifier<AsyncValue<void>> {
       state = const AsyncData(null);
     } catch (e) {
       state = AsyncError(e, StackTrace.current);
+      if (e is Exception) rethrow;
       throw Exception('OTP tidak valid atau kadaluarsa.');
     }
   }
