@@ -46,3 +46,9 @@ app.*.map.json
 
 # Environment variables / API Keys
 .env
+.env.*
+!.env.example
+
+# Node / Firebase Functions
+**/node_modules/
+functions/lib/
