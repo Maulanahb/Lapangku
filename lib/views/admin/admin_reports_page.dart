@@ -1040,8 +1040,8 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
       }
 
       String keterangan = '';
-      if (b.status == 'ditolak' && b.alasanPenolakan != null) {
-        keterangan = 'Ditolak: ${b.alasanPenolakan}';
+      if (b.status == 'ditolak') {
+        keterangan = 'Ditolak';
       } else if (b.isRescheduleRequested) {
         keterangan = 'Reschedule Requested';
       }

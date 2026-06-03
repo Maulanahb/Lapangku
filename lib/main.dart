@@ -28,10 +28,8 @@ import 'views/customer/customer_profile_page.dart';
 import 'views/customer/customer_search_page.dart';
 import 'views/customer/customer_field_detail_page.dart';
 import 'views/customer/booking_confirmation_page.dart';
-import 'views/customer/payment_upload_page.dart';
 import 'views/customer/booking_detail_page.dart';
 import 'models/field/field_model.dart';
-import 'models/booking/booking_model.dart';
 
 void main() async {
   // Pastikan binding terinisialisasi sebelum memanggil platform channel
@@ -195,11 +193,6 @@ class MyApp extends StatelessWidget {
             selectedDate: args['date'] as DateTime,
             selectedTimeSlots: args['timeSlots'] as List<String>,
           );
-        },
-        '/payment-upload': (context) {
-          final booking =
-              ModalRoute.of(context)!.settings.arguments! as BookingModel;
-          return PaymentUploadPage(booking: booking);
         },
         '/booking-detail': (context) {
           final bookingId =

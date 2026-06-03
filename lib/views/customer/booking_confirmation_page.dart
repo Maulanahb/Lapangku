@@ -278,7 +278,7 @@ class _State extends ConsumerState<BookingConfirmationPage> {
 
       if (mounted) {
         setState(() => _isBooking = false);
-        Navigator.pushReplacementNamed(context, AppConstants.routePaymentUpload, arguments: booking);
+        Navigator.pushReplacementNamed(context, AppConstants.routeBookingDetail, arguments: booking.id);
       }
     } catch (e) {
       if (mounted) {

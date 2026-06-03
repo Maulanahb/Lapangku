@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
@@ -7,12 +7,11 @@ import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/models/auth/user_model.dart';
 import 'package:lapangku/standards/constants/app_constants.dart';
-import 'package:lapangku/services/firebase_storage_service.dart';
 
 /// Service layer untuk seluruh operasi booking di Firestore.
 ///
 /// Menangani operasi lintas role:
-/// - **Customer**: createBooking, uploadPaymentProof, cancelBooking
+/// - **Customer**: createBooking, cancelBooking
 /// - **Mitra**: confirmBooking, rejectBooking, streamMitraBookingsByMitraId
 /// - **Admin**: streamAllBookings
 /// - **System**: auto-expire batas waktu bayar
@@ -187,7 +186,30 @@ class BookingService {
 
     await docRef.set(booking.toFirestore());
     debugPrint('✅ Booking saved: ${booking.bookingId} | mitraId in doc: ${booking.mitraId}');
-    return booking;
+
+    // ═══════════════════════════════════════════════════════════════════
+    // MIDTRANS SNAP: Create payment transaction via Cloud Function
+    // ═══════════════════════════════════════════════════════════════════
+    try {
+      final callable = FirebaseFunctions.instanceFor(region: 'asia-southeast2')
+          .httpsCallable('createMidtransTransaction');
+      final result = await callable.call({
+        'bookingId': docRef.id,
+        'totalBayar': totalBayar,
+        'customerName': user.nama,
+        'customerEmail': user.email ?? '',
+      });
+      final snapToken = result.data['snap_token'] as String?;
+      final paymentUrl = result.data['payment_url'] as String?;
+      await docRef.update({
+        'snapToken': snapToken,
+        'paymentUrl': paymentUrl,
+      });
+      return booking.copyWith(snapToken: snapToken, paymentUrl: paymentUrl);
+    } catch (e) {
+      debugPrint('⚠️ Midtrans callable failed: $e');
+      return booking;
+    }
   }
 
   /// [Customer] Get slot yang sudah dipesan untuk tanggal tertentu.
@@ -312,61 +334,8 @@ class BookingService {
     return snap.docs.map((doc) => BookingModel.fromFirestore(doc)).toList();
   }
 
-  /// [Customer] Upload bukti pembayaran transfer bank.
-  /// Transisi: menunggu_bayar → menunggu_konfirmasi
-  Future<void> uploadPaymentProof(String bookingId, File imageFile) async {
-    final bookingDoc =
-        await _db.collection('bookings').doc(bookingId).get();
-    if (!bookingDoc.exists) throw Exception('Booking tidak ditemukan');
-
-    final booking = BookingModel.fromFirestore(bookingDoc);
-
-    // Cek batas waktu pembayaran
-    if (DateTime.now().isAfter(booking.batasWaktuBayar)) {
-      await _expireBooking(bookingId, bookingDoc.data()?['statusTimeline']);
-      throw Exception(
-          'Batas waktu pembayaran telah terlewat. Booking otomatis expired.');
-    }
-
-    // Upload ke Firebase Storage
-    final imageUrl = await FirebaseStorageService.uploadImage(imageFile, folder: 'payments');
-    
-    if (imageUrl == null) {
-      throw Exception('Gagal mengupload bukti pembayaran. Silakan coba lagi.');
-    }
-
-    // Transisi status + simpan URL bukti
-    await _updateStatus(
-      bookingId,
-      newStatus: BookingStatusHelper.menungguKonfirmasi,
-      extraFields: {'buktiTransferUrl': imageUrl},
-    );
-  }
-
-  /// [Customer] Upload DUMMY payment proof (for testing only).
-  /// Transisi: menunggu_bayar → menunggu_konfirmasi
-  Future<void> uploadDummyPaymentProof(String bookingId) async {
-    const dummyUrl =
-        'https://res.cloudinary.com/drlgzbypb/image/upload/v1778622411/tpn0ihw9tmeyq1aysui2.jpg';
-
-    await _updateStatus(
-      bookingId,
-      newStatus: BookingStatusHelper.menungguKonfirmasi,
-      extraFields: {'buktiTransferUrl': dummyUrl},
-    );
-  }
-
-  /// [Customer] Konfirmasi pembayaran QRIS (tanpa bukti transfer).
-  /// Transisi: menunggu_bayar → menunggu_konfirmasi
-  Future<void> confirmQrisPayment(String bookingId) async {
-    await _updateStatus(
-      bookingId,
-      newStatus: BookingStatusHelper.menungguKonfirmasi,
-    );
-  }
-
   /// [Customer] Membatalkan booking.
-  /// Valid dari: menunggu_bayar, menunggu_konfirmasi
+  /// Valid dari: menunggu_bayar
   Future<void> cancelBooking(String bookingId) async {
     await _updateStatus(
       bookingId,
@@ -477,7 +446,7 @@ class BookingService {
   }
 
   /// [Mitra] Konfirmasi/setujui booking.
-  /// Transisi: menunggu_konfirmasi → dikonfirmasi
+  /// Transisi: dikonfirmasi → selesai (or manual override)
   Future<void> confirmBooking(String bookingId) async {
     await _updateStatus(
       bookingId,

@@ -7,7 +7,7 @@ import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/services/firebase_storage_service.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
-import 'package:lapangku/views/customer/payment_upload_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:lapangku/services/firebase/review_service.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/models/booking_status.dart';
@@ -236,7 +236,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
               return status == 'dikonfirmasi' || status == 'aktif';
             }
             if (filterKey == 'menunggu') {
-              return status == 'menunggu_konfirmasi' || (b.isRescheduleRequested && b.rescheduleStatus == 'pending');
+              return status == 'menunggu_bayar';
             }
             return status == filterKey;
           }).toList();
@@ -357,7 +357,7 @@ class _BookingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Gunakan BookingStatus untuk semua mapping status → UI
     final displayStatus = (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending')
-        ? BookingStatus.menungguKonfirmasi.firestoreValue
+        ? 'menunggu_bayar'
         : booking.status;
     final status = BookingStatusParsing.fromString(displayStatus);
     final dateStr =
@@ -537,19 +537,20 @@ class _BookingCard extends ConsumerWidget {
     switch (status) {
       case BookingStatus.menungguBayar:
         return [
-          _actionBtn(Icons.payment, 'Bayar', AppColors.statusPending, () {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => PaymentUploadPage(booking: booking)));
+          _actionBtn(Icons.payment, 'Bayar', AppColors.statusPending, () async {
+            if (booking.paymentUrl != null) {
+              final uri = Uri.parse(booking.paymentUrl!);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            }
           }),
           const SizedBox(width: 8),
           _actionBtn(Icons.close, 'Batal', Colors.red.shade400, onCancel),
         ];
       case BookingStatus.menungguKonfirmasi:
         return [
-          _actionBtn(
-              Icons.close, 'Batalkan', Colors.red.shade400, onCancel),
+          _actionBtn(Icons.close, 'Batal', Colors.red.shade400, onCancel),
         ];
       case BookingStatus.dikonfirmasi:
       case BookingStatus.aktif:

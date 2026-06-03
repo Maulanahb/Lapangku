@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
-import 'package:lapangku/views/customer/payment_upload_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/models/booking_status.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
@@ -174,7 +174,7 @@ class BookingDetailPage extends ConsumerWidget {
         const SizedBox(height: 20),
         _buildTimelineItem('Pesanan Dibuat', booking, 'menunggu_bayar', true),
         _buildTimelineItem('Pembayaran Dikonfirmasi', booking, 'dikonfirmasi',
-            booking.status != 'menunggu_bayar' && booking.status != 'menunggu_konfirmasi'),
+            booking.status != 'menunggu_bayar'),
         _buildTimelineItem('Pesanan Aktif', booking, 'aktif',
             booking.status == 'dikonfirmasi' || booking.status == 'aktif' || booking.status == 'selesai',
             isLast: false, badge: 'AKTIF'),
@@ -257,28 +257,6 @@ class BookingDetailPage extends ConsumerWidget {
           Text(CurrencyFormatter.format(booking.totalBayar),
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary)),
         ]),
-        if (booking.buktiTransferUrl != null) ...[
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: () => _showBuktiTransferDialog(context, booking.buktiTransferUrl!),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: AppColors.backgroundPage, borderRadius: BorderRadius.circular(12)),
-              child: Row(children: [
-                Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    image: DecorationImage(image: NetworkImage(booking.buktiTransferUrl!), fit: BoxFit.cover),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(child: Text('Bukti Transfer', style: TextStyle(fontWeight: FontWeight.w500))),
-                const Text('Lihat Bukti', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 12)),
-              ]),
-            ),
-          ),
-        ],
       ]),
     );
   }
@@ -474,13 +452,25 @@ class BookingDetailPage extends ConsumerWidget {
     return Column(children: [
       if (status == BookingStatus.menungguBayar) ...[
         ElevatedButton(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PaymentUploadPage(booking: booking))),
+          onPressed: booking.paymentUrl != null
+              ? () async {
+                  final uri = Uri.parse(booking.paymentUrl!);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                }
+              : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary, foregroundColor: Colors.white, elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 16), minimumSize: const Size(double.infinity, 0),
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            minimumSize: const Size(double.infinity, 0),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            disabledBackgroundColor: Colors.grey.shade300,
           ),
-          child: const Text('Bayar Sekarang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          child: const Text('Bayar Sekarang',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         ),
         const SizedBox(height: 12),
       ],
@@ -521,7 +511,7 @@ class BookingDetailPage extends ConsumerWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
       ),
-      if ((status == BookingStatus.dikonfirmasi || status == BookingStatus.menungguKonfirmasi) && 
+      if (status == BookingStatus.dikonfirmasi && 
           booking.rescheduleStatus == null && 
           _isEligibleForReschedule(booking)) ...[
         const SizedBox(height: 12),
@@ -536,7 +526,7 @@ class BookingDetailPage extends ConsumerWidget {
           ),
         ),
       ],
-      if (status == BookingStatus.menungguBayar || status == BookingStatus.menungguKonfirmasi) ...[
+      if (status == BookingStatus.menungguBayar) ...[
         const SizedBox(height: 24),
         TextButton(
           onPressed: () => _cancelBooking(context, ref, booking.id),
@@ -734,44 +724,6 @@ class BookingDetailPage extends ConsumerWidget {
             SnackBar(content: Text('Gagal: $e'), backgroundColor: AppColors.error));
       }
     }
-  }
-
-  void _showBuktiTransferDialog(BuildContext context, String url) {
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            InteractiveViewer(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  url,
-                  fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-                  },
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Center(child: Icon(Icons.broken_image, size: 64, color: Colors.white)),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 0,
-              right: 0,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 32),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _showRescheduleSheet(BuildContext context, WidgetRef ref, BookingModel booking) {

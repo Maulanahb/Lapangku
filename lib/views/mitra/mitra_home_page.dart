@@ -597,27 +597,6 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
             Text(booking.metodePembayaran,
                 style: TextStyle(color: Colors.grey[500], fontSize: 11)),
           ]),
-          if (booking.buktiTransferUrl != null)
-            GestureDetector(
-              onTap: () {
-                _showBuktiTransferDialog(context, booking.buktiTransferUrl!);
-              },
-              child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                      color: _bgLightGreen,
-                      borderRadius: BorderRadius.circular(8)),
-                  child: Row(children: [
-                    Icon(Icons.list_alt, size: 16, color: _primaryGreen),
-                    const SizedBox(width: 4),
-                    Text('Lihat Bukti',
-                        style: TextStyle(
-                            color: _primaryGreen,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12)),
-                  ])),
-            ),
         ]),
         const SizedBox(height: 20),
         _buildActionButtons(booking),

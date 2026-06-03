@@ -40,50 +40,39 @@ export const onBookingUpdated = onDocumentUpdated(
       const newStatus = after.status as string;
 
       switch (newStatus) {
-        // ── Customer upload bukti bayar → Kirim ke MITRA ──
-        case "menunggu_konfirmasi": {
-          const mitraId = after.mitraId;
-          if (!mitraId) break;
-
-          const mitraToken = await getUserFcmToken(mitraId);
-          if (mitraToken) {
-            await sendNotification({
-              token: mitraToken,
-              title: "Pesanan Baru! 🎾",
-              body: `${after.userName || "Penyewa"} telah membayar untuk ${fieldName}. Segera konfirmasi pesanan.`,
-              data: {
-                type: "booking",
-                targetId: bookingId,
-                bookingId: bookingDisplayId,
-              },
-              saveToFirestore: true,
-              targetUserId: mitraId,
-              notificationType: "booking",
-            });
-          }
-          break;
-        }
-
-        // ── Mitra konfirmasi → Kirim ke CUSTOMER ──
+        // ── Pembayaran berhasil (Midtrans webhook) → Kirim ke CUSTOMER & MITRA ──
         case "dikonfirmasi": {
           const userId = after.userId;
-          if (!userId) break;
+          const mitraId = after.mitraId;
 
-          const userToken = await getUserFcmToken(userId);
-          if (userToken) {
-            await sendNotification({
-              token: userToken,
-              title: "Booking Dikonfirmasi ✅",
-              body: `Pesanan ${bookingDisplayId} untuk ${fieldName} telah dikonfirmasi. Selamat bermain!`,
-              data: {
-                type: "booking",
-                targetId: bookingId,
-                bookingId: bookingDisplayId,
-              },
-              saveToFirestore: true,
-              targetUserId: userId,
-              notificationType: "booking",
-            });
+          if (userId) {
+            const userToken = await getUserFcmToken(userId);
+            if (userToken) {
+              await sendNotification({
+                token: userToken,
+                title: "Pembayaran Berhasil ✅",
+                body: `Pesanan ${bookingDisplayId} untuk ${fieldName} telah dikonfirmasi. Selamat bermain!`,
+                data: { type: "booking", targetId: bookingId, bookingId: bookingDisplayId },
+                saveToFirestore: true,
+                targetUserId: userId,
+                notificationType: "booking",
+              });
+            }
+          }
+
+          if (mitraId) {
+            const mitraToken = await getUserFcmToken(mitraId);
+            if (mitraToken) {
+              await sendNotification({
+                token: mitraToken,
+                title: "Pembayaran Masuk 💰",
+                body: `${after.userName || "Penyewa"} telah membayar untuk ${fieldName}. Pesanan otomatis dikonfirmasi.`,
+                data: { type: "booking", targetId: bookingId, bookingId: bookingDisplayId },
+                saveToFirestore: true,
+                targetUserId: mitraId,
+                notificationType: "booking",
+              });
+            }
           }
           break;
         }
@@ -113,25 +102,34 @@ export const onBookingUpdated = onDocumentUpdated(
           break;
         }
 
-        // ── Customer batalkan → Kirim ke MITRA ──
+        // ── Pesanan dibatalkan → Kirim ke CUSTOMER & MITRA ──
         case "dibatalkan": {
+          const userId = after.userId;
           const mitraId = after.mitraId;
-          if (!mitraId) break;
 
-          // Hanya kirim ke mitra jika status sebelumnya sudah menunggu_konfirmasi
-          // (berarti customer sudah bayar tapi membatalkan)
-          if (before.status === "menunggu_konfirmasi") {
+          if (userId) {
+            const userToken = await getUserFcmToken(userId);
+            if (userToken) {
+              await sendNotification({
+                token: userToken,
+                title: "Pesanan Dibatalkan",
+                body: `Pesanan ${bookingDisplayId} untuk ${fieldName} telah dibatalkan.`,
+                data: { type: "booking", targetId: bookingId, bookingId: bookingDisplayId },
+                saveToFirestore: true,
+                targetUserId: userId,
+                notificationType: "booking",
+              });
+            }
+          }
+
+          if (mitraId) {
             const mitraToken = await getUserFcmToken(mitraId);
             if (mitraToken) {
               await sendNotification({
                 token: mitraToken,
-                title: "Pembatalan Pesanan",
-                body: `${after.userName || "Penyewa"} membatalkan pesanan ${bookingDisplayId} untuk ${fieldName}.`,
-                data: {
-                  type: "booking",
-                  targetId: bookingId,
-                  bookingId: bookingDisplayId,
-                },
+                title: "Pesanan Dibatalkan",
+                body: `Pesanan ${bookingDisplayId} untuk ${fieldName} telah dibatalkan.`,
+                data: { type: "booking", targetId: bookingId, bookingId: bookingDisplayId },
                 saveToFirestore: true,
                 targetUserId: mitraId,
                 notificationType: "booking",

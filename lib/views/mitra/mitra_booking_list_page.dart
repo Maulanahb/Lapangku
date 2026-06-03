@@ -70,7 +70,7 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
               ),
             ),
             const SizedBox(width: 12),
-            ref.watch(MitraBookingStreamProvider('menunggu_konfirmasi')).when(
+            ref.watch(MitraBookingStreamProvider('menunggu_bayar')).when(
                   data: (bookings) => bookings.isEmpty 
                     ? const SizedBox.shrink()
                     : Container(
@@ -80,7 +80,7 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          '${bookings.length} menunggu',
+                          '${bookings.length} menunggu bayar',
                           style: const TextStyle(
                             color: Color(0xFF92400E),
                             fontSize: 12,
@@ -246,7 +246,7 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
           // 2. Tab Filter
           final status = b.status.toLowerCase();
           if (filterKey == 'menunggu') {
-            return status == 'menunggu_konfirmasi' || (b.isRescheduleRequested && b.rescheduleStatus == 'pending');
+            return status == 'menunggu_bayar';
           } else if (filterKey == 'dikonfirmasi') {
             return status == 'dikonfirmasi' && !(b.isRescheduleRequested && b.rescheduleStatus == 'pending');
           } else if (filterKey == 'selesai') {
@@ -647,63 +647,11 @@ class _BookingCard extends ConsumerWidget {
                     const SizedBox(width: 6),
                     Text(booking.metodePembayaran.toUpperCase(), style: const TextStyle(color: Color(0xFF64748B), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                     const Spacer(),
-                    if (booking.buktiTransferUrl != null)
-                      GestureDetector(
-                        onTap: () => _showBuktiTransferDialog(context, booking.buktiTransferUrl!),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.image_outlined, size: 14, color: AppColors.primary),
-                              SizedBox(width: 4),
-                              Text('Bukti Bayar', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w800)),
-                            ],
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ],
             ),
           ),
-          if (booking.status == BookingStatus.menungguKonfirmasi.firestoreValue)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: isLoading ? null : () => _onReject(context, ref),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFFDA4AF)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      child: const Text('Tolak', style: TextStyle(color: Color(0xFFE11D48), fontWeight: FontWeight.w800)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: isLoading ? null : () => _onConfirm(context, ref),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        elevation: 0,
-                      ),
-                      child: isLoading
-                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Text('Konfirmasi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           if (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending' && booking.status == BookingStatus.dikonfirmasi.firestoreValue)
             _buildRescheduleRequestUI(context, ref, booking),
         ],
@@ -820,47 +768,6 @@ class _BookingCard extends ConsumerWidget {
     return DateFormat('d MMM').format(date);
   }
 
-  void _onConfirm(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => _ConfirmationSheet(
-        booking: booking,
-        onConfirm: () async {
-          Navigator.pop(context);
-          try {
-            await ref
-                .read(MitraBookingActionsProvider.notifier)
-                .confirmBooking(booking.id);
-            if (context.mounted) {
-              SnackbarHelper.showSuccess(context, 'Booking berhasil dikonfirmasi');
-            }
-          } catch (e) {
-            if (context.mounted) {
-              SnackbarHelper.showError(context, 'Gagal mengkonfirmasi: $e');
-            }
-          }
-        },
-      ),
-    );
-  }
-
-  void _onReject(BuildContext context, WidgetRef ref) async {
-    try {
-      await ref
-          .read(MitraBookingActionsProvider.notifier)
-          .rejectBooking(booking.id);
-      if (context.mounted) {
-        SnackbarHelper.showSuccess(context, 'Booking berhasil ditolak');
-      }
-    } catch (e) {
-      if (context.mounted) {
-        SnackbarHelper.showError(context, 'Gagal menolak: $e');
-      }
-    }
-  }
-
   void _onDelete(BuildContext context, WidgetRef ref) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -895,178 +802,5 @@ class _BookingCard extends ConsumerWidget {
         }
       }
     }
-  }
-
-  void _showBuktiTransferDialog(BuildContext context, String url) {
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            InteractiveViewer(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  url,
-                  fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-                  },
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Center(child: Icon(Icons.broken_image, size: 64, color: Colors.white)),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 0,
-              right: 0,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 32),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ConfirmationSheet extends StatelessWidget {
-  final BookingModel booking;
-  final VoidCallback onConfirm;
-
-  const _ConfirmationSheet({required this.booking, required this.onConfirm});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Konfirmasi Pesanan?',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textBlackSoft,
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Pastikan bukti pembayaran valid sebelum menyetujui pesanan ini.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F4FF),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              children: [
-                _buildInfoRow('Pelanggan', booking.userName, isBold: true),
-                const SizedBox(height: 12),
-                _buildInfoRow(
-                    'Layanan', '${booking.fieldName} (${booking.durasi} Jam)'),
-                const SizedBox(height: 12),
-                _buildInfoRow(
-                    'Total Bayar', CurrencyFormatter.format(booking.totalBayar),
-                    isPrice: true),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: const Color(0xFFE9EFFF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    'Batal',
-                    style: TextStyle(
-                      color: AppColors.textBlackSoft,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: onConfirm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F5A3C),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Ya, Konfirmasi',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value,
-      {bool isBold = false, bool isPrice = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.grey, fontSize: 14),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: isBold || isPrice ? FontWeight.bold : FontWeight.normal,
-            fontSize: 14,
-            color: isPrice ? const Color(0xFF0F5A3C) : AppColors.textBlackSoft,
-          ),
-        ),
-      ],
-    );
   }
 }

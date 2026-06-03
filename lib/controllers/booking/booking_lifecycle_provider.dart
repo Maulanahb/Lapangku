@@ -81,32 +81,6 @@ class CustomerBookingActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Upload bukti bayar dummy (testing).
-  Future<bool> uploadDummyPayment(String bookingId) async {
-    state = const AsyncValue.loading();
-    try {
-      await _service.uploadDummyPaymentProof(bookingId);
-      state = const AsyncValue.data(null);
-      return true;
-    } catch (e, s) {
-      state = AsyncValue.error(e, s);
-      return false;
-    }
-  }
-
-  /// Konfirmasi pembayaran QRIS.
-  Future<bool> confirmQris(String bookingId) async {
-    state = const AsyncValue.loading();
-    try {
-      await _service.confirmQrisPayment(bookingId);
-      state = const AsyncValue.data(null);
-      return true;
-    } catch (e, s) {
-      state = AsyncValue.error(e, s);
-      return false;
-    }
-  }
-
   /// Batalkan booking.
   Future<bool> cancelBooking(String bookingId) async {
     state = const AsyncValue.loading();
@@ -148,14 +122,14 @@ final mitraBookingsByIdStreamProvider =
   );
 });
 
-/// Stream booking menunggu konfirmasi khusus Mitra (shortcut).
+/// Stream booking menunggu bayar khusus Mitra (shortcut).
 /// UI: Badge notifikasi di dashboard Mitra.
 final mitraPendingBookingsProvider =
     StreamProvider.family<List<BookingModel>, String>((ref, mitraId) {
   final service = ref.watch(bookingLifecycleServiceProvider);
   return service.streamMitraBookingsByMitraId(
     mitraId,
-    statusFilter: BookingStatusHelper.menungguKonfirmasi,
+    statusFilter: BookingStatusHelper.menungguBayar,
   );
 });
 

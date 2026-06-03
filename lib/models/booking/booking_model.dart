@@ -2,15 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Helper untuk konstanta status dan validasi transisi booking.
 ///
-/// Flow: menunggu_bayar → menunggu_konfirmasi → dikonfirmasi → selesai
+/// Flow: menunggu_bayar → dikonfirmasi → selesai
 ///       menunggu_bayar → expired / dibatalkan
-///       menunggu_konfirmasi → ditolak / dibatalkan
+///       dikonfirmasi → selesai / dibatalkan / ditolak
 class BookingStatusHelper {
   BookingStatusHelper._();
 
   // ─── String Constants (Firestore values) ─────────────────────────────────
   static const String menungguBayar = 'menunggu_bayar';
-  static const String menungguKonfirmasi = 'menunggu_konfirmasi';
   static const String dikonfirmasi = 'dikonfirmasi';
   static const String selesai = 'selesai';
   static const String dibatalkan = 'dibatalkan';
@@ -20,7 +19,6 @@ class BookingStatusHelper {
   /// Status yang dianggap "aktif" (memblokir slot waktu)
   static const List<String> activeStatuses = [
     menungguBayar,
-    menungguKonfirmasi,
     dikonfirmasi,
   ];
 
@@ -35,7 +33,6 @@ class BookingStatusHelper {
   /// Daftar semua status untuk validasi
   static const List<String> allStatuses = [
     menungguBayar,
-    menungguKonfirmasi,
     dikonfirmasi,
     selesai,
     dibatalkan,
@@ -46,9 +43,8 @@ class BookingStatusHelper {
   /// Cek apakah transisi status valid
   static bool isValidTransition(String from, String to) {
     final validTransitions = <String, List<String>>{
-      menungguBayar: [menungguKonfirmasi, expired, dibatalkan],
-      menungguKonfirmasi: [dikonfirmasi, ditolak, dibatalkan],
-      dikonfirmasi: [selesai],
+      menungguBayar: [dikonfirmasi, expired, dibatalkan],
+      dikonfirmasi: [selesai, dibatalkan, ditolak],
     };
     return validTransitions[from]?.contains(to) ?? false;
   }
@@ -58,8 +54,6 @@ class BookingStatusHelper {
     switch (status) {
       case menungguBayar:
         return 'Menunggu Pembayaran';
-      case menungguKonfirmasi:
-        return 'Menunggu Konfirmasi';
       case dikonfirmasi:
         return 'Dikonfirmasi';
       case selesai:
@@ -95,9 +89,10 @@ class BookingModel {
   final int biayaLayanan;
   final int totalBayar;
   final String metodePembayaran;
-  final String? buktiTransferUrl;
   final String status;
-  final String? alasanPenolakan; // alasan jika ditolak oleh Mitra
+  final String? snapToken;
+  final String? paymentUrl;
+  final String? paymentTransactionId;
   final List<Map<String, dynamic>> statusTimeline; // [{status: '...', waktu: Timestamp}]
   final DateTime batasWaktuBayar;
   final DateTime createdAt;
@@ -130,9 +125,10 @@ class BookingModel {
     required this.biayaLayanan,
     required this.totalBayar,
     required this.metodePembayaran,
-    this.buktiTransferUrl,
     required this.status,
-    this.alasanPenolakan,
+    this.snapToken,
+    this.paymentUrl,
+    this.paymentTransactionId,
     required this.statusTimeline,
     required this.batasWaktuBayar,
     required this.createdAt,
@@ -230,9 +226,10 @@ class BookingModel {
       biayaLayanan: data['biayaLayanan'] ?? 0,
       totalBayar: data['totalBayar'] ?? data['totalHarga'] ?? 0,
       metodePembayaran: data['metodePembayaran'] ?? '',
-      buktiTransferUrl: data['buktiTransferUrl'],
       status: currentStatus,
-      alasanPenolakan: data['alasanPenolakan'],
+      snapToken: data['snapToken'],
+      paymentUrl: data['paymentUrl'],
+      paymentTransactionId: data['paymentTransactionId'],
       statusTimeline: data['statusTimeline'] != null
           ? List<Map<String, dynamic>>.from(data['statusTimeline'])
           : [
@@ -282,9 +279,10 @@ class BookingModel {
       'biayaLayanan': biayaLayanan,
       'totalBayar': totalBayar,
       'metodePembayaran': metodePembayaran,
-      'buktiTransferUrl': buktiTransferUrl,
       'status': status,
-      'alasanPenolakan': alasanPenolakan,
+      if (snapToken != null) 'snapToken': snapToken,
+      if (paymentUrl != null) 'paymentUrl': paymentUrl,
+      if (paymentTransactionId != null) 'paymentTransactionId': paymentTransactionId,
       'statusTimeline': statusTimeline,
       'batasWaktuBayar': Timestamp.fromDate(batasWaktuBayar),
       'createdAt': Timestamp.fromDate(createdAt),
@@ -320,9 +318,10 @@ class BookingModel {
     int? biayaLayanan,
     int? totalBayar,
     String? metodePembayaran,
-    String? buktiTransferUrl,
     String? status,
-    String? alasanPenolakan,
+    String? snapToken,
+    String? paymentUrl,
+    String? paymentTransactionId,
     List<Map<String, dynamic>>? statusTimeline,
     DateTime? batasWaktuBayar,
     DateTime? createdAt,
@@ -353,9 +352,10 @@ class BookingModel {
       biayaLayanan: biayaLayanan ?? this.biayaLayanan,
       totalBayar: totalBayar ?? this.totalBayar,
       metodePembayaran: metodePembayaran ?? this.metodePembayaran,
-      buktiTransferUrl: buktiTransferUrl ?? this.buktiTransferUrl,
       status: status ?? this.status,
-      alasanPenolakan: alasanPenolakan ?? this.alasanPenolakan,
+      snapToken: snapToken ?? this.snapToken,
+      paymentUrl: paymentUrl ?? this.paymentUrl,
+      paymentTransactionId: paymentTransactionId ?? this.paymentTransactionId,
       statusTimeline: statusTimeline ?? this.statusTimeline,
       batasWaktuBayar: batasWaktuBayar ?? this.batasWaktuBayar,
       createdAt: createdAt ?? this.createdAt,

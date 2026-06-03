@@ -148,61 +148,8 @@ class BookingLifecycleService {
     return booking;
   }
 
-  /// [Customer] Upload bukti pembayaran transfer bank.
-  /// Transisi: menunggu_bayar → menunggu_konfirmasi
-  Future<void> uploadPaymentProof(String bookingId, File imageFile) async {
-    final bookingDoc =
-        await _db.collection('bookings').doc(bookingId).get();
-    if (!bookingDoc.exists) throw Exception('Booking tidak ditemukan');
-
-    final booking = BookingModel.fromFirestore(bookingDoc);
-
-    // Cek batas waktu
-    if (DateTime.now().isAfter(booking.batasWaktuBayar)) {
-      await _expireBooking(bookingId, bookingDoc.data()?['statusTimeline']);
-      throw Exception(
-          'Batas waktu pembayaran telah terlewat. Booking otomatis expired.');
-    }
-
-    // Upload ke Firebase Storage
-    final imageUrl = await FirebaseStorageService.uploadImage(imageFile, folder: 'payments');
-    
-    if (imageUrl == null) {
-      throw Exception('Gagal mengupload bukti pembayaran. Silakan coba lagi.');
-    }
-
-    // Transisi status + simpan URL bukti
-    await _transitionStatus(
-      bookingId,
-      toStatus: BookingStatusHelper.menungguKonfirmasi,
-      extraData: {'buktiTransferUrl': imageUrl},
-    );
-  }
-
-  /// [Customer] Upload DUMMY payment proof (for testing only).
-  /// Transisi: menunggu_bayar → menunggu_konfirmasi
-  Future<void> uploadDummyPaymentProof(String bookingId) async {
-    const dummyUrl =
-        'https://res.cloudinary.com/drlgzbypb/image/upload/v1778622411/tpn0ihw9tmeyq1aysui2.jpg';
-
-    await _transitionStatus(
-      bookingId,
-      toStatus: BookingStatusHelper.menungguKonfirmasi,
-      extraData: {'buktiTransferUrl': dummyUrl},
-    );
-  }
-
-  /// [Customer] Konfirmasi pembayaran QRIS (tanpa bukti transfer).
-  /// Transisi: menunggu_bayar → menunggu_konfirmasi
-  Future<void> confirmQrisPayment(String bookingId) async {
-    await _transitionStatus(
-      bookingId,
-      toStatus: BookingStatusHelper.menungguKonfirmasi,
-    );
-  }
-
   /// [Customer] Membatalkan booking.
-  /// Valid dari: menunggu_bayar, menunggu_konfirmasi
+  /// Valid dari: menunggu_bayar
   Future<void> cancelBooking(String bookingId) async {
     await _transitionStatus(
       bookingId,
@@ -215,7 +162,7 @@ class BookingLifecycleService {
   // ═══════════════════════════════════════════════════════════════════════════
 
   /// [Mitra] Konfirmasi/setujui booking.
-  /// Transisi: menunggu_konfirmasi → dikonfirmasi
+  /// Transisi: dikonfirmasi → selesai (or manual override)
   Future<void> confirmBooking(String bookingId) async {
     await _transitionStatus(
       bookingId,
@@ -224,7 +171,7 @@ class BookingLifecycleService {
   }
 
   /// [Mitra] Tolak booking dengan alasan opsional.
-  /// Transisi: menunggu_konfirmasi → ditolak
+  /// Transisi: dikonfirmasi → ditolak
   Future<void> rejectBooking(String bookingId, {String? reason}) async {
     await _transitionStatus(
       bookingId,
@@ -316,10 +263,10 @@ class BookingLifecycleService {
               isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
           .where('tanggal', isLessThan: Timestamp.fromDate(endOfDay))
           .get(),
-      // Booking menunggu konfirmasi
+      // Booking menunggu bayar
       _db
           .collection('bookings')
-          .where('status', isEqualTo: BookingStatusHelper.menungguKonfirmasi)
+          .where('status', isEqualTo: BookingStatusHelper.menungguBayar)
           .get(),
       // Booking selesai (semua waktu)
       _db
@@ -349,7 +296,7 @@ class BookingLifecycleService {
 
     return {
       'pesananHariIni': results[0].size,
-      'menungguKonfirmasi': results[1].size,
+      'menungguBayar': results[1].size,
       'totalSelesai': selesaiDocs.size,
       'totalDikonfirmasi': dikonfirmasiDocs.size,
       'totalPendapatan': totalPendapatan,

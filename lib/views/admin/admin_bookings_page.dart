@@ -203,8 +203,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
       if (_filterStatus == 'semua') {
         matchStatus = true;
       } else if (_filterStatus == 'menunggu_bayar') {
-        matchStatus = b.status == BookingStatusHelper.menungguBayar ||
-            b.status == BookingStatusHelper.menungguKonfirmasi;
+        matchStatus = b.status == BookingStatusHelper.menungguBayar;
       } else if (_filterStatus == 'dibatalkan') {
         matchStatus = b.status == BookingStatusHelper.dibatalkan ||
             b.status == BookingStatusHelper.ditolak ||
@@ -725,10 +724,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                             ),
                           ],
                         ),
-                        if (booking.alasanPenolakan != null &&
-                            booking.alasanPenolakan!.isNotEmpty)
-                          _detailRow(Icons.comment_outlined,
-                              'Alasan Penolakan', booking.alasanPenolakan!),
+
                       ]),
                     ],
                   ),
@@ -806,7 +802,6 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
   Color _statusColor(String status) {
     switch (status) {
       case BookingStatusHelper.menungguBayar:
-      case BookingStatusHelper.menungguKonfirmasi:
         return const Color(0xFFFF9800);
       case BookingStatusHelper.dikonfirmasi:
         return const Color(0xFF4285F4);
