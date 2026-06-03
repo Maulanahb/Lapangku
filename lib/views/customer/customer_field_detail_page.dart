@@ -15,10 +15,13 @@ import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/cached_image_widget.dart';
 import 'package:lapangku/standards/widgets/shimmer_loading.dart';
 import 'package:lapangku/standards/utils/facility_helper.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:lapangku/controllers/field/field_controller.dart';
 
 class CustomerFieldDetailPage extends ConsumerStatefulWidget {
-  final FieldModel field;
-  const CustomerFieldDetailPage({super.key, required this.field});
+  final FieldModel? field;
+  final String? fieldId;
+  const CustomerFieldDetailPage({super.key, this.field, this.fieldId});
 
   @override
   ConsumerState<CustomerFieldDetailPage> createState() => _State();
@@ -37,13 +40,17 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
   StreamSubscription? _schedulesSubscription;
   List<String> _closedByMitraSlots = [];
 
-  void _generateDynamicSlots() {
+  bool _fieldInitialized = false;
+  FieldModel? _fetchedField;
+  FieldModel get _field => widget.field ?? _fetchedField!;
+
+  void _generateDynamicSlots(FieldModel field) {
     int startHour = 8;
     int endHour = 22;
 
     try {
-      startHour = int.parse(widget.field.jamBuka.split(':')[0]);
-      endHour = int.parse(widget.field.jamTutup.split(':')[0]);
+      startHour = int.parse(field.jamBuka.split(':')[0]);
+      endHour = int.parse(field.jamTutup.split(':')[0]);
     } catch (_) {}
 
     if (endHour <= startHour) {
@@ -67,30 +74,37 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _generateDates();
-    _generateDynamicSlots();
+    if (widget.field != null) {
+      _initField(widget.field!);
+    }
+  }
 
-    final imgsCount = widget.field.fotoGaleri.length;
-    _pageController =
-        PageController(initialPage: imgsCount > 0 ? imgsCount * 1000 : 0);
-
-    _listenToMitraSchedules(_selectedDate);
+  void _initField(FieldModel field) {
+    if (_fieldInitialized) return;
+    _fieldInitialized = true;
+    _generateDynamicSlots(field);
+    final imgsCount = field.fotoGaleri.length;
+    _pageController = PageController(initialPage: imgsCount > 0 ? imgsCount * 1000 : 0);
+    _listenToMitraSchedules(field.id, _selectedDate);
   }
 
   @override
   void dispose() {
     _schedulesSubscription?.cancel();
     _tabController.dispose();
-    _pageController.dispose();
+    if (_fieldInitialized) {
+      _pageController.dispose();
+    }
     super.dispose();
   }
 
-  void _listenToMitraSchedules(DateTime selectedDate) {
+  void _listenToMitraSchedules(String fieldId, DateTime selectedDate) {
     _schedulesSubscription?.cancel();
     final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
     
     _schedulesSubscription = FirebaseFirestore.instance
         .collection('schedules')
-        .where('fieldId', isEqualTo: widget.field.id)
+        .where('fieldId', isEqualTo: fieldId)
         .where('tanggal', isEqualTo: dateStr)
         .snapshots()
         .listen((snapshot) {
@@ -137,12 +151,33 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
   DateTime get _selectedDate =>
       DateTime.parse(_dates[_selectedDateIndex]['iso']!);
   String get _providerKey =>
-      '${widget.field.id}|${_dates[_selectedDateIndex]['iso']}';
-  // REFAKTOR: sebelumnya String _fmt(int h) => NumberFormat.currency(...).format(h);
-  int get _totalHarga => widget.field.hargaPerJam * _selectedTimeIndices.length;
+      '${_field.id}|${_dates[_selectedDateIndex]['iso']}';
+  int get _totalHarga => _field.hargaPerJam * _selectedTimeIndices.length;
 
   @override
   Widget build(BuildContext context) {
+    if (widget.field != null) {
+      return _buildMainContent();
+    }
+
+    final fieldAsync = ref.watch(fieldDetailProvider(widget.fieldId!));
+    return fieldAsync.when(
+      data: (field) {
+        _fetchedField = field;
+        _initField(field);
+        return _buildMainContent();
+      },
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      ),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(title: const Text('Detail Lapangan')),
+        body: Center(child: Text('Gagal memuat detail lapangan: $e')),
+      ),
+    );
+  }
+
+  Widget _buildMainContent() {
     return Scaffold(
       backgroundColor: Colors.white,
       body: CustomScrollView(slivers: [
@@ -158,14 +193,26 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
 
   // ── HERO ──
   Widget _heroAppBar() {
-    final imgs = widget.field.fotoGaleri;
+    final imgs = _field.fotoGaleri;
     return SliverAppBar(
       expandedHeight: 280, pinned: true,
       backgroundColor:
-          AppColors.primary, // REFAKTOR: sebelumnya hardcode Color(0xFF1B6B3A)
+          AppColors.primary,
       leading: _cBtn(Icons.arrow_back, () => Navigator.pop(context)),
       actions: [
-        _cBtn(Icons.share_outlined, () {}),
+        _cBtn(Icons.share_outlined, () {
+          final f = _field;
+          Share.share(
+            '🏟️ *Temukan Lapangan Terbaik di Lapangku!* 🏟️\n\n'
+            '⚽ *Nama Lapangan:* ${f.nama}\n'
+            '📍 *Alamat:* ${f.alamat}\n'
+            '🏷️ *Kategori:* ${f.kategori} (${f.tipeLapangan})\n'
+            '💰 *Harga Sewa:* ${CurrencyFormatter.format(f.hargaPerJam)}/jam\n'
+            '🕐 *Jam Operasional:* ${f.jamBuka} - ${f.jamTutup} WIB\n\n'
+            'Buka detail lapangan dan pesan sekarang di Lapangku:\n'
+            '🔗 lapangku://field-detail?id=${f.id}',
+          );
+        }),
         _favoriteButton(),
         const SizedBox(width: 8),
       ],
@@ -234,7 +281,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
   }
 
   Widget _favoriteButton() {
-    final favAsync = ref.watch(isFavoritedProvider(widget.field.id));
+    final favAsync = ref.watch(isFavoritedProvider(_field.id));
     final isFav = favAsync.value ?? false;
     return Padding(
       padding: const EdgeInsets.all(8),
@@ -259,9 +306,9 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
             }
             final service = ref.read(favoriteServiceProvider);
             if (isFav) {
-              service.removeFavorite(user.uid, widget.field.id);
+              service.removeFavorite(user.uid, _field.id);
             } else {
-              service.addFavorite(user.uid, widget.field.id);
+              service.addFavorite(user.uid, _field.id);
             }
           },
           padding: EdgeInsets.zero,
@@ -303,7 +350,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
   }
 
   Widget _headerInfo() {
-    final f = widget.field;
+    final f = _field;
     final now = TimeOfDay.now();
     bool isOpen = false;
     try {
@@ -472,9 +519,9 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
   }
 
   Widget _infoTab() {
-    final desc = widget.field.deskripsi.isNotEmpty
-        ? widget.field.deskripsi
-        : '${widget.field.nama} menggunakan rumput sintetis standar internasional yang empuk dan tidak licin. Dilengkapi dengan tribun penonton yang nyaman dan pencahayaan LED.';
+    final desc = _field.deskripsi.isNotEmpty
+        ? _field.deskripsi
+        : '${_field.nama} menggunakan rumput sintetis standar internasional yang empuk dan tidak licin. Dilengkapi dengan tribun penonton yang nyaman dan pencahayaan LED.';
     return Padding(
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -499,9 +546,9 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
           const SizedBox(height: 16),
           // REFAKTOR: sebelumnya _fmt() — sekarang pakai CurrencyFormatter
           _iRow(Icons.attach_money, 'Harga Sewa',
-              '${CurrencyFormatter.format(widget.field.hargaPerJam)} / jam'),
+              '${CurrencyFormatter.format(_field.hargaPerJam)} / jam'),
           _iRow(Icons.access_time_rounded, 'Jam Operasional',
-              '${widget.field.jamBuka} - ${widget.field.jamTutup} WIB'),
+              '${_field.jamBuka} - ${_field.jamTutup} WIB'),
         ]));
   }
 
@@ -528,8 +575,8 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
       ]));
 
   Widget _fasilitasTab() {
-    final fas = widget.field.fasilitas.isNotEmpty
-        ? widget.field.fasilitas
+    final fas = _field.fasilitas.isNotEmpty
+        ? _field.fasilitas
         : ['Parkir Luas', 'Toilet Bersih', 'Mushola', 'Kantin'];
     return Padding(
         padding: const EdgeInsets.all(20),
@@ -559,7 +606,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
   }
 
   Widget _ulasanTab() {
-    final f = widget.field;
+    final f = _field;
     final reviewsAsync = ref.watch(fieldReviewsProvider(f.id));
     final currentUser = ref.watch(authStateProvider).value;
 
@@ -709,12 +756,12 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
     if (confirm == true) {
       try {
         await ref.read(reviewServiceProvider).deleteReview(
-              fieldId: widget.field.id,
+              fieldId: _field.id,
               reviewId: review['id'],
               rating: review['rating'] ?? 5,
               bookingId: review['bookingId'],
             );
-        ref.invalidate(fieldReviewsProvider(widget.field.id));
+        ref.invalidate(fieldReviewsProvider(_field.id));
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Ulasan berhasil dihapus')));
       } catch (e) {
@@ -857,8 +904,8 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
           ]));
 
   Widget _lokasiTab() {
-    final lat = widget.field.latitude;
-    final lng = widget.field.longitude;
+    final lat = _field.latitude;
+    final lng = _field.longitude;
     final hasCoordinates = lat != 0.0 && lng != 0.0;
 
     return Padding(
@@ -957,12 +1004,12 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              widget.field.alamat.isNotEmpty
-                  ? widget.field.alamat
+              _field.alamat.isNotEmpty
+                  ? _field.alamat
                   : 'Alamat belum diisi',
               style: TextStyle(
                 fontSize: 13,
-                color: widget.field.alamat.isNotEmpty
+                color: _field.alamat.isNotEmpty
                     ? AppColors.textBody
                     : AppColors.textSecondary,
               ),
@@ -1030,7 +1077,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
                       _selectedDateIndex = i;
                       _selectedTimeIndices.clear();
                     });
-                    _listenToMitraSchedules(_selectedDate);
+                    _listenToMitraSchedules(_field.id, _selectedDate);
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
@@ -1261,7 +1308,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
       context,
       '/booking-confirmation',
       arguments: {
-        'field': widget.field,
+        'field': _field,
         'date': _selectedDate,
         'timeSlots': orderedSlots,
       },

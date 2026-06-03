@@ -36,36 +36,40 @@ class LoadingOverlay extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: Center(
-        child: message != null
-            ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(color: AppColors.primary),
-                    const SizedBox(height: 16),
-                    Text(
-                      message!,
-                      style: const TextStyle(
-                        color: AppColors.textDark,
-                        fontWeight: FontWeight.w500,
+        child: Material(
+          type: MaterialType.transparency,
+          child: message != null
+              ? Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
-                  ],
-                ),
-              )
-            : const CircularProgressIndicator(color: AppColors.primary),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(color: AppColors.primary),
+                      const SizedBox(height: 16),
+                      Text(
+                        message!,
+                        style: const TextStyle(
+                          color: AppColors.textDark,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : const CircularProgressIndicator(color: AppColors.primary),
+        ),
       ),
     );
   }

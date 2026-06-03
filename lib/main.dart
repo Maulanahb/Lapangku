@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:email_otp/email_otp.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:app_links/app_links.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/firebase/push_notification_service.dart';
@@ -142,8 +144,69 @@ void main() async {
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
+
+  @override
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  late final AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  void _initDeepLinks() {
+    _appLinks = AppLinks();
+
+    // Handle deep links when app is running (foreground/background)
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      _handleDeepLink(uri);
+    }, onError: (err) {
+      debugPrint('⚠️ [DeepLink] Error listening to links: $err');
+    });
+
+    // Handle deep link when app is launched from terminated state (cold start)
+    _appLinks.getInitialLink().then((uri) {
+      if (uri != null) {
+        _handleDeepLink(uri);
+      }
+    });
+  }
+
+  void _handleDeepLink(Uri uri) {
+    debugPrint('🔗 [DeepLink] Received deep link: $uri');
+    final navigator = PushNotificationService.navigatorKey.currentState;
+    if (navigator == null) {
+      debugPrint('⚠️ [DeepLink] Navigator is not ready yet');
+      return;
+    }
+
+    // Scheme: lapangku://field-detail?id=xxx atau lapangku://booking-detail?id=xxx
+    if (uri.scheme == 'lapangku') {
+      final path = uri.host;
+      final id = uri.queryParameters['id'];
+
+      if (id != null && id.isNotEmpty) {
+        if (path == 'field-detail') {
+          navigator.pushNamed('/field-detail', arguments: id);
+        } else if (path == 'booking-detail') {
+          navigator.pushNamed('/booking-detail', arguments: id);
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -181,9 +244,16 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const CustomerProfilePage(),
         '/search': (context) => const CustomerSearchPage(),
         '/field-detail': (context) {
-          final field =
-              ModalRoute.of(context)!.settings.arguments! as FieldModel;
-          return CustomerFieldDetailPage(field: field);
+          final args = ModalRoute.of(context)!.settings.arguments;
+          if (args is FieldModel) {
+            return CustomerFieldDetailPage(field: args);
+          } else if (args is String) {
+            return CustomerFieldDetailPage(fieldId: args);
+          } else {
+            return const Scaffold(
+              body: Center(child: Text('Invalid arguments')),
+            );
+          }
         },
         '/booking-confirmation': (context) {
           final args = ModalRoute.of(context)!.settings.arguments!

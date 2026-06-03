@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/models/booking_status.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
@@ -31,7 +32,28 @@ class BookingDetailPage extends ConsumerWidget {
         centerTitle: true,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primary),
-        actions: [IconButton(icon: const Icon(Icons.share_outlined), onPressed: () {})],
+        actions: [IconButton(icon: const Icon(Icons.share_outlined), onPressed: () {
+          final bookingAsync = ref.read(activeBookingStreamProvider(bookingId));
+          final booking = bookingAsync.valueOrNull;
+          if (booking == null) return;
+          final dateStr = DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
+          final timeStr = booking.timeSlots.length > 1
+              ? '${booking.timeSlots.first.split(' - ')[0]} - ${booking.timeSlots.last.split(' - ')[1]} WIB'
+              : '${booking.timeSlots.first} WIB';
+          final status = BookingStatusParsing.fromString(booking.status);
+          Share.share(
+            '🏟️ *Booking Lapangku Berhasil!* 🏟️\n\n'
+            '🎫 *ID Pesanan:* #${booking.bookingId}\n'
+            '⚽ *Lapangan:* ${booking.fieldName}\n'
+            '📍 *Alamat:* ${booking.fieldAddress}\n'
+            '📅 *Hari/Tanggal:* $dateStr\n'
+            '🕐 *Waktu:* $timeStr\n'
+            '💳 *Total Bayar:* ${CurrencyFormatter.format(booking.totalBayar)}\n'
+            '📌 *Status:* ${status.label}\n\n'
+            'Tunjukkan tiket Anda di aplikasi atau buka tautan ini:\n'
+            '🔗 lapangku://booking-detail?id=${booking.id}',
+          );
+        })],
       ),
       body: bookingStream.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
