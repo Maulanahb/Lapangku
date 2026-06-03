@@ -8,9 +8,9 @@ import 'package:lapangku/controllers/mitra/mitra_booking_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
 
-// PASTIKAN import model BookingModel di bawah ini sudah benar jalurnya
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/views/mitra/mitra_booking_list_page.dart';
+import 'package:lapangku/views/mitra/widgets/mitra_notification_bell.dart';
 import 'package:intl/intl.dart';
 
 class MitraHomePage extends ConsumerStatefulWidget {
@@ -122,23 +122,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                     fontWeight: FontWeight.w900,
                     color: _primaryGreen)),
           ]),
-          Stack(children: [
-            const Icon(Icons.notifications_outlined,
-                size: 28, color: Colors.black87),
-            Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                        color: Color(0xFFE04443), shape: BoxShape.circle),
-                    child: Text(
-                        '${ref.watch(mitraWaitingBookingsProvider(_uid)).length}',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold)))),
-          ]),
+          const MitraNotificationBell(),
         ],
       ),
     );

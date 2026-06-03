@@ -22,6 +22,20 @@ final unreadNotificationsCountProvider = Provider.autoDispose<int>((ref) {
   return notifications.where((n) => !n.isRead).length;
 });
 
+final mitraNotificationsProvider = StreamProvider.autoDispose<List<NotificationModel>>((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return Stream.value([]);
+
+  return FirestoreService.instance
+      .collection('notifikasi')
+      .where('mitraId', isEqualTo: user.uid)
+      .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map((snapshot) => snapshot.docs
+          .map((doc) => NotificationModel.fromFirestore(doc))
+          .toList());
+});
+
 class NotificationController {
   final _db = FirestoreService.instance;
 
@@ -34,6 +48,21 @@ class NotificationController {
     final snapshot = await _db
         .collection('notifikasi')
         .where('customer_id', isEqualTo: userId)
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    for (var doc in snapshot.docs) {
+      batch.update(doc.reference, {'isRead': true});
+    }
+
+    await batch.commit();
+  }
+
+  Future<void> markAllMitraAsRead(String userId) async {
+    final batch = _db.batch();
+    final snapshot = await _db
+        .collection('notifikasi')
+        .where('mitraId', isEqualTo: userId)
         .where('isRead', isEqualTo: false)
         .get();
 

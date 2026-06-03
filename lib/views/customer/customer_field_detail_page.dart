@@ -99,10 +99,13 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
             final data = doc.data();
             if (data['status'] == 'ditutup') {
               final jam = data['jam'] as String?;
-              if (jam != null) {
+              if (jam != null && jam.isNotEmpty) {
                 try {
-                  final hour = int.parse(jam.split(':')[0]);
-                  closed.add("$jam - ${((hour + 1).toString().padLeft(2, '0'))}:00");
+                  final parts = jam.split(':');
+                  final hour = int.parse(parts[0]);
+                  final startStr = hour.toString().padLeft(2, '0');
+                  final endStr = (hour + 1).toString().padLeft(2, '0');
+                  closed.add("$startStr:00 - $endStr:00");
                 } catch (_) {}
               }
             }
@@ -1120,21 +1123,21 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
 
                 Color bg, border, txt;
                 String sub = '';
-                if (isClosedByMitra) {
-                  bg = Colors.red.shade50;
-                  border = Colors.red.shade200;
-                  txt = Colors.red.shade400;
-                  sub = 'MAINTENANCE';
-                } else if (isBooked) {
-                  bg = AppColors.backgroundPage;
-                  border = Colors.grey.shade200;
-                  txt = Colors.grey.shade400;
-                  sub = 'TERPESAN';
-                } else if (isPassed) {
-                  bg = AppColors.backgroundPage;
-                  border = Colors.grey.shade200;
-                  txt = Colors.grey.shade400;
-                  sub = 'LEWAT';
+                bool isStrikeThrough = false;
+
+                if (isUnavailable) {
+                  bg = AppColors.backgroundPage; // abu-abu
+                  border = Colors.grey.shade300;
+                  txt = Colors.grey.shade500;
+                  isStrikeThrough = true;
+                  
+                  if (isClosedByMitra) {
+                    sub = 'TUTUP';
+                  } else if (isBooked) {
+                    sub = 'TERPESAN';
+                  } else if (isPassed) {
+                    sub = 'LEWAT';
+                  }
                 } else if (isSel) {
                   bg = AppColors.primary;
                   border = AppColors.primary;
@@ -1167,7 +1170,9 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
                           style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: txt)),
+                              color: txt,
+                              decoration: isStrikeThrough ? TextDecoration.lineThrough : null,
+                          )),
                       if (sub.isNotEmpty)
                         Padding(
                             padding: const EdgeInsets.only(top: 2),
