@@ -9,6 +9,10 @@ class SnackbarHelper {
     _showSnackbar(context, message, Colors.red);
   }
 
+  static void showWarning(BuildContext context, String message) {
+    _showSnackbar(context, message, Colors.orange);
+  }
+
   static void showInfo(BuildContext context, String message) {
     _showSnackbar(context, message, Colors.blue);
   }

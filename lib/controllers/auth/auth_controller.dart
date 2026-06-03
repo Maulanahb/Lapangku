@@ -112,6 +112,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState();
   }
 
+  void setLoading(bool isLoading) {
+    state = state.copyWith(isLoading: isLoading);
+  }
+
   Future<void> sendPasswordReset(String email) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -171,19 +175,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> updateTwoFactor(String uid, bool enabled) async {
-    state = state.copyWith(isLoading: true, clearError: true);
-    try {
-      await _service.updateTwoFactor(uid, enabled);
-      state = state.copyWith(isLoading: false, clearError: true);
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Gagal mengupdate verifikasi 2 langkah: $e',
-      );
-      rethrow;
-    }
-  }
+
 
   Future<void> updateNotificationSettings(
       String uid, Map<String, bool> settings) async {

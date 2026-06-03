@@ -32,7 +32,7 @@ class MitraReviewModel {
   bool get isReplied => replyText != null && replyText!.isNotEmpty;
 
   factory MitraReviewModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data()! as Map<String, dynamic>;
     
     // Extract fieldId from path if not present in data
     String fieldId = data['fieldId'] ?? '';

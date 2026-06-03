@@ -6,8 +6,8 @@ import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/views/mitra/add_field_page.dart';
 import 'package:lapangku/views/mitra/edit_field_page.dart';
+import 'package:lapangku/views/mitra/jadwal_lapangan.dart';
 import 'package:intl/intl.dart';
-import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 
 class ManageFieldsPage extends ConsumerStatefulWidget {
   const ManageFieldsPage({super.key});
@@ -187,56 +187,11 @@ class _ManageFieldsPageState extends ConsumerState<ManageFieldsPage> {
             padding: const EdgeInsets.all(20),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(field.namaLapangan,
-                      style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.2)),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, color: Color(0xFF64748B)),
-                    onSelected: (value) async {
-                      if (value == 'delete') {
-                        final confirm = await ConfirmationDialog.show(
-                          context: context,
-                          title: 'Hapus Lapangan',
-                          message:
-                              'Apakah Anda yakin ingin menghapus lapangan ini?',
-                          confirmText: 'Hapus',
-                          isDestructive: true,
-                        );
-                        if (confirm == true) {
-                          await ref
-                              .read(mitraFieldProvider.notifier)
-                              .deleteField(field.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Lapangan berhasil dihapus')),
-                            );
-                          }
-                        }
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_outline,
-                                color: Colors.red, size: 20),
-                            SizedBox(width: 8),
-                            Text('Hapus Lapangan',
-                                style: TextStyle(color: Colors.red)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              Text(field.namaLapangan,
+                  style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.2)),
               const SizedBox(height: 12),
               Row(children: [
                 Container(
@@ -339,56 +294,63 @@ class _ManageFieldsPageState extends ConsumerState<ManageFieldsPage> {
                     inactiveTrackColor: const Color(0xFFD1D5DB)),
               ]),
               const SizedBox(height: 20),
+              // UPDATE: Baris tombol diubah menjadi dua tombol
               Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(children: [
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    // Tombol Edit
                     Expanded(
-                        child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      EditFieldPage(field: field),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.edit_outlined, size: 18),
-                            label: const Text('Edit'),
-                            style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.black87,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                                side: BorderSide(
-                                    color: Colors.grey[200]!, width: 1.5),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12))))),
-                    const SizedBox(width: 12),
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EditFieldPage(field: field),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        label: const Text('Edit Lapangan'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.black87,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: BorderSide(color: Colors.grey[200]!, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12), // Spasi antar tombol
+                    // Tombol Kelola Jadwal
                     Expanded(
-                        child: ElevatedButton.icon(
-                            onPressed: () {},
-                            icon: Icon(
-                                isActive
-                                    ? Icons.calendar_today_rounded
-                                    : Icons.calendar_month_outlined,
-                                size: 18),
-                            label: Text(isActive ? 'Lihat Jadwal' : 'Jadwal'),
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: isActive
-                                    ? const Color(0xFFEBF5FF)
-                                    : Colors.white,
-                                foregroundColor: isActive
-                                    ? const Color(0xFF1E40AF)
-                                    : Colors.grey[400],
-                                elevation: 0,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                                side: !isActive
-                                    ? BorderSide(color: Colors.grey[100]!)
-                                    : BorderSide.none,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12))))),
-                  ])),
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => JadwalLapanganPage(lapangan: field),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.calendar_month_outlined,
+                            size: 18, color: Colors.white),
+                        label: const Text('Kelola Jadwal'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _primaryGreen,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ])),
       ]),
     );

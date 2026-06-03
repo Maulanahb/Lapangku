@@ -9,6 +9,7 @@ import 'package:lapangku/views/admin/admin_bookings_page.dart';
 import 'package:lapangku/views/admin/admin_users_page.dart';
 import 'package:lapangku/views/admin/admin_reports_page.dart';
 import 'package:lapangku/views/admin/admin_payouts_page.dart';
+import 'package:lapangku/standards/constants/app_colors.dart';
 
 class AdminDashboardPage extends ConsumerStatefulWidget {
   const AdminDashboardPage({super.key});
@@ -35,7 +36,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
 
     if (isDesktop) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F6FA),
+        backgroundColor: AppColors.backgroundPage,
         body: Row(
           children: [
             _buildSidebar(),
@@ -51,7 +52,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: AppColors.backgroundPage,
       appBar: AppBar(
         title: const Text('LapangKu Panel Admin'),
         backgroundColor: Colors.white,
@@ -127,16 +128,24 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _sidebarItem(0, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Dashboard'),
-                _sidebarItem(1, Icons.people_outline_rounded, Icons.people_rounded, 'Kelola Pengguna'),
-                _sidebarItem(2, Icons.domain_verification_rounded, Icons.domain_verification_rounded, 'Verifikasi Mitra'),
-                _sidebarItem(3, Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Daftar Pesanan'),
-                _sidebarItem(4, Icons.analytics_outlined, Icons.analytics_rounded, 'Laporan Analistik'),
-                _sidebarItem(5, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded, 'Pencairan Dana'),
-              ],
+            child: Consumer(
+              builder: (context, ref, _) {
+                final mitrasAsync = ref.watch(adminAllMitrasProvider);
+                final pendingCount = mitrasAsync.value
+                    ?.where((m) => m.statusVerifikasi == 'menunggu')
+                    .length ?? 0;
+                return ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    _sidebarItem(0, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Dashboard'),
+                    _sidebarItem(1, Icons.people_outline_rounded, Icons.people_rounded, 'Kelola Pengguna'),
+                    _sidebarItem(2, Icons.domain_verification_rounded, Icons.domain_verification_rounded, 'Verifikasi Mitra', badge: pendingCount),
+                    _sidebarItem(3, Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Daftar Pesanan'),
+                    _sidebarItem(4, Icons.analytics_outlined, Icons.analytics_rounded, 'Laporan Analistik'),
+                    _sidebarItem(5, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded, 'Pencairan Dana'),
+                  ],
+                );
+              },
             ),
           ),
           Padding(
@@ -166,7 +175,13 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
     );
   }
 
-  Widget _sidebarItem(int index, IconData iconOutlined, IconData iconFilled, String label) {
+  Widget _sidebarItem(
+    int index,
+    IconData iconOutlined,
+    IconData iconFilled,
+    String label, {
+    int badge = 0,
+  }) {
     final isSelected = _selectedNav == index;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -189,22 +204,78 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
           ),
           child: Row(
             children: [
-              Icon(isSelected ? iconFilled : iconOutlined,
-                  color: isSelected ? _primary : Colors.grey.shade500,
-                  size: 22),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    isSelected ? iconFilled : iconOutlined,
+                    color: isSelected ? _primary : Colors.grey.shade500,
+                    size: 22,
+                  ),
+                  if (badge > 0)
+                    Positioned(
+                      top: -6,
+                      right: -8,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                            minWidth: 16, minHeight: 16),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.4),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          badge > 99 ? '99+' : '$badge',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   label,
                   style: TextStyle(
                     color: isSelected ? _primary : Colors.grey.shade600,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                    fontWeight:
+                        isSelected ? FontWeight.w800 : FontWeight.w500,
                     fontSize: 14,
                     letterSpacing: isSelected ? 0.2 : 0,
                   ),
                 ),
               ),
-              if (isSelected)
+              if (badge > 0 && !isSelected)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$badge baru',
+                    style: const TextStyle(
+                      color: Color(0xFF92400E),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                )
+              else if (isSelected)
                 Container(
                   width: 6,
                   height: 6,
@@ -212,7 +283,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                     color: _primary,
                     shape: BoxShape.circle,
                   ),
-                )
+                ),
             ],
           ),
         ),
@@ -234,8 +305,6 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 800;
-    final bookingsAsync = ref.watch(adminAllBookingsProvider);
-    final fieldsAsync = ref.watch(adminAllFieldsProvider);
     final dashboardStats = ref.watch(adminDashboardStatsProvider);
     
     final chartAsync = ref.watch(bookingsChartProvider);
@@ -246,8 +315,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
       child: RefreshIndicator(
         color: _primary,
         onRefresh: () async {
-          ref.refresh(adminAllBookingsProvider);
-          ref.refresh(adminAllFieldsProvider);
+          ref.read(adminStatsProvider.notifier).load();
           ref.read(bookingsChartProvider.notifier).load();
           ref.read(activitiesProvider.notifier).load();
         },
@@ -260,28 +328,31 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
               _buildHeader(context, authState.user?.nama ?? 'Admin'),
               const SizedBox(height: 32),
               
-              if (bookingsAsync.isLoading || fieldsAsync.isLoading)
-                _buildStatsShimmer(isDesktop)
-              else if (bookingsAsync.hasError || fieldsAsync.hasError)
-                _buildError(bookingsAsync.error?.toString() ?? fieldsAsync.error.toString())
-              else
-                _buildStatsGrid(dashboardStats, isDesktop),
-              const SizedBox(height: 24),
-              
-              if (isDesktop)
-                Row(
+              dashboardStats.when(
+                loading: () => _buildStatsShimmer(isDesktop),
+                error: (error, _) => _buildError(error.toString()),
+                data: (stats) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(flex: 3, child: _buildChartCard(chartAsync)),
-                    const SizedBox(width: 24),
-                    Expanded(flex: 2, child: _buildDonutCardWrap(bookingsAsync)),
+                    _buildStatsGrid(stats, isDesktop),
+                    const SizedBox(height: 24),
+                    if (isDesktop)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 3, child: _buildChartCard(chartAsync)),
+                          const SizedBox(width: 24),
+                          Expanded(flex: 2, child: _buildDonutCard(stats)),
+                        ],
+                      )
+                    else ...[
+                      _buildChartCard(chartAsync),
+                      const SizedBox(height: 24),
+                      _buildDonutCard(stats),
+                    ],
                   ],
-                )
-              else ...[
-                _buildChartCard(chartAsync),
-                const SizedBox(height: 24),
-                _buildDonutCardWrap(bookingsAsync),
-              ],
+                ),
+              ),
               const SizedBox(height: 24),
 
               activitiesAsync.when(
@@ -327,9 +398,9 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Dashboard',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF1A1A2E), letterSpacing: -0.3)),
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.textHeading, letterSpacing: -0.5)),
                   const SizedBox(height: 2),
-                  Text(dateStr, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                  Text(dateStr, style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
                 ],
               )
             else
@@ -400,14 +471,31 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
       ),
     ];
 
-    return GridView.count(
-      crossAxisCount: isDesktop ? 4 : 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      childAspectRatio: isDesktop ? 2.2 : 1.8,
-      children: cards.map((c) => _buildStatCard(c)).toList(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        int crossAxisCount = 4;
+        if (width < 600) {
+          crossAxisCount = 1;
+        } else if (width < 900) {
+          crossAxisCount = 2;
+        } else if (width < 1200) {
+          crossAxisCount = 2; // Can be 2 or 3 depending on preference, 2 is safer for long text
+        }
+
+        // Account for spacing (crossAxisCount - 1) * 16
+        // Small tolerance subtraction to prevent wrap due to rounding
+        final cardWidth = (width - ((crossAxisCount - 1) * 16)) / crossAxisCount - 0.1;
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: cards.map((c) => SizedBox(
+            width: cardWidth,
+            child: _buildStatCard(c),
+          )).toList(),
+        );
+      },
     );
   }
 
@@ -423,7 +511,6 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
@@ -433,6 +520,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
             ),
             child: Icon(data.icon, color: data.isGreen ? Colors.white : data.color, size: 22),
           ),
+          const SizedBox(height: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -451,7 +539,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: data.isGreen ? Colors.white : const Color(0xFF1A1A2E),
+                  color: data.isGreen ? Colors.white : AppColors.textHeading,
                 ),
               ),
             ],
@@ -462,14 +550,32 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
   }
 
   Widget _buildStatsShimmer(bool isDesktop) {
-    return GridView.count(
-      crossAxisCount: isDesktop ? 4 : 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      childAspectRatio: isDesktop ? 2.2 : 1.8,
-      children: List.generate(4, (_) => Container(decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12)))),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        int crossAxisCount = 4;
+        if (width < 600) {
+          crossAxisCount = 1;
+        } else if (width < 900) {
+          crossAxisCount = 2;
+        } else if (width < 1200) {
+          crossAxisCount = 2;
+        }
+        final cardWidth = (width - ((crossAxisCount - 1) * 16)) / crossAxisCount - 0.1;
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: List.generate(4, (_) => Container(
+            width: cardWidth,
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200, 
+              borderRadius: BorderRadius.circular(12)
+            ),
+          )),
+        );
+      },
     );
   }
 
@@ -570,22 +676,13 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
     ));
   }
 
-  Widget _buildDonutCardWrap(AsyncValue bookingsAsync) {
-    return bookingsAsync.when(
-      loading: () => Container(height: 334, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12))),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (bookings) => _buildDonutCard(bookings),
-    );
-  }
-
-  Widget _buildDonutCard(bookings) {
-    final list = bookings as List;
-    final selesai   = list.where((b) => b.status == 'selesai').length;
-    final menungguBayar = list.where((b) => b.status == 'menunggu_bayar').length;
-    final menungguKonfirmasi = list.where((b) => b.status == 'menunggu_konfirmasi').length;
-    final dikonfirmasi = list.where((b) => b.status == 'dikonfirmasi').length;
-    final dibatalkan = list.where((b) => b.status == 'dibatalkan' || b.status == 'ditolak' || b.status == 'expired').length;
-    final total = list.length;
+  Widget _buildDonutCard(AdminDashboardStats stats) {
+    final selesai = stats.countSelesai;
+    final menungguBayar = stats.countMenungguBayar;
+    final menungguKonfirmasi = stats.countMenungguKonfirmasi;
+    final dikonfirmasi = stats.countDikonfirmasi;
+    final dibatalkan = stats.countDibatalkan;
+    final total = selesai + menungguBayar + menungguKonfirmasi + dikonfirmasi + dibatalkan;
 
     double pct(int n) => total == 0 ? 0 : (n / total * 100);
 
@@ -621,7 +718,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                     ],
                 )),
                 Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text('$total', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 26, color: Color(0xFF1A1A2E))),
+                  Text('$total', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 26, color: AppColors.textHeading)),
                   const Text('TOTAL', style: TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1)),
                 ]),
               ]),
@@ -819,7 +916,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Semua Aktivitas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1A1A2E))),
+                  const Text('Semua Aktivitas', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textHeading)),
                   IconButton(
                     onPressed: () => Navigator.pop(ctx),
                     icon: Icon(Icons.close_rounded, color: Colors.grey.shade500),
@@ -988,7 +1085,7 @@ class _ProfileMenu extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(adminName,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF1A1A2E))),
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textHeading)),
                 Text('Administrator',
                     style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
               ],
@@ -1018,7 +1115,7 @@ class _ProfileMenu extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(adminName,
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF1A1A2E))),
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textHeading)),
                       Text('admin@lapangku.id',
                           style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                     ],

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/models/field/field_model.dart';
@@ -17,7 +18,6 @@ import 'package:lapangku/services/firebase_storage_service.dart';
 /// - **System**: auto-expire batas waktu bayar
 class BookingService {
   final FirebaseFirestore _db = FirestoreService.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PRIVATE HELPERS
@@ -102,6 +102,13 @@ class BookingService {
   ///
   /// WAJIB menerima `mitraId` melalui [field.mitraId] agar query Mitra efisien.
   /// Status awal: `menunggu_bayar`
+  ///
+  /// **PENTING — Asumsi Harga:**
+  /// Perhitungan `hargaLapangan = field.hargaPerJam * timeSlots.length`
+  /// mengasumsikan 1 slot = tepat 1 jam (misal: "08:00 - 09:00").
+  /// Jika Mitra membuat slot berdurasi bukan 1 jam (misal: "08:00 - 09:30"),
+  /// harga yang dihitung akan salah. Pastikan validasi pembuatan slot di sisi
+  /// Mitra mengunci durasi per slot ke tepat 1 jam.
   Future<BookingModel> createBooking({
     required FieldModel field,
     required UserModel user,
@@ -111,9 +118,28 @@ class BookingService {
     required int biayaLayanan,
     required String mitraId,
   }) async {
+    // Validasi: minimal 1 slot harus dipilih
+    if (timeSlots.isEmpty) {
+      throw Exception('Minimal pilih 1 slot waktu untuk booking.');
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ANTI DOUBLE-BOOKING: Cek slot yang sudah terpesan sebelum membuat
+    // booking baru. Mencegah race condition dimana 2 customer memesan
+    // slot yang sama dalam waktu bersamaan.
+    // ══════════════════════════════════════════════════════════════════
+    final existingSlots = await getBookedSlots(fieldId: field.id, date: date);
+    final conflict = timeSlots.where((s) => existingSlots.contains(s)).toList();
+    if (conflict.isNotEmpty) {
+      throw Exception(
+          'Slot ${conflict.join(", ")} sudah dipesan oleh orang lain. '
+          'Silakan pilih slot lain.');
+    }
+
     final docRef = _db.collection('bookings').doc();
     final now = DateTime.now();
 
+    // Asumsi: 1 slot = 1 jam. Lihat doc comment di atas.
     final int durasi = timeSlots.length;
     final int hargaLapangan = field.hargaPerJam * durasi;
     final int totalBayar = hargaLapangan + biayaLayanan;
@@ -131,6 +157,7 @@ class BookingService {
       fieldImageUrl: field.fotoUtama,
       userId: user.uid,
       userName: user.nama,
+      userAvatarUrl: user.avatarUrl,
       tanggal: DateTime(date.year, date.month, date.day),
       timeSlots: timeSlots,
       durasi: durasi,
@@ -150,16 +177,16 @@ class BookingService {
       createdAt: now,
       updatedAt: now,
     );
-    print('=========================================');
-    print('📋 CREATE BOOKING');
-    print('   fieldId: ${field.id}');
-    print('   mitraId param: $mitraId');
-    print('   field.mitraId: ${field.mitraId}');
-    print('   field.idPemilik: ${field.idPemilik}');
-    print('=========================================');
+    debugPrint('=========================================');
+    debugPrint('📋 CREATE BOOKING');
+    debugPrint('   fieldId: ${field.id}');
+    debugPrint('   mitraId param: $mitraId');
+    debugPrint('   field.mitraId: ${field.mitraId}');
+    debugPrint('   field.idPemilik: ${field.idPemilik}');
+    debugPrint('=========================================');
 
     await docRef.set(booking.toFirestore());
-    print('✅ Booking saved: ${booking.bookingId} | mitraId in doc: ${booking.mitraId}');
+    debugPrint('✅ Booking saved: ${booking.bookingId} | mitraId in doc: ${booking.mitraId}');
     return booking;
   }
 
@@ -172,9 +199,14 @@ class BookingService {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
+    // Filter tanggal di Firestore (server-side) agar hanya booking pada
+    // tanggal yang diminta yang diambil. Menghindari kebocoran reads yang
+    // sangat mahal — sebelumnya SEMUA riwayat booking lapangan di-download.
     final snap = await _db
         .collection('bookings')
         .where('fieldId', isEqualTo: fieldId)
+        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('tanggal', isLessThan: Timestamp.fromDate(endOfDay))
         .get();
 
     final bookedSlots = <String>[];
@@ -182,10 +214,6 @@ class BookingService {
 
     for (final doc in snap.docs) {
       final data = doc.data();
-
-      final tanggal = (data['tanggal'] as Timestamp?)?.toDate();
-      if (tanggal == null) continue;
-      if (tanggal.isBefore(startOfDay) || tanggal.isAfter(endOfDay)) continue;
 
       final status = data['status'] ?? '';
       // Skip terminal states (tidak memblokir slot)
@@ -217,6 +245,36 @@ class BookingService {
         }
       }
     }
+
+    // Ambil slot yang ditutup secara manual oleh Mitra dari koleksi 'jadwal'
+    try {
+      final dateStr = DateFormat('yyyy-MM-dd').format(date);
+      final jadwalSnap = await _db
+          .collection('jadwal')
+          .where('lapangan_id', isEqualTo: fieldId)
+          .where('tanggal', isEqualTo: dateStr)
+          .where('status', isEqualTo: 'ditutup')
+          .get();
+
+      for (final doc in jadwalSnap.docs) {
+        final data = doc.data();
+        final jam = data['jam'] as String?;
+        if (jam != null && jam.isNotEmpty) {
+          final parts = jam.split(':');
+          final hour = int.parse(parts[0]);
+          final nextHour = hour + 1;
+          final startSlot = '${hour.toString().padLeft(2, '0')}:00';
+          final endSlot = '${nextHour.toString().padLeft(2, '0')}:00';
+          bookedSlots.add('$startSlot - $endSlot');
+        }
+      }
+    } catch (e) {
+      // Fail-safe jika ada error parsing atau query
+      debugPrint('Error fetching/parsing manual closed slots: $e');
+    }
+
+    
+
     return bookedSlots;
   }
 
@@ -239,18 +297,19 @@ class BookingService {
     });
   }
 
-  /// [Customer] Get semua booking milik user tertentu.
-  Future<List<BookingModel>> getUserBookings(String userId) async {
+  /// [Customer] Get booking milik user tertentu.
+  ///
+  /// Menggunakan orderBy + limit agar tidak mendownload seluruh riwayat
+  /// booking sejak akun dibuat. Default limit 50 booking terbaru.
+  Future<List<BookingModel>> getUserBookings(String userId, {int limit = 50}) async {
     final snap = await _db
         .collection('bookings')
         .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
         .get();
 
-    final bookings =
-        snap.docs.map((doc) => BookingModel.fromFirestore(doc)).toList();
-    // Sort by createdAt descending
-    bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return bookings;
+    return snap.docs.map((doc) => BookingModel.fromFirestore(doc)).toList();
   }
 
   /// [Customer] Upload bukti pembayaran transfer bank.
@@ -371,11 +430,11 @@ class BookingService {
     String mitraId, {
     String? statusFilter,
   }) {
-    print('=========================================');
-    print('🔍 STREAM MITRA BOOKINGS');
-    print('   mitraId: "$mitraId"');
-    print('   statusFilter: $statusFilter');
-    print('=========================================');
+    debugPrint('=========================================');
+    debugPrint('🔍 STREAM MITRA BOOKINGS');
+    debugPrint('   mitraId: "$mitraId"');
+    debugPrint('   statusFilter: $statusFilter');
+    debugPrint('=========================================');
 
     Query query = _db
         .collection('bookings')
@@ -507,6 +566,7 @@ class BookingService {
     await _db.collection('bookings').doc(bookingId).update({
       'tanggal': Timestamp.fromDate(booking.rescheduleDate!),
       'timeSlots': booking.rescheduleTimeSlots,
+      'durasi': booking.rescheduleTimeSlots!.length,
       'isRescheduleRequested': false,
       'rescheduleStatus': 'approved',
       'updatedAt': Timestamp.fromDate(DateTime.now()),

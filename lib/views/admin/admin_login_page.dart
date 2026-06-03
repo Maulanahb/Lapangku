@@ -75,43 +75,54 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
       return;
     }
 
-    await ref.read(authProvider.notifier).login(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-        );
+    try {
+      await ref.read(authProvider.notifier).login(
+            _emailController.text.trim(),
+            _passwordController.text.trim(),
+          );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    final authState = ref.read(authProvider);
+      final authState = ref.read(authProvider);
 
-    if (authState.errorMessage != null) {
-      setState(() {
-        _emailError = '';
-        _passwordError = '';
-        _loginError = 'Email atau password yang kamu masukkan salah';
-      });
-      return;
-    }
-
-    if (authState.user != null) {
-      if (authState.user!.role.toLowerCase() == 'admin') {
-        final prefs = await SharedPreferences.getInstance();
-        if (_rememberMe) {
-          await prefs.setBool('admin_remember_me', true);
-          await prefs.setString('admin_email', _emailController.text.trim());
-          await prefs.setString('admin_password', _passwordController.text.trim());
-        } else {
-          await prefs.remove('admin_remember_me');
-          await prefs.remove('admin_email');
-          await prefs.remove('admin_password');
-        }
-
-        Navigator.pushReplacementNamed(context, '/admin-home');
-      } else {
+      if (authState.errorMessage != null) {
         setState(() {
-          _loginError = 'Akun ini bukan admin!';
+          _emailError = '';
+          _passwordError = '';
+          _loginError = 'Email atau password yang kamu masukkan salah';
         });
-        await ref.read(authProvider.notifier).logout();
+        return;
+      }
+
+      if (authState.user != null) {
+        if (authState.user!.role.toLowerCase() == 'admin') {
+          final prefs = await SharedPreferences.getInstance();
+          if (_rememberMe) {
+            await prefs.setBool('admin_remember_me', true);
+            await prefs.setString('admin_email', _emailController.text.trim());
+            await prefs.setString('admin_password', _passwordController.text.trim());
+          } else {
+            await prefs.remove('admin_remember_me');
+            await prefs.remove('admin_email');
+            await prefs.remove('admin_password');
+          }
+
+          if (!mounted) return;
+          Navigator.pushReplacementNamed(context, '/admin-home');
+        } else {
+          setState(() {
+            _loginError = 'Akun ini bukan admin!';
+          });
+          await ref.read(authProvider.notifier).logout();
+        }
+      }
+    } catch (e) {
+      ref.read(authProvider.notifier).setLoading(false);
+      if (mounted) {
+        setState(() {
+          _loginError = 'Terjadi kesalahan: $e';
+        });
+        _showSnackbar('Terjadi kesalahan: $e', isError: true);
       }
     }
   }
@@ -365,6 +376,29 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                     ),
                   ],
                 ),
+                if (_loginError != null && _loginError!.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, size: 16, color: Colors.red),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _loginError!,
+                            style: const TextStyle(color: Colors.red, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 28),
 
                 // â”€â”€â”€ Login Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

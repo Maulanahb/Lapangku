@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/models/field/field_model.dart';
@@ -124,6 +125,7 @@ class BookingLifecycleService {
       fieldImageUrl: field.fotoUtama,
       userId: user.uid,
       userName: user.nama,
+      userAvatarUrl: user.avatarUrl,
       tanggal: DateTime(date.year, date.month, date.day),
       timeSlots: timeSlots,
       durasi: durasi,
@@ -337,11 +339,11 @@ class BookingLifecycleService {
     // Hitung total pendapatan dari booking selesai + dikonfirmasi
     int totalPendapatan = 0;
     for (final doc in selesaiDocs.docs) {
-      final data = doc.data() as Map<String, dynamic>;
+      final data = doc.data()! as Map<String, dynamic>;
       totalPendapatan += (data['totalBayar'] ?? data['totalHarga'] ?? 0) as int;
     }
     for (final doc in dikonfirmasiDocs.docs) {
-      final data = doc.data() as Map<String, dynamic>;
+      final data = doc.data()! as Map<String, dynamic>;
       totalPendapatan += (data['totalBayar'] ?? data['totalHarga'] ?? 0) as int;
     }
 
@@ -480,9 +482,13 @@ class BookingLifecycleService {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
+    // Filter tanggal di Firestore (server-side) agar hanya booking pada
+    // tanggal yang diminta yang diambil. Menghindari kebocoran reads yang mahal.
     final snap = await _db
         .collection('bookings')
         .where('fieldId', isEqualTo: fieldId)
+        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('tanggal', isLessThan: Timestamp.fromDate(endOfDay))
         .get();
 
     final bookedSlots = <String>[];
@@ -490,10 +496,6 @@ class BookingLifecycleService {
 
     for (final doc in snap.docs) {
       final data = doc.data();
-
-      final tanggal = (data['tanggal'] as Timestamp?)?.toDate();
-      if (tanggal == null) continue;
-      if (tanggal.isBefore(startOfDay) || tanggal.isAfter(endOfDay)) continue;
 
       final status = data['status'] ?? '';
       // Skip terminal states (tidak memblokir slot)
@@ -524,6 +526,34 @@ class BookingLifecycleService {
         }
       }
     }
+
+    // Ambil slot yang ditutup secara manual oleh Mitra dari koleksi 'jadwal'
+    try {
+      final dateStr = DateFormat('yyyy-MM-dd').format(date);
+      final jadwalSnap = await _db
+          .collection('jadwal')
+          .where('lapangan_id', isEqualTo: fieldId)
+          .where('tanggal', isEqualTo: dateStr)
+          .where('status', isEqualTo: 'ditutup')
+          .get();
+
+      for (final doc in jadwalSnap.docs) {
+        final data = doc.data();
+        final jam = data['jam'] as String?;
+        if (jam != null && jam.isNotEmpty) {
+          final parts = jam.split(':');
+          final hour = int.parse(parts[0]);
+          final nextHour = hour + 1;
+          final startSlot = '${hour.toString().padLeft(2, '0')}:00';
+          final endSlot = '${nextHour.toString().padLeft(2, '0')}:00';
+          bookedSlots.add('$startSlot - $endSlot');
+        }
+      }
+    } catch (e) {
+      // Fail-safe jika ada error parsing atau query
+      debugPrint('Error fetching/parsing manual closed slots: $e');
+    }
+
     return bookedSlots;
   }
 
@@ -546,17 +576,19 @@ class BookingLifecycleService {
     });
   }
 
-  /// Get semua booking milik user (Customer).
-  Future<List<BookingModel>> getUserBookings(String userId) async {
+  /// Get booking milik user (Customer).
+  ///
+  /// Menggunakan orderBy + limit agar tidak mendownload seluruh riwayat
+  /// booking sejak akun dibuat. Default limit 50 booking terbaru.
+  Future<List<BookingModel>> getUserBookings(String userId, {int limit = 50}) async {
     final snap = await _db
         .collection('bookings')
         .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
         .get();
 
-    final bookings =
-        snap.docs.map((doc) => BookingModel.fromFirestore(doc)).toList();
-    bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return bookings;
+    return snap.docs.map((doc) => BookingModel.fromFirestore(doc)).toList();
   }
 
   /// Delete booking (hard delete, hanya untuk Admin atau sistem).

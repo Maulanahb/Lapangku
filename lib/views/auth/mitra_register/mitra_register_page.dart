@@ -156,6 +156,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
         appName: "LapangKu Mitra",
         otpType: OTPType.numeric,
         otpLength: 6,
+        appEmail: 'lapangku1@gmail.com',
       );
 
       EmailOTP.setTemplate(
@@ -445,7 +446,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
           'ownerName': _ownerNameController.text.trim(),
           'businessName': _businessNameController.text.trim(),
           'namaBisnis': _businessNameController.text.trim(),
-          'mitraName': _businessNameController.text.trim(),
+          'mitraName': _ownerNameController.text.trim(),
           'phone': _phoneController.text.trim(),
           'isVerified': false,
           'statusVerifikasi': 'menunggu',
@@ -624,7 +625,8 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
           selectedSport: _selectedSport,
           onSportSelected: (sport) => setState(() => _selectedSport = sport),
           selectedFieldType: _selectedFieldType,
-          onFieldTypeSelected: (type) => setState(() => _selectedFieldType = type),
+          onFieldTypeSelected: (type) =>
+              setState(() => _selectedFieldType = type),
           selectedFacilities: _selectedFacilities,
           onFacilityToggled: (facility) {
             setState(() {

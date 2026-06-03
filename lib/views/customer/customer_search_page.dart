@@ -319,9 +319,15 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                // REFAKTOR: sebelumnya Color(0xFFF4F6F9)
-                color: AppColors.backgroundPage,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  )
+                ],
               ),
               child: TextField(
                 controller: _searchController,
@@ -509,6 +515,7 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
         final filtered = fields.where((f) {
           final matchQuery = _searchQuery.isEmpty ||
               f.nama.toLowerCase().contains(_searchQuery.toLowerCase().trim()) ||
+              f.namaVenue.toLowerCase().contains(_searchQuery.toLowerCase().trim()) ||
               f.alamat.toLowerCase().contains(_searchQuery.toLowerCase().trim());
 
           final matchCategory = _selectedCategory == 'Semua' ||
@@ -524,22 +531,27 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
           return matchQuery && matchCategory && matchTipe && matchFacilities;
         }).toList();
 
+        // Hitung jarak SEKALI ke Map — dipakai untuk sorting DAN render card.
+        // Menghindari pemanggilan Geolocator.distanceBetween() 2x per lapangan.
+        final Map<String, double> distances = {};
+        if (_currentPosition != null) {
+          for (final f in filtered) {
+            distances[f.id] = Geolocator.distanceBetween(
+              _currentPosition!.latitude, _currentPosition!.longitude,
+              f.latitude, f.longitude,
+            );
+          }
+        }
+
         if (_sortBy == 'Termurah') {
           filtered.sort((a, b) => a.hargaPerJam.compareTo(b.hargaPerJam));
         } else if (_sortBy == 'Harga Tertinggi') {
           filtered.sort((a, b) => b.hargaPerJam.compareTo(a.hargaPerJam));
         } else if (_sortBy == 'Rating Tertinggi') {
           filtered.sort((a, b) => b.ratingAvg.compareTo(a.ratingAvg));
-        } else if (_sortBy == 'Terdekat' && _currentPosition != null) {
-          filtered.sort((a, b) {
-            final distA = Geolocator.distanceBetween(
-                _currentPosition!.latitude, _currentPosition!.longitude,
-                a.latitude, a.longitude);
-            final distB = Geolocator.distanceBetween(
-                _currentPosition!.latitude, _currentPosition!.longitude,
-                b.latitude, b.longitude);
-            return distA.compareTo(distB);
-          });
+        } else if (_sortBy == 'Terdekat' && distances.isNotEmpty) {
+          filtered.sort((a, b) =>
+              (distances[a.id] ?? 0).compareTo(distances[b.id] ?? 0));
         }
 
         if (filtered.isEmpty) {
@@ -565,13 +577,10 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final field = filtered[index];
-                    double? distanceInMeters;
-                    if (_currentPosition != null) {
-                      distanceInMeters = Geolocator.distanceBetween(
-                          _currentPosition!.latitude, _currentPosition!.longitude,
-                          field.latitude, field.longitude);
-                    }
-                    return _HorizontalFieldCard(field: field, distanceInMeters: distanceInMeters);
+                    return _HorizontalFieldCard(
+                      field: field,
+                      distanceInMeters: distances[field.id],
+                    );
                   },
                 ),
               ),
@@ -630,11 +639,10 @@ class _HorizontalFieldCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 16,
               offset: const Offset(0, 4),
             )
           ],

@@ -52,3 +52,6 @@ app.*.map.json
 # Node / Firebase Functions
 **/node_modules/
 functions/lib/
+
+# Claude / Agent Skills
+.claude/

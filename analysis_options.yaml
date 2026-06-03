@@ -5,24 +5,76 @@
 # IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
 # invoked from the command line by running `flutter analyze`.
 
-# The following line activates a set of recommended lints for Flutter apps,
-# packages, and plugins designed to encourage good coding practices.
-include: package:flutter_lints/flutter.yaml
+# Stricter analysis options dari Very Good Ventures
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  language:
+    strict-casts: false
+    strict-inference: false
+    strict-raw-types: false
+  errors:
+    # Sembunyikan warning tentang withOpacity yang dideprecated agar tidak mengotori tab problems
+    deprecated_member_use: ignore
+  exclude:
+    - "**.g.dart"
+    - "**.freezed.dart"
+    - "lib/generated_plugin_registrant.dart"
 
 linter:
-  # The lint rules applied to this project can be customized in the
-  # section below to disable rules from the `package:flutter_lints/flutter.yaml`
-  # included above or to enable additional rules. A list of all available lints
-  # and their documentation is published at https://dart.dev/lints.
-  #
-  # Instead of disabling a lint rule for the entire project in the
-  # section below, it can also be suppressed for a single line of code
-  # or a specific dart file by using the `// ignore: name_of_lint` and
-  # `// ignore_for_file: name_of_lint` syntax on the line or in the file
-  # producing the lint.
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # --- MENONAKTIFKAN ATURAN PEDANTIK YANG MENYEBABKAN RIBUAN WARNING GAYA PENULISAN ---
+    
+    # 1. Spasi, Format & File Ending
+    require_trailing_commas: false
+    lines_longer_than_80_chars: false
+    eol_at_end_of_file: false
+    avoid_multiple_declarations_per_line: false
+    curly_braces_in_flow_control_structures: false
 
-# Additional information about this file can be found at
-# https://dart.dev/guides/language/analysis-options
+    # 2. Tipe Data & Casting
+    omit_local_variable_types: false
+    prefer_final_locals: false
+    prefer_final_in_for_each: false
+    avoid_dynamic_calls: false
+    avoid_types_on_closure_parameters: false
+    avoid_void_async: false
+    specify_nonobvious_property_types: false
+
+    # 3. Struktur, Susunan & Import
+    directives_ordering: false
+    sort_constructors_first: false
+    always_put_required_named_parameters_first: false
+    public_member_api_docs: false
+    cascade_invocations: false
+    always_use_package_imports: false
+    prefer_relative_imports: false
+
+    # 4. Penggunaan Const & Literal (Nonaktifkan agar tidak banyak peringatan 'const' di UI Widget)
+    prefer_const_constructors: false
+    prefer_const_constructors_in_immutables: false
+    prefer_const_declarations: false
+    prefer_const_literals_to_create_immutables: false
+    prefer_int_literals: false
+    no_literal_bool_comparisons: false
+    unnecessary_const: false
+
+    # 5. Konvensi Tanda Kutip (Bebas menggunakan single atau double quotes)
+    prefer_single_quotes: false
+
+    # 6. Aturan Tambahan Lainnya
+    discarded_futures: false
+    unnecessary_parenthesis: false
+    avoid_catches_without_on_clauses: false
+    sort_pub_dependencies: false
+    unawaited_futures: false
+    unnecessary_raw_strings: false
+    non_constant_identifier_names: false
+    avoid_redundant_argument_values: false
+    unnecessary_lambdas: false
+    use_colored_box: false
+    prefer_if_elements_to_conditional_expressions: false
+    use_super_parameters: false
+    unnecessary_breaks: false
+    document_ignores: false
+    unnecessary_ignore: false

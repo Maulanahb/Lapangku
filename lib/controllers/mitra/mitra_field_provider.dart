@@ -1,46 +1,50 @@
 import 'dart:io';
+import 'package:collection/collection.dart'; // Ditambahkan untuk firstWhereOrNull
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/services/firebase/mitra_service.dart';
+import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 
-// â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── State ─────────────────────────────────────────────────────────────────
 class MitraFieldState {
   final AsyncValue<List<MitraFieldModel>> fields;
-  final bool isMutating; // loading untuk add/edit/delete
+  final bool isMutating; 
+  final String? errorMessage; // Tambahkan ini untuk handle error mutasi di UI
 
   const MitraFieldState({
     this.fields = const AsyncLoading(),
     this.isMutating = false,
+    this.errorMessage,
   });
 
   MitraFieldState copyWith({
     AsyncValue<List<MitraFieldModel>>? fields,
     bool? isMutating,
+    String? errorMessage,
   }) =>
       MitraFieldState(
         fields: fields ?? this.fields,
         isMutating: isMutating ?? this.isMutating,
+        errorMessage: errorMessage, // Jika sukses, bisa di-set null kembali
       );
 }
 
-// â”€â”€ Notifier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Notifier ──────────────────────────────────────────────────────────────
 class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
   final MitraService _service;
+  final String _uid; // Passing UID dari provider agar lebih testable
 
-  MitraFieldNotifier(this._service) : super(const MitraFieldState()) {
+  MitraFieldNotifier(this._service, this._uid) : super(const MitraFieldState()) {
     loadFields();
   }
-
-  String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
 
   Future<void> loadFields() async {
     if (_uid.isEmpty) {
       state = state.copyWith(fields: const AsyncData([]));
       return;
     }
-    state = state.copyWith(fields: const AsyncLoading());
+    state = state.copyWith(fields: const AsyncLoading(), errorMessage: null);
     try {
       final fields = await _service.getMitraFields(_uid);
       state = state.copyWith(fields: AsyncData(fields));
@@ -49,7 +53,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     }
   }
 
-  Future<void> addField({
+  Future<bool> addField({
     required String namaVenue,
     required String namaLapangan,
     required String jenisLapangan,
@@ -65,7 +69,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     List<String> fasilitas = const [],
     List<File>? photoFiles,
   }) async {
-    state = state.copyWith(isMutating: true);
+    state = state.copyWith(isMutating: true, errorMessage: null);
     try {
       final field = MitraFieldModel(
         id: '',
@@ -86,12 +90,16 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
       );
       await _service.addField(field, photoFiles: photoFiles);
       await loadFields();
+      return true; // Indikasi ke UI kalau proses berhasil
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+      return false; // Indikasi ke UI kalau proses gagal
     } finally {
       state = state.copyWith(isMutating: false);
     }
   }
 
-  Future<void> editField(
+  Future<bool> editField(
     String fieldId, {
     required String namaVenue,
     required String namaLapangan,
@@ -109,10 +117,16 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     List<String> photoUrls = const [],
     List<File>? newPhotoFiles,
   }) async {
-    state = state.copyWith(isMutating: true);
+    state = state.copyWith(isMutating: true, errorMessage: null);
     try {
       final currentFields = state.fields.value ?? [];
-      final existingField = currentFields.firstWhere((f) => f.id == fieldId);
+      
+      // Menggunakan firstWhereOrNull untuk menghindari StateError crash
+      final existingField = currentFields.firstWhereOrNull((f) => f.id == fieldId);
+      if (existingField == null) {
+        throw Exception("Lapangan tidak ditemukan.");
+      }
+
       final updatedField = existingField.copyWith(
         namaVenue: namaVenue,
         namaLapangan: namaLapangan,
@@ -131,16 +145,24 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
       );
       await _service.updateField(updatedField, newPhotoFiles: newPhotoFiles);
       await loadFields();
+      return true;
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+      return false;
     } finally {
       state = state.copyWith(isMutating: false);
     }
   }
 
-  Future<void> deleteField(String fieldId) async {
-    state = state.copyWith(isMutating: true);
+  Future<bool> deleteField(String fieldId) async {
+    state = state.copyWith(isMutating: true, errorMessage: null);
     try {
       await _service.deleteField(fieldId);
       await loadFields();
+      return true;
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+      return false;
     } finally {
       state = state.copyWith(isMutating: false);
     }
@@ -148,7 +170,6 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
 
   Future<void> toggleFieldStatus(String fieldId, bool currentStatus) async {
     final newStatus = !currentStatus;
-    // Optimistic update
     final currentList = state.fields.value ?? [];
     final updated = currentList
         .map((f) => f.id == fieldId ? f.copyWith(isActive: newStatus) : f)
@@ -157,15 +178,13 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     try {
       await _service.toggleFieldStatus(fieldId, newStatus);
     } catch (_) {
-      // Revert
       state = state.copyWith(fields: AsyncData(currentList));
       rethrow;
     }
   }
 }
 
-// Provider yang reaktif terhadap perubahan auth state
-// Ini memastikan data di-reset saat user ganti akun (logout/login)
+// Stream Provider untuk UID Auth
 final _authUidProvider = StreamProvider<String?>((ref) {
   return FirebaseAuth.instance.authStateChanges().map((user) => user?.uid);
 });
@@ -173,13 +192,16 @@ final _authUidProvider = StreamProvider<String?>((ref) {
 final mitraFieldProvider =
     StateNotifierProvider<MitraFieldNotifier, MitraFieldState>((ref) {
   final service = ref.watch(mitraServiceProvider);
-  // Watch UID — saat UID berubah (ganti akun), provider ini otomatis di-recreate
-  ref.watch(_authUidProvider);
-  return MitraFieldNotifier(service);
+  final uidAsync = ref.watch(_authUidProvider);
+  
+  // Ambil value string UID, berikan fallback string kosong jika belum login/loading
+  final uid = uidAsync.value ?? '';
+  
+  return MitraFieldNotifier(service, uid);
 });
 
-// Convenience getter
-final MitraFieldListProvider =
+// Perbaikan penulisan nama ke camelCase
+final mitraFieldListProvider =
     Provider<AsyncValue<List<MitraFieldModel>>>((ref) {
   return ref.watch(mitraFieldProvider).fields;
 });

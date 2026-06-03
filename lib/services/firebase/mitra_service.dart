@@ -48,18 +48,51 @@ class MitraService {
     List<File> photos, {
     String suffix = '',
   }) async {
-    return await FirebaseStorageService.uploadMultipleImages(photos, folder: 'fields');
+    if (photos.isEmpty) return [];
+
+    final sfx = suffix.isNotEmpty
+        ? suffix
+        : DateTime.now().millisecondsSinceEpoch.toString();
+    print(
+        'Mengunggah ${photos.length} foto secara paralel ke folder fields/$fieldId/...');
+
+    try {
+      // 🌟 BYPASS & OPTIMASI PARALEL: Gambar langsung diupload bersamaan dalam satu waktu
+      final List<Future<String>> uploadTasks =
+          photos.asMap().entries.map((entry) async {
+        final index = entry.key;
+        final file = entry.value;
+
+        if (!await file.exists()) throw Exception('File tidak ditemukan');
+
+        // 📁 STRUKTUR RAPI: Memaksa file masuk ke sub-folder ID lapangan, bukan root 'fields'
+        final ref = _storage.ref().child('fields/$fieldId/${sfx}_$index.jpg');
+
+        final uploadTask = await ref.putFile(file);
+        return uploadTask.ref.getDownloadURL();
+      }).toList();
+
+      // Tunggu semua selesai barengan
+      final List<String> completedUrls = await Future.wait(uploadTasks);
+      print('Upload Sukses! Semua URL didapatkan.');
+      return completedUrls;
+    } catch (e) {
+      print('ERROR UPLOAD LAPANGAN: $e');
+      throw Exception('Gagal upload foto lapangan: $e');
+    }
   }
 
   Future<String> uploadLogo(String uid, File imageFile) async {
     if (!await imageFile.exists()) throw Exception('File logo tidak ditemukan');
-    final url = await FirebaseStorageService.uploadImage(imageFile, folder: 'logos');
+    final url =
+        await FirebaseStorageService.uploadImage(imageFile, folder: 'logos');
     return url!;
   }
 
   Future<String> uploadDocument(String uid, String docType, File file) async {
     if (!await file.exists()) throw Exception('File dokumen tidak ditemukan');
-    final url = await FirebaseStorageService.uploadImage(file, folder: 'documents');
+    final url =
+        await FirebaseStorageService.uploadImage(file, folder: 'documents');
     return url!;
   }
 
@@ -88,15 +121,16 @@ class MitraService {
       final snap = await _db
           .collection('lapangan')
           .where('MitraId', isEqualTo: MitraId)
-          .get(const GetOptions(source: Source.server));
+          .get();
 
       print('📂 Koleksi "lapangan": Ditemukan ${snap.docs.length} dokumen');
-      
+
       for (var doc in snap.docs) {
         final data = doc.data();
         final model = MitraFieldModel.fromMap(data, doc.id);
         allFields.add(model);
-        print('   ✅ Lapangan: ${model.namaLapangan} | ID Doc: ${doc.id} | MitraId: ${data['MitraId']}');
+        print(
+            '   ✅ Lapangan: ${model.namaLapangan} | ID Doc: ${doc.id} | MitraId: ${data['MitraId']}');
       }
     } catch (e) {
       print('⚠️ ERROR LOAD: $e');
@@ -121,8 +155,11 @@ class MitraService {
     MitraFieldModel field, {
     List<File>? photoFiles,
   }) async {
+    // 1. Buat referensi dokumen baru untuk mendapatkan ID unik terlebih dahulu
     final docRef = _db.collection('lapangan').doc();
     final initialData = field.copyWith(id: docRef.id, photoUrls: []).toMap();
+
+    // 2. Tulis data awal ke Firestore
     await docRef.set(initialData);
 
     if (photoFiles != null && photoFiles.isNotEmpty) {
@@ -134,6 +171,7 @@ class MitraService {
         );
         print('UPLOAD SUCCESS. URLs: $photoUrls');
 
+        // 3. Update dokumen dengan URL foto yang berhasil di-upload
         await docRef.update({
           'photoUrls': photoUrls,
           'foto_lapangan': photoUrls, // ✅ Key yang dibaca Customer
@@ -142,7 +180,20 @@ class MitraService {
         return docRef.id;
       } catch (e) {
         print('UPLOAD/UPDATE ERROR: $e');
-        return docRef.id;
+
+        // 🚨 SAFETY FALLBACK: Jika upload foto gagal, hapus kembali dokumen Firestore
+        // yang terlanjur dibuat di atas agar tidak menjadi data sampah/cacat di DB.
+        try {
+          await docRef.delete();
+          print(
+              'ROLLBACK SUCCESS: Dokumen cacat berhasil dihapus dari Firestore');
+        } catch (deleteError) {
+          print('FAILED TO ROLLBACK FIRESTORE: $deleteError');
+        }
+
+        // Lemparkan error ke provider agar UI tahu kalau ini GAGAL
+        throw Exception(
+            'Gagal mengunggah foto lapangan. Silakan coba lagi. ($e)');
       }
     }
     return docRef.id;
@@ -158,27 +209,63 @@ class MitraService {
     print('FOTO BARU: ${newPhotoFiles?.length ?? 0}');
     print('=========================================');
 
+    final fieldRef = _db.collection('lapangan').doc(field.id);
+    final fieldDoc = await fieldRef.get();
+
+    // 🚨 PROTECTION 1: Lacak dan bersihkan foto sampah di Storage jika dokumen sudah ada
+    if (fieldDoc.exists) {
+      final oldData = fieldDoc.data();
+      if (oldData != null && oldData['photoUrls'] != null) {
+        // Ambil daftar URL foto yang ada di database saat ini
+        final List<dynamic> dbPhotos = oldData['photoUrls'];
+        final List<Future<void>> deleteTasks = [];
+
+        // Cari URL foto yang ada di DB tetapi sudah TIDAK ADA di object 'field' baru (artinya dihapus oleh user)
+        for (var url in dbPhotos) {
+          if (!field.photoUrls.contains(url)) {
+            deleteTasks.add(() async {
+              try {
+                print('MENGHAPUS FOTO SAMPAH DARI STORAGE: $url');
+                // Hapus file fisik dari Firebase Storage menggunakan URL-nya
+                await _storage.refFromURL(url).delete();
+                print('BERHASIL MENGHAPUS FOTO DARI STORAGE');
+              } catch (storageError) {
+                // Gunakan catch agar jika 1 foto gagal dihapus (misal karena sudah tidak ada), proses update tidak crash
+                print('GAGAL MENGHAPUS FOTO DARI STORAGE: $storageError');
+              }
+            }());
+          }
+        }
+
+        // Jalankan penghapusan di background agar tidak memblokir penyimpanan Firestore
+        if (deleteTasks.isNotEmpty) {
+          Future.wait(deleteTasks);
+        }
+      }
+    }
+
     List<String> photoUrls = List.from(field.photoUrls);
 
+    // 2. Upload foto baru jika ada
     if (newPhotoFiles != null && newPhotoFiles.isNotEmpty) {
       print('Uploading ${newPhotoFiles.length} new photos...');
-      final uploaded = await uploadFieldPhotos(field.id, newPhotoFiles,
-          suffix: 'new_${DateTime.now().millisecondsSinceEpoch}');
+      final uploaded = await uploadFieldPhotos(
+        field.id,
+        newPhotoFiles,
+        suffix: 'new_${DateTime.now().millisecondsSinceEpoch}',
+      );
       photoUrls.addAll(uploaded);
       print('Total photos after upload: ${photoUrls.length}');
     }
 
     final data = field.copyWith(photoUrls: photoUrls).toMap();
-    // toMap() sudah menulis 'foto_lapangan' dan 'photoUrls'
     // Pastikan kedua key foto konsisten
     data['photoUrls'] = photoUrls;
     data['foto_lapangan'] = photoUrls;
 
     print('FINAL DATA TO SAVE: $data');
 
-    final fieldRef = _db.collection('lapangan').doc(field.id);
-    final fieldDoc = await fieldRef.get();
-
+    // 3. Simpan perubahan ke Firestore
     if (fieldDoc.exists) {
       print('Updating in "lapangan" collection...');
       await fieldRef.update(data);
@@ -239,14 +326,16 @@ class MitraService {
 
   static List<MitraScheduleModel> _defaultSchedule(String fieldId) {
     // dayOfWeek: 1=Senin, 2=Selasa, ..., 7=Minggu
-    return List.generate(7, (index) => MitraScheduleModel(
-      id: '',
-      fieldId: fieldId,
-      dayOfWeek: index + 1,
-      jamBuka: '08:00',
-      jamTutup: '22:00',
-      isActive: true,
-    ));
+    return List.generate(
+        7,
+        (index) => MitraScheduleModel(
+              id: '',
+              fieldId: fieldId,
+              dayOfWeek: index + 1,
+              jamBuka: '08:00',
+              jamTutup: '22:00',
+              isActive: true,
+            ));
   }
 
   // ————————————————————————————————————————————————————————————————————————————————
@@ -265,9 +354,14 @@ class MitraService {
 
     List<BookingModel> allBookings = [];
 
-    for (int i = 0; i < fieldIds.length; i += AppConstants.firestoreWhereInLimit) {
+    for (int i = 0;
+        i < fieldIds.length;
+        i += AppConstants.firestoreWhereInLimit) {
       final chunk = fieldIds.sublist(
-          i, i + AppConstants.firestoreWhereInLimit > fieldIds.length ? fieldIds.length : i + AppConstants.firestoreWhereInLimit);
+          i,
+          i + AppConstants.firestoreWhereInLimit > fieldIds.length
+              ? fieldIds.length
+              : i + AppConstants.firestoreWhereInLimit);
       final snap = await _db
           .collection('bookings')
           .where('fieldId', whereIn: chunk)
@@ -277,12 +371,7 @@ class MitraService {
     }
 
     final validBookings = allBookings.where((b) {
-      final isDateValid =
-          b.tanggal.isAfter(startDate.subtract(const Duration(days: 1))) &&
-              b.tanggal.isBefore(endDate.add(const Duration(days: 1)));
-
-      return isDateValid &&
-          (b.status == 'dikonfirmasi' || b.status == 'selesai');
+      return b.status == 'dikonfirmasi' || b.status == 'selesai';
     }).toList();
 
     int totalRevenue = 0;
@@ -297,10 +386,10 @@ class MitraService {
       if (b.status == 'selesai') {
         // Mitra's revenue is hargaLapangan (totalBayar - biayaLayanan)
         totalRevenue += b.hargaLapangan;
-        
+
         // Cek jika transaksi hari ini
-        if (b.tanggal.year == today.year && 
-            b.tanggal.month == today.month && 
+        if (b.tanggal.year == today.year &&
+            b.tanggal.month == today.month &&
             b.tanggal.day == today.day) {
           todayRevenue += b.hargaLapangan;
         }
@@ -349,7 +438,12 @@ class MitraService {
       disbursedRevenue: disbursedRevenue,
       availableBalance: availableBalance > 0 ? availableBalance : 0,
       activeBookings: activeBookings,
-      payoutSuccessRate: payoutsSnap.docs.isEmpty ? 1.0 : (payoutsSnap.docs.where((d) => d.data()['status'] == 'completed').length / payoutsSnap.docs.length),
+      payoutSuccessRate: payoutsSnap.docs.isEmpty
+          ? 1.0
+          : (payoutsSnap.docs
+                  .where((d) => d.data()['status'] == 'completed')
+                  .length /
+              payoutsSnap.docs.length),
     );
   }
 

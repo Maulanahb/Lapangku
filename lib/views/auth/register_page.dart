@@ -572,6 +572,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         appName: "LapangKu Mitra",
         otpType: OTPType.numeric,
         otpLength: 6,
+        appEmail: 'lapangku1@gmail.com',
       );
 
       EmailOTP.setTemplate(

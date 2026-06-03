@@ -24,7 +24,9 @@ class _MitraMainPageState extends State<MitraMainPage> {
   ];
 
   void _onNavTapped(int index) {
-    setState(() { _currentIndex = index; });
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   @override
@@ -42,9 +44,12 @@ class _MitraMainPageState extends State<MitraMainPage> {
     );
   }
 
+// 1. UBAH FUNGSI INI
   Widget _buildBottomNav() {
     return Container(
-      padding: const EdgeInsets.only(bottom: 20, left: 6, right: 6, top: 10),
+      // PERUBAHAN: Kurangi 'bottom' dari 20 ke 10, dan 'top' dari 10 ke 8.
+      // (Di Android, padding 20 terlalu besar karena Android jarang memiliki 'poni' bawah selebar iPhone)
+      padding: const EdgeInsets.only(bottom: 10, left: 6, right: 6, top: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         border: const Border(top: BorderSide(color: Color(0xFFF3F4F6))),
@@ -56,19 +61,24 @@ class _MitraMainPageState extends State<MitraMainPage> {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(Icons.grid_view_rounded, 'DASHBOARD', 0),
-          _buildNavItem(Icons.stadium_rounded, 'FIELDS', 1),
-          _buildScanButton(),
-          _buildNavItem(Icons.assignment_outlined, 'ORDERS', 2),
-          _buildNavItem(Icons.person_outline_rounded, 'PROFILE', 3),
-        ],
+      // PERUBAHAN OPSIONAL (Sangat disarankan):
+      // Bungkus Row dengan SafeArea agar jika dibuka di iPhone atau HP Android dengan gesture bar, UI tidak nabrak pinggir bawah.
+      child: SafeArea(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(Icons.grid_view_rounded, 'DASHBOARD', 0),
+            _buildNavItem(Icons.stadium_rounded, 'FIELDS', 1),
+            _buildScanButton(),
+            _buildNavItem(Icons.assignment_outlined, 'ORDERS', 2),
+            _buildNavItem(Icons.person_outline_rounded, 'PROFILE', 3),
+          ],
+        ),
       ),
     );
   }
 
+  // 2. UBAH FUNGSI INI
   Widget _buildScanButton() {
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -79,8 +89,9 @@ class _MitraMainPageState extends State<MitraMainPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 52,
-            height: 52,
+            // PERUBAHAN: Perkecil lingkaran dari 52x52 menjadi 46x46
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
               color: _primaryGreen,
               shape: BoxShape.circle,
@@ -92,38 +103,50 @@ class _MitraMainPageState extends State<MitraMainPage> {
                 ),
               ],
             ),
-            child: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 26),
+            // PERUBAHAN: Perkecil icon size dari 26 ke 24 agar standar
+            child: const Icon(Icons.qr_code_scanner,
+                color: Colors.white, size: 24),
           ),
           const SizedBox(height: 4),
-          Text('SCAN', style: TextStyle(
-            color: _primaryGreen,
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
-          )),
+          Text('SCAN',
+              style: TextStyle(
+                color: _primaryGreen,
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+              )),
         ],
       ),
     );
   }
 
+  // 3. UBAH FUNGSI INI
   Widget _buildNavItem(IconData icon, String label, int index) {
     final isActive = _currentIndex == index;
     return GestureDetector(
       onTap: () => _onNavTapped(index),
       child: Container(
         width: 70,
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        // PERUBAHAN: Kurangi padding vertikal background hijau dari 8 ke 4 agar lebih ramping
+        padding: const EdgeInsets.symmetric(vertical: 4),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFD1FAE5).withValues(alpha: 0.5) : Colors.transparent,
+          color: isActive
+              ? const Color(0xFFD1FAE5).withValues(alpha: 0.5)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: isActive ? _primaryGreen : Colors.grey[400], size: 24),
+            Icon(icon,
+                color: isActive ? _primaryGreen : Colors.grey[400], size: 24),
             const SizedBox(height: 4),
-            Text(label, textAlign: TextAlign.center,
-              style: TextStyle(color: isActive ? _primaryGreen : Colors.grey[400], fontSize: 9, fontWeight: FontWeight.w900)),
+            Text(label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: isActive ? _primaryGreen : Colors.grey[400],
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900)),
           ],
         ),
       ),

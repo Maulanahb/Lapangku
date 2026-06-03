@@ -184,32 +184,34 @@ class _State extends ConsumerState<BookingConfirmationPage> {
     final isSelected = _selectedPaymentMethod == id;
     return GestureDetector(
       onTap: () => setState(() => _selectedPaymentMethod = id),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? Colors.white : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
               color: isSelected ? AppColors.primary : Colors.grey.shade200,
               width: isSelected ? 1.5 : 1),
+          boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2))] : [],
         ),
         child: Row(children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-                color: AppColors.backgroundPage, borderRadius: BorderRadius.circular(4)),
+                color: isSelected ? AppColors.primaryLight : AppColors.backgroundPage, borderRadius: BorderRadius.circular(6)),
             child: Text(badgeLabel,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: AppColors.textBlueDark)),
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: isSelected ? AppColors.primary : AppColors.textSecondary)),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
               child: Text(name,
-                  style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.w500))),
+                  style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, color: AppColors.textDark))),
           if (isSelected)
-            const Icon(Icons.check_circle, color: AppColors.primary, size: 20)
+            const Icon(Icons.check_circle, color: AppColors.primary, size: 22)
           else
-            const Icon(Icons.circle_outlined, color: AppColors.divider, size: 20),
+            const Icon(Icons.circle_outlined, color: AppColors.divider, size: 22),
         ]),
       ),
     );
@@ -217,35 +219,36 @@ class _State extends ConsumerState<BookingConfirmationPage> {
 
   Widget _buildBottomBar() {
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(context).padding.bottom + 14),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 16),
+      decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 12, offset: Offset(0, -4))]),
+          border: Border(top: BorderSide(color: Colors.grey.shade200))),
       child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Total Pembayaran',
-              style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
           const SizedBox(height: 2),
           Text(CurrencyFormatter.format(_totalBayar),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.textDark)),
         ]),
         ElevatedButton(
           onPressed: _isBooking ? null : _handleBooking,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            elevation: 4,
+            shadowColor: AppColors.primary.withOpacity(0.4),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           child: _isBooking
               ? const SizedBox(
                   width: 20, height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
               : const Row(children: [
-                  Text('Bayar Sekarang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text('Bayar Sekarang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   SizedBox(width: 8),
-                  Icon(Icons.shopping_cart_checkout, size: 16),
+                  Icon(Icons.shopping_cart_checkout, size: 18),
                 ]),
         ),
       ]),

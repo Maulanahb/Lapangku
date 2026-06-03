@@ -9,7 +9,6 @@ import 'package:lapangku/standards/models/booking_status.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 import 'package:lapangku/views/mitra/mitra_offline_booking_page.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 
 class MitraBookingListPage extends ConsumerStatefulWidget {
@@ -27,12 +26,21 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
   final TextEditingController _searchController = TextEditingController();
   String _selectedSort = 'Terbaru';
   final List<String> _sortOptions = ['Terbaru', 'Terlama', 'Nilai Tertinggi'];
+  
+  // Pagination state
+  int _currentPage = 1;
+  final int _itemsPerPage = 15;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(
         length: 4, vsync: this, initialIndex: widget.initialIndex);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        setState(() => _currentPage = 1);
+      }
+    });
   }
 
   @override
@@ -118,8 +126,8 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildBookingList(null),
-                _buildBookingList('menunggu_konfirmasi'),
+                _buildBookingList('semua'),
+                _buildBookingList('menunggu'),
                 _buildBookingList('dikonfirmasi'),
                 _buildBookingList('selesai'),
               ],
@@ -166,7 +174,7 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
             ),
             child: TextField(
               controller: _searchController,
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) => setState(() => _currentPage = 1),
               style: const TextStyle(fontSize: 14),
               decoration: const InputDecoration(
                 hintText: 'Cari nama pelanggan atau ID...',
@@ -189,7 +197,10 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: GestureDetector(
-                    onTap: () => setState(() => _selectedSort = sort),
+                    onTap: () => setState(() {
+                      _selectedSort = sort;
+                      _currentPage = 1;
+                    }),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -219,15 +230,29 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
     );
   }
 
-  Widget _buildBookingList(String? statusFilter) {
-    final bookingsAsync = ref.watch(MitraBookingStreamProvider(statusFilter));
+ Widget _buildBookingList(String filterKey) {
+    // Selalu fetch semua booking, lalu filter di lokal agar efisien & mendukung logika OR
+    final bookingsAsync = ref.watch(MitraBookingStreamProvider(null));
 
     return bookingsAsync.when(
       data: (bookings) {
         final filteredBookings = bookings.where((b) {
+          // 1. Text Search Filter
           final query = _searchController.text.toLowerCase();
-          return b.userName.toLowerCase().contains(query) ||
+          final matchesSearch = b.userName.toLowerCase().contains(query) ||
               b.bookingId.toLowerCase().contains(query);
+          if (!matchesSearch) return false;
+
+          // 2. Tab Filter
+          final status = b.status.toLowerCase();
+          if (filterKey == 'menunggu') {
+            return status == 'menunggu_konfirmasi' || (b.isRescheduleRequested && b.rescheduleStatus == 'pending');
+          } else if (filterKey == 'dikonfirmasi') {
+            return status == 'dikonfirmasi' && !(b.isRescheduleRequested && b.rescheduleStatus == 'pending');
+          } else if (filterKey == 'selesai') {
+            return status == 'selesai';
+          }
+          return true; // 'semua'
         }).toList();
 
         switch (_selectedSort) {
@@ -258,11 +283,25 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
           );
         }
 
+        final int totalPages = (filteredBookings.length / _itemsPerPage).ceil();
+        
+        // Safety check if search reduces items such that currentPage is out of bounds
+        final safePage = (_currentPage > totalPages && totalPages > 0) ? 1 : _currentPage;
+
+        final paginatedBookings = filteredBookings
+            .skip((safePage - 1) * _itemsPerPage)
+            .take(_itemsPerPage)
+            .toList();
+
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          itemCount: filteredBookings.length,
-          itemBuilder: (context, index) =>
-              _BookingCard(booking: filteredBookings[index]),
+          padding: const EdgeInsets.only(top: 16, bottom: 100),
+          itemCount: paginatedBookings.length + (totalPages > 1 ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == paginatedBookings.length) {
+              return _buildPaginationControls(totalPages, safePage);
+            }
+            return _BookingCard(booking: paginatedBookings[index]);
+          },
         );
       },
       loading: () => const Center(
@@ -270,15 +309,82 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
       error: (e, st) => Center(child: Text('Error: $e')),
     );
   }
+
+  Widget _buildPaginationControls(int totalPages, int currentPage) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          GestureDetector(
+            onTap: currentPage > 1 ? () => setState(() => _currentPage = currentPage - 1) : null,
+            child: Icon(Icons.chevron_left_rounded, color: currentPage > 1 ? AppColors.primary : Colors.grey.shade300),
+          ),
+          const SizedBox(width: 8),
+          ...List.generate(totalPages, (index) {
+            final page = index + 1;
+
+            if (totalPages > 5) {
+              if (page != 1 && page != totalPages && (page < currentPage - 1 || page > currentPage + 1)) {
+                if (page == currentPage - 2 || page == currentPage + 2) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: Text('···', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 14)),
+                  );
+                }
+                return const SizedBox.shrink();
+              }
+            }
+
+            final isSelected = page == currentPage;
+            return GestureDetector(
+              onTap: () => setState(() => _currentPage = page),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
+                  ),
+                  boxShadow: isSelected
+                      ? [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2))]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '$page',
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : const Color(0xFF64748B),
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            );
+          }),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: currentPage < totalPages ? () => setState(() => _currentPage = currentPage + 1) : null,
+            child: Icon(Icons.chevron_right_rounded, color: currentPage < totalPages ? AppColors.primary : Colors.grey.shade300),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-final _userAvatarProvider = FutureProvider.family<String?, String>((ref, userId) async {
-  final doc = await FirestoreService.instance.collection('users').doc(userId).get();
-  if (doc.exists) {
-    final data = doc.data();
-    if (data != null) {
-      return data['avatarUrl']?.toString() ?? data['photoUrl']?.toString();
+final _userInfoProvider = FutureProvider.autoDispose.family<Map<String, dynamic>?, String>((ref, userId) async {
+  if (userId.isEmpty || userId.startsWith('offline_')) return null;
+  try {
+    final doc = await FirestoreService.instance.collection('users').doc(userId).get();
+    if (doc.exists) {
+      return doc.data();
     }
+  } catch (e) {
+    debugPrint('🚨 ERROR FETCH USER INFO untuk $userId: $e');
   }
   return null;
 });
@@ -291,7 +397,7 @@ class _BookingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLoading = ref.watch(MitraBookingActionsProvider).contains(booking.id);
     final status = BookingStatusParsing.fromString(booking.status);
-    final avatarAsync = ref.watch(_userAvatarProvider(booking.userId));
+    final userInfoAsync = ref.watch(_userInfoProvider(booking.userId));
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -385,29 +491,66 @@ class _BookingCard extends ConsumerWidget {
                         color: const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: avatarAsync.when(
-                        data: (avatarUrl) => ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: avatarUrl != null && avatarUrl.isNotEmpty
-                              ? Image.network(
-                                  avatarUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Image.network('https://i.pravatar.cc/150', fit: BoxFit.cover),
-                                )
-                              : Image.network('https://i.pravatar.cc/150', fit: BoxFit.cover),
-                        ),
-                        loading: () => const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                        error: (_, __) => ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.network('https://i.pravatar.cc/150', fit: BoxFit.cover),
-                        ),
+                      child: Builder(
+                        builder: (context) {
+                          final fetchedAvatar = userInfoAsync.asData?.value?['avatarUrl']?.toString() ?? userInfoAsync.asData?.value?['photoUrl']?.toString();
+                          final avatarUrl = fetchedAvatar ?? booking.userAvatarUrl;
+                          
+                          final initials = booking.userName.trim().isNotEmpty
+                              ? booking.userName
+                                  .trim()
+                                  .split(' ')
+                                  .where((l) => l.isNotEmpty)
+                                  .map((l) => l[0])
+                                  .take(2)
+                                  .join()
+                                  .toUpperCase()
+                              : 'U';
+
+                          Widget buildPlaceholder() => Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEBF5FF),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  initials,
+                                  style: const TextStyle(
+                                    color: Color(0xFF1E40AF),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              );
+
+                          if (avatarUrl != null && avatarUrl.isNotEmpty) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.network(
+                                avatarUrl,
+                                fit: BoxFit.cover,
+                                width: 48,
+                                height: 48,
+                                errorBuilder: (context, error, stackTrace) {
+                                  debugPrint('🚨 ERROR RENDER IMAGE NETWORK: $error');
+                                  return buildPlaceholder();
+                                },
+                              ),
+                            );
+                          }
+
+                          if (userInfoAsync.isLoading) {
+                            return const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            );
+                          }
+
+                          return buildPlaceholder();
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -417,7 +560,17 @@ class _BookingCard extends ConsumerWidget {
                         children: [
                           Text(booking.userName, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF1E293B))),
                           const SizedBox(height: 2),
-                          const Text('+62 812-3456-7890', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                          userInfoAsync.when(
+                            data: (userInfo) {
+                              final phone = userInfo?['phone']?.toString();
+                              if (phone != null && phone.isNotEmpty) {
+                                return Text(phone, style: const TextStyle(color: Color(0xFF64748B), fontSize: 12));
+                              }
+                              return const SizedBox.shrink();
+                            },
+                            loading: () => const Text('Memuat...', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+                            error: (_, __) => const SizedBox.shrink(),
+                          ),
                         ],
                       ),
                     ),
@@ -524,7 +677,7 @@ class _BookingCard extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: isLoading ? null : () => _onReject(ref),
+                      onPressed: isLoading ? null : () => _onReject(context, ref),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFFFDA4AF)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -551,7 +704,7 @@ class _BookingCard extends ConsumerWidget {
                 ],
               ),
             ),
-          if (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending')
+          if (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending' && booking.status == BookingStatus.dikonfirmasi.firestoreValue)
             _buildRescheduleRequestUI(context, ref, booking),
         ],
       ),
@@ -680,18 +833,32 @@ class _BookingCard extends ConsumerWidget {
             await ref
                 .read(MitraBookingActionsProvider.notifier)
                 .confirmBooking(booking.id);
-          } catch (_) {}
+            if (context.mounted) {
+              SnackbarHelper.showSuccess(context, 'Booking berhasil dikonfirmasi');
+            }
+          } catch (e) {
+            if (context.mounted) {
+              SnackbarHelper.showError(context, 'Gagal mengkonfirmasi: $e');
+            }
+          }
         },
       ),
     );
   }
 
-  void _onReject(WidgetRef ref) async {
+  void _onReject(BuildContext context, WidgetRef ref) async {
     try {
       await ref
           .read(MitraBookingActionsProvider.notifier)
           .rejectBooking(booking.id);
-    } catch (_) {}
+      if (context.mounted) {
+        SnackbarHelper.showSuccess(context, 'Booking berhasil ditolak');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        SnackbarHelper.showError(context, 'Gagal menolak: $e');
+      }
+    }
   }
 
   void _onDelete(BuildContext context, WidgetRef ref) async {

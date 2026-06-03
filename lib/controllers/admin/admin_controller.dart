@@ -264,52 +264,39 @@ class AdminDashboardStats {
   final int totalBookingHariIni;
   final int totalPendapatan;
 
+  // Status counts for the donut/pie chart
+  final int countSelesai;
+  final int countMenungguBayar;
+  final int countMenungguKonfirmasi;
+  final int countDikonfirmasi;
+  final int countDibatalkan;
+
   AdminDashboardStats({
     required this.totalPengguna,
     required this.totalMitra,
     required this.totalBookingHariIni,
     required this.totalPendapatan,
+    required this.countSelesai,
+    required this.countMenungguBayar,
+    required this.countMenungguKonfirmasi,
+    required this.countDikonfirmasi,
+    required this.countDibatalkan,
   });
 }
 
-final adminDashboardStatsProvider = Provider<AdminDashboardStats>((ref) {
-  final bookingsAsync = ref.watch(adminAllBookingsProvider);
-  final mitrasAsync = ref.watch(adminAllMitrasProvider);
-  final usersAsync = ref.watch(adminAllUsersStreamProvider);
-
-  int totalPengguna = 0;
-  int totalMitra = 0;
-  int totalBookingHariIni = 0;
-  int totalPendapatan = 0;
-
-  if (usersAsync.hasValue) {
-    totalPengguna = usersAsync.value!.length;
-  }
-
-  if (mitrasAsync.hasValue) {
-    totalMitra = mitrasAsync.value!.length;
-  }
-
-  if (bookingsAsync.hasValue) {
-    final now = DateTime.now();
-    for (var b in bookingsAsync.value!) {
-      if (b.status == 'selesai') {
-        // Sama dengan laporan analistik: gunakan totalBayar (= totalHarga)
-        totalPendapatan += b.totalBayar;
-      }
-
-      if (b.tanggal.year == now.year && b.tanggal.month == now.month && b.tanggal.day == now.day) {
-        totalBookingHariIni++;
-      }
-    }
-  }
-
-  return AdminDashboardStats(
-    totalPengguna: totalPengguna,
-    totalMitra: totalMitra,
-    totalBookingHariIni: totalBookingHariIni,
-    totalPendapatan: totalPendapatan,
-  );
+final adminDashboardStatsProvider = Provider<AsyncValue<AdminDashboardStats>>((ref) {
+  final statsAsync = ref.watch(adminStatsProvider);
+  return statsAsync.whenData((stats) => AdminDashboardStats(
+    totalPengguna: stats.totalUsers,
+    totalMitra: stats.lapanganAktif,
+    totalBookingHariIni: stats.pesananHariIni,
+    totalPendapatan: stats.totalPendapatan,
+    countSelesai: stats.countSelesai,
+    countMenungguBayar: stats.countMenungguBayar,
+    countMenungguKonfirmasi: stats.countMenungguKonfirmasi,
+    countDikonfirmasi: stats.countDikonfirmasi,
+    countDibatalkan: stats.countDibatalkan,
+  ));
 });
 
 final adminPayoutsProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {

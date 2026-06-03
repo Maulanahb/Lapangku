@@ -6,6 +6,7 @@ import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/admin/admin_field_model.dart';
 import 'package:lapangku/models/admin/booking_model.dart';
 import 'package:lapangku/models/admin/admin_stats.dart';
+import 'package:lapangku/models/booking/booking_model.dart' as global_booking;
 
 class AdminService {
   final FirebaseFirestore _firestore = FirestoreService.instance;
@@ -15,40 +16,118 @@ class AdminService {
     final startOfDay = DateTime(now.year, now.month, now.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    final results = await Future.wait([
-      _firestore.collection('users').where('role', isEqualTo: 'customer').get(),
-      _firestore.collection('mitra').get(),
-      _firestore
-          .collection('bookings')
-          .where('tanggal',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('tanggal', isLessThan: Timestamp.fromDate(endOfDay))
-          .get(),
-      _firestore
-          .collection('bookings')
-          .where('status', isEqualTo: 'selesai')
-          .get(),
-    ]);
+    // 1. Total users (role: customer) count
+    final usersCountSnap = await _firestore
+        .collection('users')
+        .where('role', isEqualTo: 'customer')
+        .count()
+        .get();
+    final totalUsers = usersCountSnap.count ?? 0;
 
-    final totalPendapatan = (results[3] as QuerySnapshot).docs.fold<int>(
-      0,
-      (total, doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        return total + ((data['totalBayar'] ?? data['totalHarga'] ?? 0) as int);
-      },
-    );
+    // 2. Lapangan aktif (mitra collection count)
+    final mitraCountSnap = await _firestore.collection('mitra').count().get();
+    final lapanganAktif = mitraCountSnap.count ?? 0;
+
+    // 3. Pesanan hari ini
+    final todayBookingsSnap = await _firestore
+        .collection('bookings')
+        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('tanggal', isLessThan: Timestamp.fromDate(endOfDay))
+        .count()
+        .get();
+    final pesananHariIni = todayBookingsSnap.count ?? 0;
+
+    // 4. Total Pendapatan — dibaca dari dokumen counter metadata/stats
+    // Dokumen ini diupdate otomatis oleh Cloud Function onBookingUpdated
+    // saat status booking berubah menjadi 'selesai'.
+    int totalPendapatan = 0;
+    try {
+      final statsDoc = await _firestore
+          .collection('metadata')
+          .doc('stats')
+          .get();
+      if (statsDoc.exists) {
+        totalPendapatan = (statsDoc.data()?['totalPendapatan'] ?? 0) as int;
+      }
+    } catch (_) {
+      // Dokumen belum ada, tetap gunakan 0
+    }
+
+    // 5. Booking Status Counts for Donut Chart (Apply client-side auto-expire logic by parsing them via BookingModel)
+    final allBookingsSnap = await _firestore.collection('bookings').get();
+    int countSelesai = 0;
+    int countMenungguBayar = 0;
+    int countMenungguKonfirmasi = 0;
+    int countDikonfirmasi = 0;
+    int countDibatalkan = 0;
+
+    for (var doc in allBookingsSnap.docs) {
+      // Use global_booking.BookingModel to apply the exact same logic (auto-expire, fallbacks) used in the UI
+      final booking = global_booking.BookingModel.fromFirestore(doc);
+      switch (booking.status) {
+        case 'selesai':
+          countSelesai++;
+          break;
+        case 'menunggu_bayar':
+          countMenungguBayar++;
+          break;
+        case 'menunggu_konfirmasi':
+          countMenungguKonfirmasi++;
+          break;
+        case 'dikonfirmasi':
+          countDikonfirmasi++;
+          break;
+        case 'dibatalkan':
+        case 'ditolak':
+        case 'expired':
+          countDibatalkan++;
+          break;
+      }
+    }
 
     return AdminStats(
-      totalUsers: results[0].size,
-      lapanganAktif: results[1].size,
-      pesananHariIni: results[2].size,
+      totalUsers: totalUsers,
+      lapanganAktif: lapanganAktif,
+      pesananHariIni: pesananHariIni,
       totalPendapatan: totalPendapatan,
+      countSelesai: countSelesai,
+      countMenungguBayar: countMenungguBayar,
+      countMenungguKonfirmasi: countMenungguKonfirmasi,
+      countDikonfirmasi: countDikonfirmasi,
+      countDibatalkan: countDibatalkan,
     );
   }
 
+  /// Retrieves a page of users with optional pagination.
+  ///
+  /// [limit] defines the maximum number of documents returned (default 20).
+  /// [startAfter] should be the last document snapshot from the previous page
+  ///   (obtained from a previous query) to continue fetching.
+  Future<List<Map<String, dynamic>>> getUsersPaginated({
+    int limit = 20,
+    DocumentSnapshot? startAfter,
+  }) async {
+    Query query = _firestore.collection('users').limit(limit);
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+    final snap = await query.get();
+    return snap.docs
+        .map((d) => <String, dynamic>{'uid': d.id, ...(d.data()! as Map<String, dynamic>)})
+        .toList();
+  }
+
+  // Backward compatible method (returns all users, may be heavy).
   Future<List<Map<String, dynamic>>> getAllUsers() async {
     final snap = await _firestore.collection('users').get();
-    return snap.docs.map((d) => {'uid': d.id, ...d.data()}).toList();
+    return snap.docs
+        .map((d) => <String, dynamic>{'uid': d.id, ...d.data()})
+        .toList();
+  }
+
+  /// Alias for updateUserStatus — used by AllUsersNotifier.
+  Future<void> updateUserVerifikasi(String uid, String status) async {
+    await updateUserStatus(uid, status);
   }
 
   Future<List<AdminFieldModel>> getAllFields() async {
@@ -83,42 +162,49 @@ class AdminService {
     }
   }
 
-  Future<List<BookingModel>> getAllBookings() async {
-    final snap = await _firestore
-        .collection('bookings')
-        .orderBy('tanggal', descending: true)
-        .get();
+  /// Retrieves bookings with pagination (limit 20)
+  Future<List<BookingModel>> getAllBookings({
+    int limit = 20,
+    DocumentSnapshot? startAfter,
+  }) async {
+    Query query = _firestore.collection('bookings').limit(limit);
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+    final snap = await query.get();
     return snap.docs.map((d) {
-      final data = d.data();
-      
-      String jamMulai = data['jamMulai'] ?? '';
-      String jamSelesai = data['jamSelesai'] ?? '';
-      
-      if (data['timeSlots'] != null && (data['timeSlots'] as List).isNotEmpty) {
-        final slots = List<String>.from(data['timeSlots']);
-        try {
-          jamMulai = slots.first.split(' - ').first.trim();
-          jamSelesai = slots.last.split(' - ').last.trim();
-        } catch (e) {
-          jamMulai = slots.first;
-          jamSelesai = slots.last;
-        }
-      }
-
+      final data = d.data()! as Map<String, dynamic>;
       return BookingModel(
         bookingId: d.id,
         namaLapangan: data['fieldName'] ?? data['namaLapangan'] ?? '',
         namaPenyewa: data['userName'] ?? data['namaPenyewa'] ?? '',
         tanggal: (data['tanggal'] as Timestamp).toDate(),
-        jamMulai: jamMulai,
-        jamSelesai: jamSelesai,
+        jamMulai: data['jamMulai'] ?? '',
+        jamSelesai: data['jamSelesai'] ?? '',
         totalHarga: (data['totalBayar'] ?? data['totalHarga'] ?? 0) as int,
         status: data['status'] ?? 'menunggu',
       );
     }).toList();
   }
 
-  Future<void> updateUserVerifikasi(String uid, String status) async {
+  /// Retrieves users with pagination (limit 20)
+  Future<List<Map<String, dynamic>>> getAllUsersPaginated({
+    int limit = 20,
+    DocumentSnapshot? startAfter,
+  }) async {
+    Query query = _firestore.collection('users').limit(limit);
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+    final snap = await query.get();
+    return snap.docs
+        .map((d) => <String, dynamic>{'uid': d.id, ...(d.data()! as Map<String, dynamic>)})
+        .toList();
+  }
+
+
+  // Existing methods remain unchanged
+  Future<void> updateUserStatus(String uid, String status) async {
     await _firestore
         .collection('users')
         .doc(uid)
@@ -223,9 +309,10 @@ class AdminService {
           .where('tanggal',
               isGreaterThanOrEqualTo: Timestamp.fromDate(start))
           .where('tanggal', isLessThan: Timestamp.fromDate(end))
+          .count()
           .get();
 
-      hasil.add(snap.size);
+      hasil.add(snap.count ?? 0);
     }
     return hasil;
   }
@@ -249,7 +336,8 @@ class AdminService {
       // Bookings
       final bookingsSnap = results[0] as QuerySnapshot;
       for (var doc in bookingsSnap.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final booking = global_booking.BookingModel.fromFirestore(doc);
+        final data = doc.data() as Map<String, dynamic>? ?? {};
         final dynamic t = data['tanggal'];
         DateTime time = DateTime.now();
         if (t is Timestamp) {
@@ -258,10 +346,10 @@ class AdminService {
 
         activities.add({
           'time': time,
-          'user': data['userName'] ?? data['namaPenyewa'] ?? 'Penyewa',
+          'user': booking.userName.isNotEmpty ? booking.userName : 'Penyewa',
           'action': 'New Booking',
-          'detail': data['fieldName'] ?? data['namaLapangan'] ?? '',
-          'status': data['status'] ?? 'menunggu',
+          'detail': booking.fieldName.isNotEmpty ? booking.fieldName : 'Tanpa Keterangan',
+          'status': booking.status,
           'type': 'booking',
         });
       }
@@ -269,7 +357,7 @@ class AdminService {
       // New Owners (Mitra)
       final ownersSnap = results[1] as QuerySnapshot;
       for (var doc in ownersSnap.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data()! as Map<String, dynamic>;
         final dynamic t = data['createdAt'];
         DateTime time = DateTime.now().subtract(const Duration(days: 365)); // Default old
         

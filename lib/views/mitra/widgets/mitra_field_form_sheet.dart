@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Ditambahkan untuk Whitelisting TextInput
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
@@ -21,6 +22,7 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
   late TextEditingController _nameController;
   late TextEditingController _priceController;
   late TextEditingController _descController;
+  
   String _selectedJenis = 'Futsal';
   final List<String> _jenisOptions = [
     'Futsal',
@@ -36,33 +38,35 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
     'Kantin',
     'Mushola',
     'Wifi',
-    'Ruang Ganti'
+    'Locker'
   ];
 
+  // Foto lama (dari URL network Firebase)
+  List<String> _existingPhotos = [];
+  // Foto baru (dari lokal berkas galeri/kamera)
   final List<File> _newPhotos = [];
-  List<String> _existingPhotoUrls = [];
-  bool _isSaving = false;
+
   final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
-    final f = widget.field;
-    _venueController = TextEditingController(text: f?.namaVenue ?? '');
-    _nameController = TextEditingController(text: f?.namaLapangan ?? '');
-    _priceController =
-        TextEditingController(text: f?.hargaPerJam.toString() ?? '');
-    _descController = TextEditingController(text: f?.deskripsi ?? '');
+    _venueController = TextEditingController(text: widget.field?.namaVenue ?? '');
+    _nameController = TextEditingController(text: widget.field?.namaLapangan ?? '');
+    _priceController = TextEditingController(
+        text: widget.field?.hargaPerJam != null
+            ? widget.field!.hargaPerJam.toString()
+            : '');
+    _descController = TextEditingController(text: widget.field?.deskripsi ?? '');
 
-    if (f != null) {
-      if (_jenisOptions.contains(f.jenisLapangan)) {
-        _selectedJenis = f.jenisLapangan;
-      }
-      _selectedFasilitas = List.from(f.fasilitas);
-      _existingPhotoUrls = List.from(f.photoUrls);
+    if (widget.field != null) {
+      _selectedJenis = widget.field!.jenisLapangan;
+      _selectedFasilitas = List.from(widget.field!.fasilitas);
+      _existingPhotos = List.from(widget.field!.photoUrls);
     }
   }
 
+  // FIXED: Ditambahkan untuk mencegah kebocoran memori (Memory Leak)
   @override
   void dispose() {
     _venueController.dispose();
@@ -72,271 +76,244 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
     super.dispose();
   }
 
-  Future<void> _pickImages() async {
-    final picked = await _picker.pickMultiImage(imageQuality: 70);
-    if (picked.isNotEmpty) {
-      setState(() {
-        _newPhotos.addAll(picked.map((e) => File(e.path)));
-      });
+  Future<void> _pickImage() async {
+    try {
+      final XFile? picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70, // Kompres sedikit agar upload lebih cepat
+        maxWidth: 1080,
+        maxHeight: 1080,
+      );
+      if (picked != null) {
+        setState(() {
+          _newPhotos.add(File(picked.path));
+        });
+      }
+    } catch (e) {
+      SnackbarHelper.showError(context, "Gagal mengambil gambar: $e");
     }
   }
 
-  void _removeNewPhoto(int index) {
-    setState(() => _newPhotos.removeAt(index));
-  }
-
-  void _removeExistingPhoto(int index) {
-    setState(() => _existingPhotoUrls.removeAt(index));
-  }
-
-  Future<void> _submit() async {
-    if (_nameController.text.trim().isEmpty ||
+  Future<void> _save() async {
+    if (_venueController.text.trim().isEmpty ||
+        _nameController.text.trim().isEmpty ||
         _priceController.text.trim().isEmpty) {
-      SnackbarHelper.showError(context, 'Nama dan Harga wajib diisi');
+      SnackbarHelper.showWarning(context, "Mohon isi semua kolom wajib!");
       return;
     }
 
-    setState(() => _isSaving = true);
-    try {
-      final name = _nameController.text.trim();
-      final price = int.tryParse(_priceController.text.trim()) ?? 0;
-      final desc = _descController.text.trim();
+    // FIXED: Aman dari FormatException Crash berkat tryParse
+    final cleanPriceText = _priceController.text.replaceAll('.', '').trim();
+    int? price = int.tryParse(cleanPriceText);
+    if (price == null || price <= 0) {
+      SnackbarHelper.showError(context, "Format harga per jam tidak valid!");
+      return;
+    }
 
-      if (widget.field != null) {
-        // Edit
-        final updatedField = widget.field!.copyWith(
-          namaVenue: _venueController.text.trim(),
-          namaLapangan: name,
-          jenisLapangan: _selectedJenis,
-          hargaPerJam: price,
-          deskripsi: desc,
-          fasilitas: _selectedFasilitas,
-          photoUrls: _existingPhotoUrls, // Keep remaining
-        );
+    if (_existingPhotos.isEmpty && _newPhotos.isEmpty) {
+      SnackbarHelper.showWarning(context, "Mohon unggah minimal 1 foto lapangan!");
+      return;
+    }
 
-        await ref.read(mitraFieldProvider.notifier).editField(
-              updatedField.id,
-              namaVenue: _venueController.text.trim(),
-              namaLapangan: name,
-              jenisLapangan: _selectedJenis,
-              hargaPerJam: price,
-              deskripsi: desc,
-              fasilitas: _selectedFasilitas,
-              newPhotoFiles: _newPhotos,
-            );
-        if (mounted) SnackbarHelper.showSuccess(context, 'Lapangan diperbarui');
+    final notifier = ref.read(mitraFieldProvider.notifier);
+    bool success = false;
+
+    if (widget.field == null) {
+      // Create / Add New Field
+      success = await notifier.addField(
+        namaVenue: _venueController.text.trim(),
+        namaLapangan: _nameController.text.trim(),
+        jenisLapangan: _selectedJenis,
+        hargaPerJam: price,
+        deskripsi: _descController.text.trim(),
+        fasilitas: _selectedFasilitas,
+        photoFiles: _newPhotos,
+      );
+    } else {
+      // Update / Edit Existing Field
+      success = await notifier.editField(
+        widget.field!.id,
+        namaVenue: _venueController.text.trim(),
+        namaLapangan: _nameController.text.trim(),
+        jenisLapangan: _selectedJenis,
+        hargaPerJam: price,
+        deskripsi: _descController.text.trim(),
+        fasilitas: _selectedFasilitas,
+        photoUrls: _existingPhotos,
+        newPhotoFiles: _newPhotos,
+      );
+    }
+
+    if (mounted) {
+      if (success) {
+        SnackbarHelper.showSuccess(context, "Data lapangan berhasil disimpan!");
+        Navigator.pop(context);
       } else {
-        // Add
-        await ref.read(mitraFieldProvider.notifier).addField(
-              namaVenue: _venueController.text.trim(),
-              namaLapangan: name,
-              jenisLapangan: _selectedJenis,
-              hargaPerJam: price,
-              deskripsi: desc,
-              fasilitas: _selectedFasilitas,
-              photoFiles: _newPhotos,
-            );
-        if (mounted) {
-          SnackbarHelper.showSuccess(context, 'Lapangan ditambahkan');
-        }
+        // Ambil pesan error dari state provider yang baru kita rancang
+        final errorMsg = ref.read(mitraFieldProvider).errorMessage ?? "Terjadi kesalahan.";
+        SnackbarHelper.showError(context, errorMsg);
       }
-
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      if (mounted) SnackbarHelper.showError(context, 'Gagal menyimpan: $e');
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEdit = widget.field != null;
-    return Padding(
+    final fieldState = ref.watch(mitraFieldProvider);
+
+    return Container(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-        left: 20,
-        right: 20,
-        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        top: 16,
+        left: 16,
+        right: 16,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                isEdit ? 'Edit Lapangan' : 'Tambah Lapangan',
-                style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1B6B3A)),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2)),
               ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const Divider(),
-          Flexible(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              widget.field == null ? 'Tambah Lapangan Baru' : 'Edit Data Lapangan',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _venueController,
+              decoration: _inputDecor('Nama Venue / Lokasi *', Icons.business),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _nameController,
+              decoration: _inputDecor('Nama Lapangan (e.g. Lapangan A) *', Icons.sports_soccer),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _selectedJenis,
+              decoration: _inputDecor('Jenis Olahraga', Icons.category),
+              items: _jenisOptions.map((jenis) {
+                return DropdownMenuItem(value: jenis, child: Text(jenis));
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _selectedJenis = val);
+              },
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _priceController,
+              keyboardType: TextInputType.number,
+              // Membatasi hanya input angka saja
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: _inputDecor('Harga Sewa Per Jam (IDR) *', Icons.attach_money),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descController,
+              maxLines: 3,
+              decoration: _inputDecor('Deskripsi Lapangan (Opsional)', Icons.description),
+            ),
+            const SizedBox(height: 16),
+            const Text('Fasilitas Lapangan',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: _fasilitasOptions.map((f) {
+                final isSelected = _selectedFasilitas.contains(f);
+                return FilterChip(
+                  label: Text(f),
+                  selected: isSelected,
+                  selectedColor: const Color(0xFF1B6B3A).withOpacity(0.2),
+                  checkmarkColor: const Color(0xFF1B6B3A),
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _selectedFasilitas.add(f);
+                      } else {
+                        _selectedFasilitas.remove(f);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            const Text('Foto Lapangan *',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 100,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
                 children: [
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _venueController,
-                    decoration: _inputDecor(
-                        'Nama Tempat / Venue (opsional)', Icons.business),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _nameController,
-                    decoration: _inputDecor('Nama Lapangan', Icons.stadium),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedJenis,
-                    decoration:
-                        _inputDecor('Jenis Lapangan', Icons.stadium_outlined),
-                    items: _jenisOptions
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                    onChanged: (v) => setState(() => _selectedJenis = v!),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _priceController,
-                    keyboardType: TextInputType.number,
-                    decoration:
-                        _inputDecor('Harga per Jam (Rp)', Icons.attach_money),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _descController,
-                    maxLines: 3,
-                    decoration:
-                        _inputDecor('Deskripsi Lapangan', Icons.description)
-                            .copyWith(alignLabelWithHint: true),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text('Fasilitas Lapangan',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _fasilitasOptions.map((fasilitas) {
-                      final isSelected = _selectedFasilitas.contains(fasilitas);
-                      return FilterChip(
-                        label: Text(fasilitas),
-                        selected: isSelected,
-                        selectedColor: const Color(0xFFD1FAE5),
-                        checkmarkColor: const Color(0xFF1B6B3A),
-                        labelStyle: TextStyle(
-                            color: isSelected
-                                ? const Color(0xFF1B6B3A)
-                                : Colors.black87),
-                        onSelected: (bool selected) {
-                          setState(() {
-                            if (selected) {
-                              _selectedFasilitas.add(fasilitas);
-                            } else {
-                              _selectedFasilitas.remove(fasilitas);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Foto Lapangan',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                      TextButton.icon(
-                        onPressed: _pickImages,
-                        icon: const Icon(Icons.add_a_photo, size: 16),
-                        label: const Text('Tambah Foto'),
-                      )
-                    ],
-                  ),
-                  if (_existingPhotoUrls.isEmpty && _newPhotos.isEmpty)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12)),
-                      child: const Column(
-                        children: [
-                          Icon(Icons.photo_library_outlined,
-                              size: 40, color: Colors.grey),
-                          SizedBox(height: 8),
-                          Text('Belum ada foto',
-                              style: TextStyle(color: Colors.grey)),
-                        ],
-                      ),
-                    )
-                  else
-                    SizedBox(
-                      height: 100,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          // Existing
-                          ..._existingPhotoUrls
-                              .asMap()
-                              .entries
-                              .map((entry) => _buildPhotoItem(
-                                    isNetwork: true,
-                                    url: entry.value,
-                                    onRemove: () =>
-                                        _removeExistingPhoto(entry.key),
-                                  )),
-                          // New
-                          ..._newPhotos
-                              .asMap()
-                              .entries
-                              .map((entry) => _buildPhotoItem(
-                                    isNetwork: false,
-                                    file: entry.value,
-                                    onRemove: () => _removeNewPhoto(entry.key),
-                                  )),
-                        ],
+                  ..._existingPhotos.map((url) => _buildPhotoItem(
+                        isNetwork: true,
+                        url: url,
+                        onRemove: () => setState(() => _existingPhotos.remove(url)),
+                      )),
+                  ..._newPhotos.map((file) => _buildPhotoItem(
+                        isNetwork: false,
+                        file: file,
+                        onRemove: () => setState(() => _newPhotos.remove(file)),
+                      )),
+                  if (_existingPhotos.length + _newPhotos.length < 5)
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        width: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          border: Border.all(color: Colors.grey[300]!),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.add_a_photo, color: Colors.grey),
                       ),
                     ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
-          ),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1B6B3A),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: fieldState.isMutating ? null : _save, // FIXED: Disable click saat loading
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1B6B3A),
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.grey, // Indikasi visual loading
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: fieldState.isMutating
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Text('Simpan Data',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
-              onPressed: _isSaving ? null : _submit,
-              child: _isSaving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2))
-                  : Text(isEdit ? 'Simpan Perubahan' : 'Tambahkan Lapangan',
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
             ),
-          ),
-          const SizedBox(height: 20),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -353,20 +330,29 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
     );
   }
 
-  Widget _buildPhotoItem(
-      {required bool isNetwork,
-      String? url,
-      File? file,
-      required VoidCallback onRemove}) {
+  // FIXED: Pengkondisian render ImageProvider tanpa cast paksa 'as'
+  Widget _buildPhotoItem({
+    required bool isNetwork,
+    String? url,
+    File? file,
+    required VoidCallback onRemove,
+  }) {
+    ImageProvider imageProvider;
+    if (isNetwork && url != null) {
+      imageProvider = NetworkImage(url);
+    } else if (!isNetwork && file != null) {
+      imageProvider = FileImage(file);
+    } else {
+      imageProvider = const AssetImage('assets/images/placeholder.png'); // Fallback aman
+    }
+
     return Container(
       margin: const EdgeInsets.only(right: 8),
       width: 100,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         image: DecorationImage(
-          image: isNetwork
-              ? NetworkImage(url!) as ImageProvider
-              : FileImage(file!),
+          image: imageProvider,
           fit: BoxFit.cover,
         ),
       ),
@@ -377,9 +363,8 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
           child: Container(
             margin: const EdgeInsets.all(4),
             padding: const EdgeInsets.all(2),
-            decoration:
-                const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-            child: const Icon(Icons.close, size: 14, color: Colors.white),
+            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+            child: const Icon(Icons.close, color: Colors.white, size: 16),
           ),
         ),
       ),

@@ -96,7 +96,7 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
     required String namaPenyewa,
     String catatan = '',
   }) async {
-    return await _service.createOfflineBooking(
+    return _service.createOfflineBooking(
       fieldId: field.id,
       mitraId: mitraId,
       fieldName: field.namaVenue.isNotEmpty

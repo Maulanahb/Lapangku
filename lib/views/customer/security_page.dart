@@ -64,25 +64,7 @@ class _SecurityPageState extends ConsumerState<SecurityPage> {
     }
   }
 
-  Future<void> _handleToggleTwoFactor(UserModel user, bool value) async {
-    LoadingOverlay.show(context, message: 'Mengupdate keamanan...');
-    try {
-      await ref.read(authProvider.notifier).updateTwoFactor(user.uid, value);
-      if (mounted) {
-        LoadingOverlay.dismiss(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Verifikasi 2 langkah ${value ? 'diaktifkan' : 'dimatikan'}')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        LoadingOverlay.dismiss(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal mengupdate: $e')),
-        );
-      }
-    }
-  }
+
 
   Future<void> _handleSendEmailVerification() async {
     LoadingOverlay.show(context, message: 'Mengirim email...');
@@ -330,39 +312,7 @@ class _SecurityPageState extends ConsumerState<SecurityPage> {
             ),
           ),
 
-          const SizedBox(height: 24),
 
-          // SECTION 3 — VERIFIKASI 2 LANGKAH
-          _buildSectionTitle('Verifikasi 2 Langkah'),
-          _buildCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.shield_outlined, color: AppColors.primary),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Verifikasi 2 Langkah',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                      ),
-                    ),
-                    Switch(
-                      value: user.twoFactorEnabled,
-                      activeThumbColor: AppColors.primary,
-                      onChanged: (value) => _handleToggleTwoFactor(user, value),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Aktifkan verifikasi 2 langkah untuk keamanan ekstra',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
 
           const SizedBox(height: 24),
 

@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
@@ -88,13 +90,129 @@ class _JadwalKetersediaanPageState extends State<JadwalKetersediaanPage> {
     return slots;
   }
 
-  Stream<QuerySnapshot> _getJadwalStream() {
+  Stream<Map<String, Map<String, dynamic>>> _getCombinedJadwalStream() {
     final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
-    return FirebaseFirestore.instance
+    final startOfDayDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final endOfDayDate = startOfDayDate.add(const Duration(days: 1));
+
+    // Stream 1: jadwal (untuk manual closure/status dari Mitra)
+    final streamJadwal = FirestoreService.instance
         .collection('jadwal')
         .where('lapangan_id', isEqualTo: widget.lapangan.id)
         .where('tanggal', isEqualTo: dateStr)
         .snapshots();
+
+    // Stream 2: bookings (booking aktif dari Customer)
+    final streamBookings = FirestoreService.instance
+        .collection('bookings')
+        .where('fieldId', isEqualTo: widget.lapangan.id)
+        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDayDate))
+        .where('tanggal', isLessThan: Timestamp.fromDate(endOfDayDate))
+        .snapshots();
+
+    final controller = StreamController<Map<String, Map<String, dynamic>>>();
+    StreamSubscription? subJadwal;
+    StreamSubscription? subBookings;
+    QuerySnapshot? lastJadwal;
+    QuerySnapshot? lastBookings;
+
+    void emitCombined() {
+      if (controller.isClosed) return;
+      final combined = <String, Map<String, dynamic>>{};
+
+      // 1. Proses data dari koleksi 'jadwal'
+      if (lastJadwal != null) {
+        for (var doc in lastJadwal!.docs) {
+          final data = doc.data() as Map<String, dynamic>?;
+          if (data == null) continue;
+          final jam = data['jam'] as String?;
+          if (jam != null) {
+            combined[jam] = {
+              'status': data['status'] ?? 'tersedia',
+              'nama_customer': data['nama_customer'] ?? '',
+              'waktu_booking': data['waktu_booking'] ?? '',
+            };
+          }
+        }
+      }
+
+      // 2. Proses data booking riil dari koleksi 'bookings'
+      if (lastBookings != null) {
+        for (var doc in lastBookings!.docs) {
+          final data = doc.data() as Map<String, dynamic>?;
+          if (data == null) continue;
+          final status = data['status'] as String?;
+          
+          // Skip booking yang dibatalkan, expired, atau ditolak
+          if (status == 'dibatalkan' || status == 'expired' || status == 'ditolak') {
+            continue;
+          }
+
+          final timeSlots = data['timeSlots'] as List<dynamic>?;
+          final userName = data['userName'] as String? ?? 'Customer';
+          final createdAtRaw = data['createdAt'];
+          String waktuBookingStr = '';
+          
+          if (createdAtRaw is Timestamp) {
+            waktuBookingStr = DateFormat('HH:mm').format(createdAtRaw.toDate());
+          } else if (createdAtRaw is String) {
+            final dt = DateTime.tryParse(createdAtRaw);
+            if (dt != null) {
+              waktuBookingStr = DateFormat('HH:mm').format(dt);
+            }
+          }
+
+          if (timeSlots != null) {
+            for (var slot in timeSlots) {
+              if (slot is String) {
+                // Map "08:00 - 09:00" -> "08:00"
+                final jamMulai = slot.split(' - ').first.trim();
+                combined[jamMulai] = {
+                  'status': 'dibooking',
+                  'nama_customer': userName,
+                  'waktu_booking': waktuBookingStr,
+                };
+              }
+            }
+          } else {
+            // Fallback jamMulai
+            final jamMulai = data['jamMulai'] as String?;
+            if (jamMulai != null && jamMulai.isNotEmpty) {
+              combined[jamMulai] = {
+                'status': 'dibooking',
+                'nama_customer': userName,
+                'waktu_booking': waktuBookingStr,
+              };
+            }
+          }
+        }
+      }
+
+      controller.add(combined);
+    }
+
+    subJadwal = streamJadwal.listen(
+      (snap) {
+        lastJadwal = snap;
+        emitCombined();
+      },
+      onError: (err) => controller.addError(err),
+    );
+
+    subBookings = streamBookings.listen(
+      (snap) {
+        lastBookings = snap;
+        emitCombined();
+      },
+      onError: (err) => controller.addError(err),
+    );
+
+    controller.onCancel = () {
+      subJadwal?.cancel();
+      subBookings?.cancel();
+    };
+
+    return controller.stream;
   }
 
   Future<void> _simpanPerubahan() async {
@@ -104,14 +222,14 @@ class _JadwalKetersediaanPageState extends State<JadwalKetersediaanPage> {
 
     try {
       final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
-      final batch = FirebaseFirestore.instance.batch();
+      final batch = FirestoreService.instance.batch();
 
       for (var entry in _modifiedSlots.entries) {
         final jam = entry.key;
         final status = entry.value;
 
         // Query if document exists
-        final querySnapshot = await FirebaseFirestore.instance
+        final querySnapshot = await FirestoreService.instance
             .collection('jadwal')
             .where('lapangan_id', isEqualTo: widget.lapangan.id)
             .where('tanggal', isEqualTo: dateStr)
@@ -121,12 +239,16 @@ class _JadwalKetersediaanPageState extends State<JadwalKetersediaanPage> {
 
         if (querySnapshot.docs.isNotEmpty) {
           // Update existing
-          batch.update(querySnapshot.docs.first.reference, {'status': status});
+          batch.update(querySnapshot.docs.first.reference, {
+            'status': status,
+            'mitra_id': widget.lapangan.mitraId,
+          });
         } else {
           // Create new
-          final newDoc = FirebaseFirestore.instance.collection('jadwal').doc();
+          final newDoc = FirestoreService.instance.collection('jadwal').doc();
           batch.set(newDoc, {
             'lapangan_id': widget.lapangan.id,
+            'mitra_id': widget.lapangan.mitraId,
             'tanggal': dateStr,
             'jam': jam,
             'status': status,
@@ -214,8 +336,8 @@ class _JadwalKetersediaanPageState extends State<JadwalKetersediaanPage> {
           _buildPilihanTanggal(),
           const SizedBox(height: 16),
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _getJadwalStream(),
+            child: StreamBuilder<Map<String, Map<String, dynamic>>>(
+              stream: _getCombinedJadwalStream(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator(color: AppColors.primary));
@@ -225,15 +347,8 @@ class _JadwalKetersediaanPageState extends State<JadwalKetersediaanPage> {
                   return Center(child: Text('Terjadi kesalahan: ${snapshot.error}'));
                 }
 
-                final docs = snapshot.data?.docs ?? [];
+                final firestoreData = snapshot.data ?? {};
                 
-                // Create a map for quick lookup
-                final firestoreData = <String, Map<String, dynamic>>{};
-                for (var doc in docs) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  firestoreData[data['jam']] = data;
-                }
-
                 final slots = _generateTimeSlots();
 
                 if (slots.isEmpty) {
@@ -258,9 +373,13 @@ class _JadwalKetersediaanPageState extends State<JadwalKetersediaanPage> {
                     status = firestoreData[jam]!['status'] ?? 'tersedia';
                   }
 
-                  if (status == 'tersedia') availableCount++;
-                  else if (status == 'dibooking') bookedCount++;
-                  else if (status == 'ditutup') closedCount++;
+                  if (status == 'tersedia') {
+                    availableCount++;
+                  } else if (status == 'dibooking') {
+                    bookedCount++;
+                  } else if (status == 'ditutup') {
+                    closedCount++;
+                  }
                 }
 
                 return Column(

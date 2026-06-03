@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:lapangku/models/auth/user_model.dart';
+import 'package:lapangku/services/firebase/push_notification_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -110,6 +111,9 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    // Hapus FCM token dari Firestore agar perangkat tidak menerima notif setelah logout
+    await PushNotificationService.instance.removeToken();
+
     try {
       print('DEBUG AUTH: Melakukan logout...');
       await GoogleSignIn().signOut();
@@ -119,14 +123,6 @@ class AuthService {
     
     // Bersihkan sesi Auth
     await _auth.signOut();
-    
-    try {
-      // SANGAT PENTING: Bersihkan cache Firestore agar tidak bentrok saat login akun lain
-      await _db.terminate();
-      await _db.clearPersistence();
-    } catch (e) {
-      print('DEBUG AUTH: Gagal clear persistence: $e');
-    }
     
     print('DEBUG AUTH: Logout berhasil.');
   }
@@ -199,11 +195,7 @@ class AuthService {
     }
   }
 
-  Future<void> updateTwoFactor(String uid, bool enabled) async {
-    await _db.collection('users').doc(uid).update({
-      'twoFactorEnabled': enabled,
-    });
-  }
+
 
   Future<void> updateNotificationSettings(
       String uid, Map<String, bool> settings) async {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/field/field_model.dart';
+import 'package:lapangku/models/auth/user_model.dart';
 import 'package:lapangku/controllers/field/field_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
@@ -9,7 +10,6 @@ import 'package:lapangku/standards/widgets/cached_image_widget.dart';
 import 'package:lapangku/standards/widgets/shimmer_loading.dart';
 import 'package:lapangku/controllers/notification/notification_controller.dart';
 import 'package:lapangku/views/customer/notification_page.dart';
-import 'package:geolocator/geolocator.dart';
 
 class CustomerHomePage extends ConsumerStatefulWidget {
   const CustomerHomePage({super.key});
@@ -32,7 +32,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final fieldsAsync = ref.watch(fieldsProvider);
+    final fieldsAsync = ref.watch(sortedFieldsWithDistanceProvider);
     final userAsync = ref.watch(authStateProvider);
     final user = userAsync.value;
 
@@ -43,119 +43,30 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
       backgroundColor: AppColors.backgroundPage,
       body: CustomScrollView(
         slivers: [
-          // Elegant Header
-          SliverAppBar(
-            expandedHeight: 220.0,
-            floating: false,
+          // Custom Elegant Header (Greeting + Sticky Search Bar)
+          SliverPersistentHeader(
             pinned: true,
-            backgroundColor: AppColors.primary,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.primaryDark, AppColors.primary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Halo, ${user?.nama ?? 'Sobat'} 👋',
-                                    style: const TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500),
-                                    maxLines: 1, overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  const Text('Cari Lapangan Favoritmu!',
-                                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Consumer(
-                                  builder: (context, ref, child) {
-                                    final unreadCount = ref.watch(unreadNotificationsCountProvider);
-                                    return Container(
-                                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle),
-                                      child: IconButton(
-                                        icon: Badge(
-                                          isLabelVisible: unreadCount > 0,
-                                          label: Text(unreadCount.toString()),
-                                          backgroundColor: Colors.red,
-                                          child: const Icon(Icons.notifications_none_rounded, color: Colors.white),
-                                        ),
-                                        onPressed: () {
-                                          Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationPage()));
-                                        },
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(width: 12),
-                                GestureDetector(
-                                  onTap: () {
-                                    if (hasAvatar) {
-                                      _showFullScreenPhoto(context, avatarUrl!);
-                                    } else {
-                                      Navigator.pushNamed(context, '/customer-profile');
-                                    }
-                                  },
-                                  child: CircleAvatar(
-                                    radius: 24,
-                                    backgroundColor: Colors.white.withValues(alpha: 0.24),
-                                    backgroundImage: hasAvatar ? NetworkImage(avatarUrl!) : null,
-                                    child: hasAvatar ? null : const Icon(Icons.person, color: Colors.white),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        Container(
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
-                          ),
-                          child: TextField(
-                            readOnly: true,
-                            onTap: () {
-                              Navigator.pushNamed(context, '/search');
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Nama lapangan atau lokasi...',
-                              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
-                              prefixIcon: const Icon(Icons.search, color: AppColors.primary),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            delegate: _HeaderDelegate(
+              expandedHeight: MediaQuery.of(context).padding.top + 150.0,
+              collapsedHeight: MediaQuery.of(context).padding.top + 76.0,
+              user: user,
+              avatarUrl: avatarUrl,
+              hasAvatar: hasAvatar,
+              unreadCount: ref.watch(unreadNotificationsCountProvider),
+              onSearchTap: () => Navigator.pushNamed(context, '/search'),
+              onNotificationTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const NotificationPage())),
+              onAvatarTap: () {
+                if (hasAvatar) {
+                  _showFullScreenPhoto(context, avatarUrl);
+                } else {
+                  Navigator.pushNamed(context, '/customer-profile');
+                }
+              },
             ),
           ),
 
-          // Categories
+          // Categories - KEMBALI SEPERTI ASLI
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.only(top: 24, bottom: 8),
@@ -164,7 +75,11 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                 children: [
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 24),
-                    child: Text('Kategori', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                    child: Text('Kategori',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textDark)),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -177,20 +92,40 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                         final category = _categories[index];
                         final isSelected = _selectedCategory == category;
                         return GestureDetector(
-                          onTap: () => setState(() => _selectedCategory = category),
+                          onTap: () =>
+                              setState(() => _selectedCategory = category),
                           child: Container(
                             margin: const EdgeInsets.symmetric(horizontal: 4),
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 8),
                             decoration: BoxDecoration(
-                              color: isSelected ? AppColors.primary : Colors.white,
+                              color:
+                                  isSelected ? AppColors.primary : Colors.white,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300),
-                              boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))] : null,
+                              border: Border.all(
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : Colors.grey.shade300),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                          color: AppColors.primary
+                                              .withOpacity(0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4))
+                                    ]
+                                  : null,
                             ),
                             child: Center(
-                              child: Text(category, style: TextStyle(
-                                color: isSelected ? Colors.white : AppColors.textSecondary,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, fontSize: 14)),
+                              child: Text(category,
+                                  style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : AppColors.textSecondary,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      fontSize: 14)),
                             ),
                           ),
                         );
@@ -202,7 +137,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
             ),
           ),
 
-          // Title
+          // Title - KEMBALI SEPERTI ASLI
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
@@ -210,8 +145,13 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _selectedCategory == 'Semua' ? 'Rekomendasi Lapangan' : 'Hasil Pencarian',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                    _selectedCategory == 'Semua'
+                        ? 'Rekomendasi Lapangan'
+                        : 'Hasil Pencarian',
+                    style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textDark),
                   ),
                   if (user?.alamatLatLng == null) ...[
                     const SizedBox(height: 12),
@@ -224,12 +164,16 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline, color: AppColors.primary, size: 20),
+                          const Icon(Icons.info_outline,
+                              color: AppColors.primary, size: 20),
                           const SizedBox(width: 8),
-                          Expanded(
-                            child: const Text(
+                          const Expanded(
+                            child: Text(
                               'Isi alamat di Informasi Pribadi untuk melihat lapangan terdekat',
-                              style: TextStyle(color: AppColors.primaryDark, fontSize: 12, fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                  color: AppColors.primaryDark,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500),
                             ),
                           ),
                           TextButton(
@@ -241,7 +185,11 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                               minimumSize: const Size(50, 30),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            child: const Text('Isi Sekarang', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                            child: const Text('Isi Sekarang',
+                                style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -252,65 +200,60 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
             ),
           ),
 
-          // List Lapangan
+          // List Lapangan (HANYA INI YANG MENGGUNAKAN GRID)
           fieldsAsync.when(
             loading: () => SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              sliver: SliverList(
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 0.7,
+                ),
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => ShimmerLoading.card(height: 280),
-                  childCount: 3,
+                  (context, index) => ShimmerLoading.card(height: 200),
+                  childCount: 4,
                 ),
               ),
             ),
-            error: (e, _) => SliverFillRemaining(child: Center(child: Text('Terjadi kesalahan:\n$e', textAlign: TextAlign.center))),
-            data: (fields) {
-              final filtered = fields.where((f) {
+            error: (e, _) => SliverFillRemaining(
+                child: Center(
+                    child: Text('Terjadi kesalahan:\n$e',
+                        textAlign: TextAlign.center))),
+            data: (fieldsWithDistance) {
+              final filtered = fieldsWithDistance.where((fwd) {
                 final matchCat = _selectedCategory == 'Semua' ||
-                    f.kategori.toLowerCase().trim() == _selectedCategory.toLowerCase().trim();
+                    fwd.field.kategori.toLowerCase().trim() ==
+                        _selectedCategory.toLowerCase().trim();
                 return matchCat;
               }).toList();
 
               if (filtered.isEmpty) {
                 return const SliverFillRemaining(
-                  child: Center(child: Text('Tidak ada lapangan yang sesuai.', style: TextStyle(color: AppColors.textSecondary, fontSize: 16))),
+                  child: Center(
+                      child: Text('Tidak ada lapangan yang sesuai.',
+                          style: TextStyle(
+                              color: AppColors.textSecondary, fontSize: 16))),
                 );
               }
 
-              if (user?.alamatLatLng != null) {
-                filtered.sort((a, b) {
-                  final distA = Geolocator.distanceBetween(
-                    user!.alamatLatLng!.latitude,
-                    user.alamatLatLng!.longitude,
-                    a.latitude,
-                    a.longitude,
-                  );
-                  final distB = Geolocator.distanceBetween(
-                    user.alamatLatLng!.latitude,
-                    user.alamatLatLng!.longitude,
-                    b.latitude,
-                    b.longitude,
-                  );
-                  return distA.compareTo(distB);
-                });
-              }
-
               return SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                sliver: SliverList(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 0.65,
+                  ),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      final field = filtered[index];
-                      double? distance;
-                      if (user?.alamatLatLng != null) {
-                        distance = Geolocator.distanceBetween(
-                          user!.alamatLatLng!.latitude,
-                          user.alamatLatLng!.longitude,
-                          field.latitude,
-                          field.longitude,
-                        );
-                      }
-                      return _FieldCard(field: field, distanceInMeters: distance);
+                      final fwd = filtered[index];
+                      return _FieldCard(
+                          field: fwd.field,
+                          distanceInMeters: fwd.distanceInMeters);
                     },
                     childCount: filtered.length,
                   ),
@@ -324,6 +267,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
       ),
     );
   }
+
   void _showFullScreenPhoto(BuildContext context, String imageUrl) {
     showDialog(
       context: context,
@@ -359,22 +303,215 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
   }
 }
 
+// ─── Custom Header Delegate ────────────────
+class _HeaderDelegate extends SliverPersistentHeaderDelegate {
+  final double expandedHeight;
+  final double collapsedHeight;
+  final UserModel? user;
+  final String? avatarUrl;
+  final bool hasAvatar;
+  final int unreadCount;
+  final VoidCallback onSearchTap;
+  final VoidCallback onNotificationTap;
+  final VoidCallback onAvatarTap;
+
+  _HeaderDelegate({
+    required this.expandedHeight,
+    required this.collapsedHeight,
+    required this.user,
+    required this.avatarUrl,
+    required this.hasAvatar,
+    required this.unreadCount,
+    required this.onSearchTap,
+    required this.onNotificationTap,
+    required this.onAvatarTap,
+  });
+
+  @override
+  double get maxExtent => expandedHeight;
+
+  @override
+  double get minExtent => collapsedHeight;
+
+  @override
+  bool shouldRebuild(covariant _HeaderDelegate oldDelegate) {
+    return user != oldDelegate.user ||
+        avatarUrl != oldDelegate.avatarUrl ||
+        unreadCount != oldDelegate.unreadCount ||
+        hasAvatar != oldDelegate.hasAvatar ||
+        expandedHeight != oldDelegate.expandedHeight ||
+        collapsedHeight != oldDelegate.collapsedHeight;
+  }
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final double fadeEnd = expandedHeight - collapsedHeight - 10.0;
+    double opacity = 1.0 - (shrinkOffset / fadeEnd);
+    opacity = opacity.clamp(0.0, 1.0);
+    
+    // Default location string based on the user's city or a fallback
+    final locationText = (user?.city != null && user!.city!.isNotEmpty) 
+        ? user!.city! 
+        : 'Malang, Jawa Timur';
+        
+    // Initial for avatar
+    final initial = (user?.nama != null && user!.nama.isNotEmpty) 
+        ? user!.nama.substring(0, 1).toUpperCase() 
+        : 'S';
+
+    return Container(
+      color: Colors.white,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 24,
+            right: 24,
+            child: Opacity(
+              opacity: opacity,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Halo, ${user?.nama ?? 'Budi'} 👋',
+                          style: const TextStyle(
+                              color: AppColors.textDark,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on_outlined, color: AppColors.primary, size: 14),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                locationText,
+                                style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            shape: BoxShape.circle),
+                        child: IconButton(
+                          icon: Badge(
+                            isLabelVisible: unreadCount > 0,
+                            label: Text(unreadCount.toString()),
+                            backgroundColor: Colors.red,
+                            child: const Icon(Icons.notifications_none_rounded,
+                                color: AppColors.textDark),
+                          ),
+                          onPressed: onNotificationTap,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: onAvatarTap,
+                        child: CircleAvatar(
+                          radius: 22,
+                          backgroundColor: AppColors.primary,
+                          backgroundImage:
+                              hasAvatar ? NetworkImage(avatarUrl!) : null,
+                          child: hasAvatar
+                              ? null
+                              : Text(
+                                  initial,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 16,
+            left: 24,
+            right: 24,
+            child: Container(
+              height: 52,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F5F7),
+                borderRadius: BorderRadius.circular(50),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(50),
+                  onTap: onSearchTap,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search,
+                            color: Color(0xFF8C98A8), size: 22),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Cari lapangan, lokasi, atau olahraga...',
+                            style: TextStyle(
+                                color: const Color(0xFF8C98A8), fontSize: 14, fontWeight: FontWeight.w500),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Field Card Widget (Grid Version - HANYA INI YANG BERUBAH) ─────────────
 class _FieldCard extends StatelessWidget {
   final FieldModel field;
   final double? distanceInMeters;
 
   const _FieldCard({required this.field, this.distanceInMeters});
 
-  // _formatHarga dihapus — gunakan CurrencyFormatter.formatShort() dari shared/utils
-
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 12, offset: const Offset(0, 4))],
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4))
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
@@ -390,61 +527,55 @@ class _FieldCard extends StatelessWidget {
                 children: [
                   CachedImageWidget(
                     imageUrl: field.fotoUtama,
-                    height: 180,
+                    height: 110,
                     width: double.infinity,
                     errorWidget: Container(
-                      height: 180,
+                      height: 110,
                       color: AppColors.primaryLight,
-                      child: const Center(child: Icon(Icons.stadium_outlined, size: 56, color: AppColors.primary)),
+                      child: const Center(
+                          child: Icon(Icons.stadium_outlined,
+                              size: 40, color: AppColors.primary)),
                     ),
                   ),
                   Positioned(
-                    top: 12, right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20),
-                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))]),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
-                        const SizedBox(width: 4),
-                        Text(field.ratingAvg.toStringAsFixed(1), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-                        Text(' (${field.totalUlasan})', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-                      ]),
-                    ),
-                  ),
-                  Positioned(
-                    top: 12, left: 12,
-                    child: Row(
+                    top: 8,
+                    left: 8,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                          child: Text(field.kategori.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppColors.primary, 
-                            borderRadius: BorderRadius.circular(8)
-                          ),
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(6)),
+                          child: Text(field.kategori.toUpperCase(),
+                              style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 4),
+                          decoration: BoxDecoration(
+                              color: Colors.black45,
+                              borderRadius: BorderRadius.circular(6)),
                           child: Row(
                             children: [
                               Icon(
-                                field.tipeLapangan == 'Indoor' ? Icons.roofing : Icons.wb_sunny_outlined,
-                                size: 12,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                field.tipeLapangan.toUpperCase(), 
-                                style: const TextStyle(
-                                  fontSize: 10, 
-                                  fontWeight: FontWeight.bold, 
-                                  color: Colors.white, 
-                                  letterSpacing: 0.5
-                                )
-                              ),
+                                  field.tipeLapangan == 'Indoor'
+                                      ? Icons.roofing
+                                      : Icons.wb_sunny_outlined,
+                                  size: 10,
+                                  color: Colors.white),
+                              const SizedBox(width: 2),
+                              Text(field.tipeLapangan.toUpperCase(),
+                                  style: const TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white)),
                             ],
                           ),
                         ),
@@ -453,66 +584,74 @@ class _FieldCard extends StatelessWidget {
                   ),
                 ],
               ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (field.namaVenue.isNotEmpty) ...[
-                      Text(
-                        field.namaVenue.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 10, 
-                          fontWeight: FontWeight.w800, 
-                          color: AppColors.textSecondary, 
-                          letterSpacing: 0.5,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                    ],
-                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Expanded(child: Text(field.nama, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                      Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                        Text('Rp ${CurrencyFormatter.formatShort(field.hargaPerJam)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                        const Text('/ jam', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                      ]),
-                    ]),
-                    const SizedBox(height: 6),
-                    Row(children: [
-                      const Icon(Icons.location_on_rounded, size: 16, color: AppColors.textSecondary),
-                      const SizedBox(width: 4),
-                      Expanded(child: Text(field.alamat, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    ]),
-                    if (distanceInMeters != null) ...[
-                      const SizedBox(height: 4),
-                      Row(children: [
-                        const Icon(Icons.directions_run, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 4),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (field.namaVenue.isNotEmpty) ...[
                         Text(
-                          distanceInMeters! > 1000 
-                              ? '${(distanceInMeters! / 1000).toStringAsFixed(1)} km dari lokasi Anda'
-                              : '${distanceInMeters!.toStringAsFixed(0)} m dari lokasi Anda',
-                          style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600),
+                          field.namaVenue.toUpperCase(),
+                          style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textSecondary,
+                              letterSpacing: 0.5),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ]),
-                    ],
-                    if (field.fasilitas.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: field.fasilitas.take(4).map((f) => Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(color: AppColors.backgroundChip, borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.grey.shade200)),
-                            child: Text(f, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                          )).toList(),
-                        ),
+                        const SizedBox(height: 2),
+                      ],
+                      Text(field.nama,
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textDark),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                      const Spacer(),
+                      Text(
+                          'Rp ${CurrencyFormatter.formatShort(field.hargaPerJam)}',
+                          style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary)),
+                      const Text('/ jam',
+                          style: TextStyle(
+                              fontSize: 9, color: AppColors.textSecondary)),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                              distanceInMeters != null
+                                  ? Icons.directions_run
+                                  : Icons.location_on_rounded,
+                              size: 12,
+                              color: AppColors.textSecondary),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              distanceInMeters != null
+                                  ? (distanceInMeters! > 1000
+                                      ? '${(distanceInMeters! / 1000).toStringAsFixed(1)} km'
+                                      : '${distanceInMeters!.toStringAsFixed(0)} m')
+                                  : field.alamat,
+                              style: const TextStyle(
+                                  fontSize: 10, color: AppColors.textSecondary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const Icon(Icons.star_rounded,
+                              color: Colors.amber, size: 12),
+                          Text(field.ratingAvg.toStringAsFixed(1),
+                              style: const TextStyle(
+                                  fontSize: 10, fontWeight: FontWeight.bold)),
+                        ],
                       ),
                     ],
-                  ],
+                  ),
                 ),
               ),
             ],
