@@ -239,12 +239,16 @@ class _JadwalKetersediaanPageState extends State<JadwalKetersediaanPage> {
 
         if (querySnapshot.docs.isNotEmpty) {
           // Update existing
-          batch.update(querySnapshot.docs.first.reference, {'status': status});
+          batch.update(querySnapshot.docs.first.reference, {
+            'status': status,
+            'mitra_id': widget.lapangan.mitraId,
+          });
         } else {
           // Create new
           final newDoc = FirestoreService.instance.collection('jadwal').doc();
           batch.set(newDoc, {
             'lapangan_id': widget.lapangan.id,
+            'mitra_id': widget.lapangan.mitraId,
             'tanggal': dateStr,
             'jam': jam,
             'status': status,

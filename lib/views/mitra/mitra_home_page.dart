@@ -497,13 +497,18 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
           CircleAvatar(
             radius: 24,
             backgroundColor: _primaryGreen.withOpacity(0.1),
-            child: Text(
-              booking.userName[0].toUpperCase(),
-              style: TextStyle(
-                  color: _primaryGreen,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18),
-            ),
+            backgroundImage: booking.userAvatarUrl != null && booking.userAvatarUrl!.isNotEmpty 
+                ? NetworkImage(booking.userAvatarUrl!) 
+                : null,
+            child: booking.userAvatarUrl == null || booking.userAvatarUrl!.isEmpty
+                ? Text(
+                    booking.userName.isNotEmpty ? booking.userName[0].toUpperCase() : 'U',
+                    style: TextStyle(
+                        color: _primaryGreen,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18),
+                  )
+                : null,
           ),
           const SizedBox(width: 12),
           Expanded(
