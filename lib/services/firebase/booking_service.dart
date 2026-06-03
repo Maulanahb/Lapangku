@@ -185,8 +185,42 @@ class BookingService {
     debugPrint('   field.idPemilik: ${field.idPemilik}');
     debugPrint('=========================================');
 
-    await docRef.set(booking.toFirestore());
-    debugPrint('✅ Booking saved: ${booking.bookingId} | mitraId in doc: ${booking.mitraId}');
+    // ══════════════════════════════════════════════════════════════════
+    // BATCH WRITE: Atomik — booking + notifikasi ditulis bersamaan.
+    // Jika salah satu gagal, keduanya dibatalkan (konsistensi data).
+    // ══════════════════════════════════════════════════════════════════
+    final batch = _db.batch();
+
+    // 1. Tulis dokumen booking
+    batch.set(docRef, booking.toFirestore());
+
+    // 2. Tulis dokumen notifikasi untuk Mitra
+    final notifRef = _db.collection('notifikasi').doc();
+    final String fieldDisplayName = field.namaVenue.isNotEmpty
+        ? '${field.namaVenue} - ${field.nama}'
+        : field.nama;
+    final String dateFormatted = DateFormat('dd MMM yyyy').format(date);
+    final String slotsFormatted = timeSlots.join(', ');
+
+    batch.set(notifRef, {
+      'mitraId': mitraId,
+      'isRead': false,
+      'title': 'Pesanan Baru!',
+      'message': '${user.nama} memesan $fieldDisplayName pada $dateFormatted ($slotsFormatted)',
+      'type': 'booking',
+      'createdAt': FieldValue.serverTimestamp(),
+      'data': {
+        'bookingId': booking.bookingId,
+        'bookingDocId': docRef.id,
+        'fieldId': field.id,
+        'fieldName': fieldDisplayName,
+        'userId': user.uid,
+        'userName': user.nama,
+      },
+    });
+
+    await batch.commit();
+    debugPrint('✅ Booking + Notifikasi saved: ${booking.bookingId} | mitraId: ${booking.mitraId}');
     return booking;
   }
 
@@ -246,12 +280,14 @@ class BookingService {
       }
     }
 
-    // Ambil slot yang ditutup secara manual oleh Mitra dari koleksi 'jadwal'
+    // Ambil slot yang ditutup secara manual oleh Mitra dari koleksi 'schedules'
+    // PENTING: Mitra menyimpan jadwal via jadwal_lapangan.dart ke koleksi
+    // 'schedules' dengan field 'fieldId' (bukan 'jadwal'/'lapangan_id').
     try {
       final dateStr = DateFormat('yyyy-MM-dd').format(date);
       final jadwalSnap = await _db
-          .collection('jadwal')
-          .where('lapangan_id', isEqualTo: fieldId)
+          .collection('schedules')
+          .where('fieldId', isEqualTo: fieldId)
           .where('tanggal', isEqualTo: dateStr)
           .where('status', isEqualTo: 'ditutup')
           .get();

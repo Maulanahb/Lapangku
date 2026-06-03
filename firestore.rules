@@ -106,8 +106,16 @@ service cloud.firestore {
     // KOLEKSI: notifikasi
     // ==========================================
     match /notifikasi/{notificationId} {
-      allow read: if isAuthenticated() && resource.data.customer_id == request.auth.uid;
-      allow update, delete: if isAuthenticated() && (resource.data.customer_id == request.auth.uid || isAdmin());
+      allow read: if isAuthenticated() && (
+        ('customer_id' in resource.data && resource.data.customer_id == request.auth.uid) || 
+        ('mitraId' in resource.data && resource.data.mitraId == request.auth.uid)
+      );
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (
+        ('customer_id' in resource.data && resource.data.customer_id == request.auth.uid) || 
+        ('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) || 
+        isAdmin()
+      );
     }
 
     // ==========================================
