@@ -31,6 +31,5 @@ class AppConstants {
   static const String routeSearch = '/search';
   static const String routeFieldDetail = '/field-detail';
   static const String routeBookingConfirmation = '/booking-confirmation';
-  static const String routePaymentUpload = '/payment-upload';
   static const String routeBookingDetail = '/booking-detail';
 }
