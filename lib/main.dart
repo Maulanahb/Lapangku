@@ -93,10 +93,10 @@ void main() async {
 
     EmailOTP.setSMTP(
       host: 'smtp.gmail.com',
-      emailPort: EmailPort.port465,
-      secureType: SecureType.ssl,
-      username: dotenv.env['SMTP_USERNAME'] ?? '',
-      password: dotenv.env['SMTP_PASSWORD'] ?? '',
+      emailPort: EmailPort.port587,
+      secureType: SecureType.tls,
+      username: dotenv.env['SMTP_USERNAME'] ?? 'lapangku1@gmail.com',
+      password: dotenv.env['SMTP_PASSWORD'] ?? 'grhnkjzimuukanyn',
     );
 
     // 6. Jalankan Aplikasi Utama
