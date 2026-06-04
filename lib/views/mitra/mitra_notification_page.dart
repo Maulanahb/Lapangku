@@ -137,6 +137,7 @@ class _NotificationCard extends ConsumerWidget {
       case 'booking': return Icons.check_circle;
       case 'payment': return Icons.payment;
       case 'promo': return Icons.local_offer;
+      case 'reschedule': return Icons.edit_calendar;
       default: return Icons.notifications;
     }
   }
@@ -146,6 +147,7 @@ class _NotificationCard extends ConsumerWidget {
       case 'booking': return Colors.green;
       case 'payment': return Colors.red;
       case 'promo': return Colors.orange;
+      case 'reschedule': return Colors.orange.shade800;
       default: return AppColors.primary;
     }
   }
@@ -186,9 +188,8 @@ class _NotificationCard extends ConsumerWidget {
           }
           if (!context.mounted) return;
           
-          if (notification.type == 'booking') {
-            Navigator.pushNamed(context, '/mitra-orders');
-          } else if (notification.type == 'payment') {
+          if (notification.type == 'booking' || notification.type == 'payment' || notification.type == 'reschedule') {
+            // Kita bisa arahkan ke mitra-orders (pesanan masuk)
             Navigator.pushNamed(context, '/mitra-orders');
           }
         },

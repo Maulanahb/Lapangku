@@ -10,10 +10,9 @@ final userReviewsProvider = FutureProvider.family<List<Map<String, dynamic>>, St
   return service.getUserReviews(userId);
 });
 
-final fieldReviewsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, fieldId) async {
-  ref.keepAlive();
+final fieldReviewsProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, fieldId) {
   final service = ref.watch(reviewServiceProvider);
-  return service.getFieldReviews(fieldId);
+  return service.streamFieldReviews(fieldId);
 });
 
 class ReviewService {
@@ -109,19 +108,18 @@ class ReviewService {
     return docs;
   }
 
-  Future<List<Map<String, dynamic>>> getFieldReviews(String fieldId) async {
-    final querySnapshot = await _db
+  Stream<List<Map<String, dynamic>>> streamFieldReviews(String fieldId) {
+    return _db
         .collection('lapangan')
         .doc(fieldId)
         .collection('reviews')
         .orderBy('createdAt', descending: true)
-        .get();
-
-    return querySnapshot.docs.map((doc) {
-      final data = doc.data();
-      data['id'] = doc.id; // Menyisipkan ID dokumen asli agar bisa dipakai saat memanggil aksi Hapus
-      return data;
-    }).toList();
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              final data = doc.data();
+              data['id'] = doc.id; // Menyisipkan ID dokumen asli agar bisa dipakai saat memanggil aksi Hapus
+              return data;
+            }).toList());
   }
 
   Future<void> deleteReview({
@@ -139,8 +137,17 @@ class ReviewService {
     final fieldRef = _db.collection('lapangan').doc(fieldId);
 
     await _db.runTransaction((transaction) async {
+      // 1. SEMUA PROSES BACA DILAKUKAN TERLEBIH DAHULU (READS)
       final fieldSnap = await transaction.get(fieldRef);
+      
+      DocumentSnapshot? bookingSnap;
+      DocumentReference? bookingRef;
+      if (bookingId != null && bookingId.isNotEmpty) {
+        bookingRef = _db.collection('bookings').doc(bookingId);
+        bookingSnap = await transaction.get(bookingRef);
+      }
 
+      // 2. SETELAH ITU BARU PROSES TULIS/UBAH/HAPUS (WRITES)
       if (fieldSnap.exists) {
         final data = fieldSnap.data()!;
         final currentAvg = (data['avg_rating'] ?? data['ratingAvg'] ?? 0.0) as num;
@@ -159,8 +166,7 @@ class ReviewService {
       transaction.delete(reviewRef);
 
       // Kembalikan status booking menjadi belum di-review agar customer bisa menulis ulang
-      if (bookingId != null && bookingId.isNotEmpty) {
-        final bookingRef = _db.collection('bookings').doc(bookingId);
+      if (bookingRef != null && bookingSnap != null && bookingSnap.exists) {
         transaction.update(bookingRef, {'isReviewed': false});
       }
     });

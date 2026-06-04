@@ -352,6 +352,27 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
   Widget _headerInfo() {
     final f = _field;
     final now = TimeOfDay.now();
+    
+    // Calculate real-time ratings from the stream
+    final reviewsAsync = ref.watch(fieldReviewsProvider(f.id));
+    double displayRating = f.ratingAvg;
+    int displayTotal = f.totalUlasan;
+    
+    reviewsAsync.whenData((reviews) {
+      int t = reviews.length;
+      if (t > 0) {
+        double sum = 0;
+        for (var r in reviews) {
+          sum += (r['rating'] ?? 5);
+        }
+        displayRating = sum / t;
+        displayTotal = t;
+      } else {
+        displayRating = 0.0;
+        displayTotal = 0;
+      }
+    });
+
     bool isOpen = false;
     try {
       final openParts = f.jamBuka.split(':');
@@ -462,10 +483,10 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
         Row(children: [
           const Icon(Icons.star_rounded, size: 18, color: Colors.amber),
           const SizedBox(width: 4),
-          Text(f.ratingAvg.toStringAsFixed(1),
+          Text(displayRating.toStringAsFixed(1),
               style:
                   const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-          Text(' (${f.totalUlasan} ulasan)',
+          Text(' ($displayTotal ulasan)',
               style: const TextStyle(
                   fontSize: 12, color: AppColors.textSecondary)),
           const Spacer(),
@@ -615,7 +636,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           reviewsAsync.when(
             loading: () => Column(children: [
-              _buildSummaryBox(f, 0, 0, 0, 0, 0),
+              _buildSummaryBox(f, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: ListView.builder(
@@ -627,7 +648,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
               ),
             ]),
             error: (e, _) => Column(children: [
-              _buildSummaryBox(f, 0, 0, 0, 0, 0),
+              _buildSummaryBox(f, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
               Padding(
                   padding: const EdgeInsets.all(24),
                   child: Center(
@@ -636,19 +657,24 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
             ]),
             data: (reviews) {
               int c5 = 0, c4 = 0, c3 = 0, c2 = 0, c1 = 0;
+              double sumRating = 0;
               for (var r in reviews) {
                 int rating = r['rating'] ?? 5;
+                sumRating += rating;
                 if (rating == 5) {
                   c5++;
-                } else if (rating == 4)
+                } else if (rating == 4) {
                   c4++;
-                else if (rating == 3)
+                } else if (rating == 3) {
                   c3++;
-                else if (rating == 2)
+                } else if (rating == 2) {
                   c2++;
-                else if (rating == 1) c1++;
+                } else if (rating == 1) {
+                  c1++;
+                }
               }
               int t = reviews.length;
+              double actualAvg = t > 0 ? sumRating / t : 0.0;
 
               final myReviews = reviews
                   .where((r) =>
@@ -664,6 +690,8 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
                 children: [
                   _buildSummaryBox(
                       f,
+                      t,
+                      actualAvg,
                       t > 0 ? c5 / t : 0,
                       t > 0 ? c4 / t : 0,
                       t > 0 ? c3 / t : 0,
@@ -746,7 +774,9 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
               onPressed: () => Navigator.pop(context, false),
               child: const Text('Batal')),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              Navigator.pop(context, true);
+            },
             child: const Text('Hapus', style: TextStyle(color: Colors.red)),
           ),
         ],
@@ -765,15 +795,17 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Ulasan berhasil dihapus')));
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Gagal menghapus ulasan: $e'),
-            backgroundColor: Colors.red));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Gagal menghapus ulasan: $e'),
+              backgroundColor: Colors.red));
+        }
       }
     }
   }
 
   Widget _buildSummaryBox(
-      FieldModel f, double p5, double p4, double p3, double p2, double p1) {
+      FieldModel f, int totalReviews, double avgRating, double p5, double p4, double p3, double p2, double p1) {
     return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -781,7 +813,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
             borderRadius: BorderRadius.circular(16)),
         child: Row(children: [
           Column(children: [
-            Text(f.ratingAvg.toStringAsFixed(1),
+            Text(avgRating.toStringAsFixed(1),
                 style: const TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
@@ -790,12 +822,12 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
                 children: List.generate(
                     5,
                     (i) => Icon(
-                        i < f.ratingAvg.round()
+                        i < avgRating.round()
                             ? Icons.star_rounded
                             : Icons.star_border_rounded,
                         color: Colors.amber,
                         size: 16))),
-            Text('${f.totalUlasan} ulasan',
+            Text('$totalReviews ulasan',
                 style: const TextStyle(
                     fontSize: 11, color: AppColors.textSecondary)),
           ]),

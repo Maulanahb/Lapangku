@@ -22,13 +22,16 @@ final bookingServiceProvider = Provider<BookingService>((ref) {
 /// [Customer] FutureProvider: slot yang sudah dipesan untuk tanggal tertentu.
 /// Parameter format: "fieldId|yyyy-MM-dd"
 /// Usage: ref.watch(bookedSlotsProvider('fieldId123|2026-05-11'))
-final bookedSlotsProvider =
-    FutureProvider.family<List<String>, String>((ref, param) async {
+final bookedSlotsProvider = StreamProvider.autoDispose.family<List<String>, String>((ref, param) async* {
   final parts = param.split('|');
   final fieldId = parts[0];
   final date = DateTime.parse(parts[1]);
   final service = ref.watch(bookingServiceProvider);
-  return service.getBookedSlots(fieldId: fieldId, date: date);
+  
+  // This is a workaround since we can't easily combine streams without RxDart.
+  // Instead of querying both manually every time, we will yield a stream of the real-time slots.
+  // Using Riverpod's StreamProvider, we can listen to Firestore directly inside the service.
+  yield* service.streamBookedSlots(fieldId: fieldId, date: date);
 });
 
 /// [Customer] FutureProvider: semua booking milik user tertentu.
