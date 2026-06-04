@@ -7,6 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lapangku/views/mitra/mitra_booking_list_page.dart' as lapangku_mitra_orders;
 
 /// Top-level background message handler — HARUS di top-level (bukan method dari class).
 /// Dipanggil saat notifikasi diterima ketika app di background/terminated.
@@ -267,6 +268,11 @@ class PushNotificationService {
         if (targetId.isNotEmpty) {
           navigator.pushNamed('/booking-detail', arguments: targetId);
         }
+        break;
+      case 'mitra_booking':
+      case 'mitra_reschedule':
+        // Arahkan Mitra ke halaman Pesanan Masuk (MitraBookingListPage)
+        navigator.push(MaterialPageRoute(builder: (_) => const lapangku_mitra_orders.MitraBookingListPage()));
         break;
       // Untuk tipe lain (payout, review, system), tetap di halaman saat ini
       // karena navigasi ke halaman tersebut memerlukan context khusus Mitra/Admin

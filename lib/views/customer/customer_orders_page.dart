@@ -81,7 +81,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
     if (mounted) LoadingOverlay.show(context);
 
     try {
-      final futures = _selectedIds.map((id) => service.deleteBooking(id));
+      final futures = _selectedIds.map((id) => service.hideBookingForCustomer(id));
       await Future.wait(futures);
 
       ref.invalidate(userBookingsStreamProvider(userId));

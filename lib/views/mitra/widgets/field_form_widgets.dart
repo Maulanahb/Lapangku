@@ -148,19 +148,21 @@ class FieldFormWidgets {
     TextEditingController controller,
     String hint, {
     int maxLines = 1,
+    bool readOnly = false,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F4FF),
+        color: readOnly ? const Color(0xFFE2E8F0) : const Color(0xFFF0F4FF),
         borderRadius: BorderRadius.circular(14),
       ),
       child: TextField(
         controller: controller,
         maxLines: maxLines,
-        style: const TextStyle(
+        readOnly: readOnly,
+        style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF2D3748),
+          color: readOnly ? const Color(0xFF718096) : const Color(0xFF2D3748),
         ),
         decoration: InputDecoration(
           hintText: hint,

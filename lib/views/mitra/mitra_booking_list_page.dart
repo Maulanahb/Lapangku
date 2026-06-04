@@ -795,7 +795,7 @@ class _BookingCard extends ConsumerWidget {
       try {
         await ref
             .read(MitraBookingActionsProvider.notifier)
-            .deleteBooking(booking.id);
+            .hideBooking(booking.id);
         if (context.mounted) {
           SnackbarHelper.showSuccess(context, 'Log pesanan berhasil dihapus');
         }
