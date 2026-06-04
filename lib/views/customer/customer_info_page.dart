@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
@@ -25,11 +25,7 @@ class _CustomerInfoPageState extends ConsumerState<CustomerInfoPage> {
   
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
-  late TextEditingController _cityController;
-  late TextEditingController _addressController;
-  
-  String? _selectedDate;
-  String? _selectedGender;
+
   bool _isInit = false;
   bool _isLoading = false;
 
@@ -38,16 +34,12 @@ class _CustomerInfoPageState extends ConsumerState<CustomerInfoPage> {
     super.initState();
     _nameController = TextEditingController();
     _phoneController = TextEditingController();
-    _cityController = TextEditingController();
-    _addressController = TextEditingController();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _cityController.dispose();
-    _addressController.dispose();
     super.dispose();
   }
 
@@ -57,54 +49,17 @@ class _CustomerInfoPageState extends ConsumerState<CustomerInfoPage> {
     if (user != null && !_isInit) {
       _nameController.text = user.nama == 'User Tanpa Nama' ? '' : user.nama;
       _phoneController.text = user.phone ?? '';
-      _cityController.text = user.city ?? '';
-      _addressController.text = user.address ?? '';
-      _selectedDate = user.birthday;
-      _selectedGender = user.gender;
       _isInit = true;
     }
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    DateTime initialDate = DateTime.now();
-    if (_selectedDate != null && _selectedDate!.isNotEmpty) {
-      try {
-        initialDate = DateFormat('dd MMM yyyy').parse(_selectedDate!);
-      } catch (e) {
-        try {
-          initialDate = DateFormat('yyyy-MM-dd').parse(_selectedDate!);
-        } catch (_) {}
-      }
-    }
 
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: AppColors.textDark,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        _selectedDate = DateFormat('dd MMM yyyy').format(picked);
-      });
-    }
-  }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return;
 
     setState(() => _isLoading = true);
     LoadingOverlay.show(context, message: 'Menyimpan profil...');
@@ -113,10 +68,10 @@ class _CustomerInfoPageState extends ConsumerState<CustomerInfoPage> {
       final result = await ref.read(customerInfoControllerProvider).updateCustomerProfile(
         nama: _nameController.text,
         phone: _phoneController.text,
-        birthday: _selectedDate,
-        gender: _selectedGender,
-        city: _cityController.text,
-        address: _addressController.text,
+        birthday: user.birthday,
+        gender: user.gender,
+        city: user.city,
+        address: user.address,
       );
 
       if (mounted) {
@@ -181,7 +136,6 @@ class _CustomerInfoPageState extends ConsumerState<CustomerInfoPage> {
       }
     });
 
-    final progress = ref.read(customerInfoControllerProvider).calculateProgress(user);
     final fieldBackgroundColor = const Color(0xFFF4F6FB);
 
     return Scaffold(
@@ -261,43 +215,7 @@ class _CustomerInfoPageState extends ConsumerState<CustomerInfoPage> {
               ),
               const SizedBox(height: 24),
 
-              // PROFIL CARD (Progress Bar)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryDark,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Profil Kamu', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-                        Text('${(progress * 100).toInt()}%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    const Text('Lengkapi data pribadi', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    const SizedBox(height: 16),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        backgroundColor: Colors.white.withOpacity(0.2),
-                        color: Colors.lightGreenAccent,
-                        minHeight: 6,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
+
 
               // INFORMASI DASAR SECTION
               Padding(
@@ -363,158 +281,9 @@ class _CustomerInfoPageState extends ConsumerState<CustomerInfoPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // TANGGAL LAHIR
-                    const Text('TANGGAL LAHIR', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: () => _selectDate(context),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        decoration: BoxDecoration(color: fieldBackgroundColor, borderRadius: BorderRadius.circular(12)),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              _selectedDate ?? 'Pilih Tanggal Lahir',
-                              style: TextStyle(fontSize: 14, color: _selectedDate == null ? Colors.grey : AppColors.textDark),
-                            ),
-                            const Icon(Icons.calendar_today_outlined, color: Colors.grey, size: 20),
-                          ],
-                        ),
-                      ),
-                    ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 32),
-
-              // INFORMASI TAMBAHAN SECTION
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Informasi Tambahan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textHeading)),
-                    const SizedBox(height: 16),
-
-                    // JENIS KELAMIN
-                    const Text('JENIS KELAMIN', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: fieldBackgroundColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: InkWell(
-                              onTap: () => setState(() => _selectedGender = 'Laki-laki'),
-                              borderRadius: BorderRadius.circular(8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: _selectedGender == 'Laki-laki' ? Colors.white : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(8),
-                                  boxShadow: _selectedGender == 'Laki-laki' 
-                                      ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                                      : null,
-                                ),
-                                child: Center(
-                                  child: Text('Laki-laki', 
-                                    style: TextStyle(
-                                      color: _selectedGender == 'Laki-laki' ? AppColors.primaryDark : Colors.grey, 
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: InkWell(
-                              onTap: () => setState(() => _selectedGender = 'Perempuan'),
-                              borderRadius: BorderRadius.circular(8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: _selectedGender == 'Perempuan' ? Colors.white : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(8),
-                                  boxShadow: _selectedGender == 'Perempuan' 
-                                      ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                                      : null,
-                                ),
-                                child: Center(
-                                  child: Text('Perempuan', 
-                                    style: TextStyle(
-                                      color: _selectedGender == 'Perempuan' ? AppColors.primaryDark : Colors.grey, 
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // KOTA
-                    const Text('KOTA', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(color: fieldBackgroundColor, borderRadius: BorderRadius.circular(12)),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _cityController,
-                              style: const TextStyle(fontSize: 14, color: AppColors.textDark),
-                              decoration: const InputDecoration(
-                                hintText: 'Contoh: Malang, Jawa Timur',
-                                hintStyle: TextStyle(color: Colors.grey),
-                                border: InputBorder.none, 
-                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14)
-                              ),
-                            ),
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.only(right: 16),
-                            child: Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // ALAMAT
-                    const Text('ALAMAT', style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(color: fieldBackgroundColor, borderRadius: BorderRadius.circular(12)),
-                      child: TextFormField(
-                        controller: _addressController,
-                        minLines: 2,
-                        maxLines: 4,
-                        style: const TextStyle(fontSize: 14, color: AppColors.textDark),
-                        decoration: const InputDecoration(
-                          hintText: 'Masukkan alamat lengkap...',
-                          hintStyle: TextStyle(color: Colors.grey),
-                          border: InputBorder.none, 
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14)
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 40),
+              ),              const SizedBox(height: 40),
 
               // TOMBOL SIMPAN
               Padding(
