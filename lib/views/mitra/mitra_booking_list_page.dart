@@ -70,8 +70,10 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
               ),
             ),
             const SizedBox(width: 12),
-            ref.watch(MitraBookingStreamProvider('menunggu_bayar')).when(
-                  data: (bookings) => bookings.isEmpty 
+            ref.watch(MitraBookingStreamProvider(null)).when(
+                  data: (bookings) {
+                    final pendingConfirmations = bookings.where((b) => b.isRescheduleRequested && b.rescheduleStatus == 'pending').toList();
+                    return pendingConfirmations.isEmpty 
                     ? const SizedBox.shrink()
                     : Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -80,14 +82,15 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          '${bookings.length} menunggu bayar',
+                          '${pendingConfirmations.length} konfirmasi',
                           style: const TextStyle(
                             color: Color(0xFF92400E),
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                      ),
+                      );
+                  },
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
                 ),

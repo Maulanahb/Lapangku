@@ -13,6 +13,7 @@ import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
 import 'package:lapangku/controllers/field/field_controller.dart';
 import 'package:lapangku/models/field/field_model.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
 
 
 class BookingDetailPage extends ConsumerWidget {
@@ -524,7 +525,50 @@ class BookingDetailPage extends ConsumerWidget {
         const SizedBox(height: 12),
       ],
       OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: () async {
+          if (booking.mitraId.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ID Mitra tidak ditemukan.')));
+            return;
+          }
+          try {
+            // Coba ambil dari koleksi 'mitra' yang merupakan data profil terbaru mitra
+            final doc = await FirestoreService.instance.collection('mitra').doc(booking.mitraId).get();
+            String phone = '';
+            
+            if (doc.exists) {
+              final data = doc.data() as Map<String, dynamic>;
+              phone = data['phone'] ?? data['noTelepon'] ?? '';
+            }
+
+            // Fallback: Jika tidak ada di 'mitra', coba cari di 'users' (saat daftar)
+            if (phone.isEmpty) {
+              final userDoc = await FirestoreService.instance.collection('users').doc(booking.mitraId).get();
+              if (userDoc.exists) {
+                final userData = userDoc.data() as Map<String, dynamic>;
+                phone = userData['phone'] ?? userData['noTelepon'] ?? '';
+              }
+            }
+
+            if (phone.isNotEmpty) {
+              // Format nomor HP untuk WhatsApp (hapus spasi, -, +, ganti 0 di depan jadi 62)
+              phone = phone.replaceAll(RegExp(r'\D'), '');
+              if (phone.startsWith('0')) {
+                phone = '62${phone.substring(1)}';
+              }
+              final message = 'Halo, saya ${booking.userName} dengan ID Pesanan #${booking.bookingId} terkait lapangan ${booking.fieldName}.';
+              final uri = Uri.parse('https://wa.me/$phone?text=${Uri.encodeComponent(message)}');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              } else {
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tidak dapat membuka WhatsApp.')));
+              }
+            } else {
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nomor telepon mitra tidak tersedia.')));
+            }
+          } catch (e) {
+            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal mengambil kontak: $e')));
+          }
+        },
         icon: const Icon(Icons.phone_outlined),
         label: const Text('Hubungi Pemilik Lapangan'),
         style: OutlinedButton.styleFrom(

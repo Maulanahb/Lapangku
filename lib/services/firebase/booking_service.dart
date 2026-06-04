@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
@@ -246,6 +247,137 @@ class BookingService {
     }
   }
 
+  /// [Customer] Stream real-time slot yang sudah dipesan & ditutup untuk tanggal tertentu.
+  /// Juga memblokir slot dari pengajuan reschedule yang masih pending.
+  Stream<List<String>> streamBookedSlots({
+    required String fieldId,
+    required DateTime date,
+  }) {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+    final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    
+    final controller = StreamController<List<String>>.broadcast();
+    
+    List<String> currentBooked = [];
+    List<String> currentClosed = [];
+    List<String> currentRescheduleSlots = [];
+    
+    void emit() {
+      final combined = <String>{...currentBooked, ...currentClosed, ...currentRescheduleSlots}.toList();
+      if (!controller.isClosed) {
+        controller.add(combined);
+      }
+    }
+    
+    // Sub1: Listen to existing bookings on this date
+    final sub1 = _db
+        .collection('bookings')
+        .where('fieldId', isEqualTo: fieldId)
+        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('tanggal', isLessThan: Timestamp.fromDate(endOfDay))
+        .snapshots()
+        .listen((snap) {
+      final slots = <String>[];
+      final now = DateTime.now();
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final status = data['status'] ?? '';
+        if (status == BookingStatusHelper.dibatalkan ||
+            status == BookingStatusHelper.expired ||
+            status == BookingStatusHelper.ditolak) {
+          continue;
+        }
+        if (status == BookingStatusHelper.menungguBayar) {
+          final batasWaktu = (data['batasWaktuBayar'] as Timestamp?)?.toDate();
+          if (batasWaktu != null && now.isAfter(batasWaktu)) {
+            continue;
+          }
+        }
+        final timeSlots = data['timeSlots'];
+        if (timeSlots != null) {
+          slots.addAll(List<String>.from(timeSlots));
+        } else {
+          final jamMulai = data['jamMulai'] ?? '';
+          final jamSelesai = data['jamSelesai'] ?? '';
+          if (jamMulai.isNotEmpty && jamSelesai.isNotEmpty) {
+            slots.add('$jamMulai - $jamSelesai');
+          }
+        }
+      }
+      currentBooked = slots;
+      emit();
+    }, onError: (e) {
+      if (!controller.isClosed) controller.addError(e);
+    });
+
+    // Sub2: Listen to manually closed slots by Mitra
+    final sub2 = _db
+        .collection('schedules')
+        .where('fieldId', isEqualTo: fieldId)
+        .where('tanggal', isEqualTo: dateStr)
+        .where('status', isEqualTo: 'ditutup')
+        .snapshots()
+        .listen((snap) {
+      final slots = <String>[];
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final jam = data['jam'] as String?;
+        if (jam != null && jam.isNotEmpty) {
+          try {
+            final parts = jam.split(':');
+            final hour = int.parse(parts[0]);
+            final startSlot = '${hour.toString().padLeft(2, '0')}:00';
+            final endSlot = '${(hour + 1).toString().padLeft(2, '0')}:00';
+            slots.add('$startSlot - $endSlot');
+          } catch (_) {}
+        }
+      }
+      currentClosed = slots;
+      emit();
+    }, onError: (e) {
+      if (!controller.isClosed) controller.addError(e);
+    });
+
+    // Sub3: Listen to pending reschedule requests targeting this date.
+    // When a customer requests a reschedule to this date, the new time slots
+    // should be blocked even though the reschedule hasn't been approved yet.
+    final sub3 = _db
+        .collection('bookings')
+        .where('fieldId', isEqualTo: fieldId)
+        .where('rescheduleStatus', isEqualTo: 'pending')
+        .snapshots()
+        .listen((snap) {
+      final slots = <String>[];
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final rescheduleDate = (data['rescheduleDate'] as Timestamp?)?.toDate();
+        if (rescheduleDate == null) continue;
+        
+        // Check if the reschedule targets this date
+        final reschedDay = DateTime(rescheduleDate.year, rescheduleDate.month, rescheduleDate.day);
+        if (reschedDay.isAtSameMomentAs(startOfDay)) {
+          final rescheduleTimeSlots = data['rescheduleTimeSlots'];
+          if (rescheduleTimeSlots != null) {
+            slots.addAll(List<String>.from(rescheduleTimeSlots));
+          }
+        }
+      }
+      currentRescheduleSlots = slots;
+      emit();
+    }, onError: (e) {
+      if (!controller.isClosed) controller.addError(e);
+    });
+    
+    controller.onCancel = () {
+      sub1.cancel();
+      sub2.cancel();
+      sub3.cancel();
+    };
+    
+    return controller.stream;
+  }
+
   /// [Customer] Get slot yang sudah dipesan untuk tanggal tertentu.
   /// Juga auto-expire booking yang melewati batas waktu pembayaran.
   Future<List<String>> getBookedSlots({
@@ -331,7 +463,30 @@ class BookingService {
       debugPrint('Error fetching/parsing manual closed slots: $e');
     }
 
-    
+    // Juga blokir slot dari pengajuan reschedule yang masih pending
+    try {
+      final reschedSnap = await _db
+          .collection('bookings')
+          .where('fieldId', isEqualTo: fieldId)
+          .where('rescheduleStatus', isEqualTo: 'pending')
+          .get();
+
+      for (final doc in reschedSnap.docs) {
+        final data = doc.data();
+        final rescheduleDate = (data['rescheduleDate'] as Timestamp?)?.toDate();
+        if (rescheduleDate == null) continue;
+
+        final reschedDay = DateTime(rescheduleDate.year, rescheduleDate.month, rescheduleDate.day);
+        if (reschedDay.isAtSameMomentAs(startOfDay)) {
+          final rescheduleTimeSlots = data['rescheduleTimeSlots'];
+          if (rescheduleTimeSlots != null) {
+            bookedSlots.addAll(List<String>.from(rescheduleTimeSlots));
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching pending reschedule slots: $e');
+    }
 
     return bookedSlots;
   }
@@ -425,7 +580,9 @@ class BookingService {
       }
     }
     
-    await _db.collection('bookings').doc(bookingId).update({
+    final batch = _db.batch();
+
+    batch.update(_db.collection('bookings').doc(bookingId), {
       'isRescheduleRequested': true,
       'rescheduleDate': Timestamp.fromDate(newDate),
       'rescheduleTimeSlots': newTimeSlots,
@@ -433,6 +590,29 @@ class BookingService {
       'rescheduleStatus': 'pending',
       'updatedAt': Timestamp.fromDate(DateTime.now()),
     });
+
+    final String dateFormatted = DateFormat('dd MMM yyyy').format(newDate);
+    final String slotsFormatted = newTimeSlots.join(', ');
+
+    final notifRef = _db.collection('notifikasi').doc();
+    batch.set(notifRef, {
+      'mitraId': booking.mitraId,
+      'isRead': false,
+      'title': 'Pengajuan Reschedule',
+      'message': '${booking.userName} mengajukan perubahan jadwal ke $dateFormatted ($slotsFormatted)',
+      'type': 'reschedule',
+      'createdAt': FieldValue.serverTimestamp(),
+      'data': {
+        'bookingId': booking.bookingId,
+        'bookingDocId': bookingId,
+        'fieldId': booking.fieldId,
+        'fieldName': booking.fieldName,
+        'userId': booking.userId,
+        'userName': booking.userName,
+      },
+    });
+
+    await batch.commit();
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -580,7 +760,9 @@ class BookingService {
       throw Exception('Tidak ada pengajuan reschedule yang valid.');
     }
     
-    await _db.collection('bookings').doc(bookingId).update({
+    final batch = _db.batch();
+    
+    batch.update(_db.collection('bookings').doc(bookingId), {
       'tanggal': Timestamp.fromDate(booking.rescheduleDate!),
       'timeSlots': booking.rescheduleTimeSlots,
       'durasi': booking.rescheduleTimeSlots!.length,
@@ -588,15 +770,55 @@ class BookingService {
       'rescheduleStatus': 'approved',
       'updatedAt': Timestamp.fromDate(DateTime.now()),
     });
+    
+    // Kirim Notifikasi ke Customer
+    final notifRef = _db.collection('notifikasi').doc();
+    batch.set(notifRef, {
+      'customer_id': booking.userId,
+      'isRead': false,
+      'title': 'Reschedule Disetujui',
+      'message': 'Pengajuan reschedule Anda untuk lapangan ${booking.fieldName} telah disetujui.',
+      'type': 'reschedule',
+      'createdAt': FieldValue.serverTimestamp(),
+      'data': {
+        'bookingId': booking.bookingId,
+        'bookingDocId': bookingId,
+      },
+    });
+    
+    await batch.commit();
   }
 
   /// [Mitra] Menolak pengajuan reschedule
   Future<void> rejectReschedule(String bookingId) async {
-    await _db.collection('bookings').doc(bookingId).update({
+    final doc = await _db.collection('bookings').doc(bookingId).get();
+    if (!doc.exists) throw Exception('Booking tidak ditemukan');
+    final booking = BookingModel.fromFirestore(doc);
+    
+    final batch = _db.batch();
+    
+    batch.update(_db.collection('bookings').doc(bookingId), {
       'isRescheduleRequested': false,
       'rescheduleStatus': 'rejected',
       'updatedAt': Timestamp.fromDate(DateTime.now()),
     });
+    
+    // Kirim Notifikasi ke Customer
+    final notifRef = _db.collection('notifikasi').doc();
+    batch.set(notifRef, {
+      'customer_id': booking.userId,
+      'isRead': false,
+      'title': 'Reschedule Ditolak',
+      'message': 'Maaf, pengajuan reschedule Anda untuk lapangan ${booking.fieldName} tidak dapat disetujui.',
+      'type': 'reschedule',
+      'createdAt': FieldValue.serverTimestamp(),
+      'data': {
+        'bookingId': booking.bookingId,
+        'bookingDocId': bookingId,
+      },
+    });
+    
+    await batch.commit();
   }
 
   /// [Mitra] Buat booking offline/manual untuk memblokir slot.
