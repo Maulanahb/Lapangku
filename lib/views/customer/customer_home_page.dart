@@ -153,48 +153,6 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                         fontWeight: FontWeight.bold,
                         color: AppColors.textDark),
                   ),
-                  if (user?.alamatLatLng == null) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.primary),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.info_outline,
-                              color: AppColors.primary, size: 20),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'Isi alamat di Informasi Pribadi untuk melihat lapangan terdekat',
-                              style: TextStyle(
-                                  color: AppColors.primaryDark,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/customer-profile');
-                            },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(50, 30),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: const Text('Isi Sekarang',
-                                style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),

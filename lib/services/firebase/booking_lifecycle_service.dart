@@ -283,13 +283,9 @@ class BookingLifecycleService {
     final selesaiDocs = results[2] as QuerySnapshot;
     final dikonfirmasiDocs = results[3] as QuerySnapshot;
     
-    // Hitung total pendapatan dari booking selesai + dikonfirmasi
+    // Hitung total pendapatan hanya dari booking selesai
     int totalPendapatan = 0;
     for (final doc in selesaiDocs.docs) {
-      final data = doc.data()! as Map<String, dynamic>;
-      totalPendapatan += (data['totalBayar'] ?? data['totalHarga'] ?? 0) as int;
-    }
-    for (final doc in dikonfirmasiDocs.docs) {
       final data = doc.data()! as Map<String, dynamic>;
       totalPendapatan += (data['totalBayar'] ?? data['totalHarga'] ?? 0) as int;
     }

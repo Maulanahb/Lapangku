@@ -37,20 +37,19 @@ class AdminService {
         .get();
     final pesananHariIni = todayBookingsSnap.count ?? 0;
 
-    // 4. Total Pendapatan — dibaca dari dokumen counter metadata/stats
-    // Dokumen ini diupdate otomatis oleh Cloud Function onBookingUpdated
-    // saat status booking berubah menjadi 'selesai'.
+    // 4. Total Pendapatan — dihitung langsung dari booking berstatus 'selesai'
     int totalPendapatan = 0;
     try {
-      final statsDoc = await _firestore
-          .collection('metadata')
-          .doc('stats')
+      final selesaiSnap = await _firestore
+          .collection('bookings')
+          .where('status', isEqualTo: 'selesai')
           .get();
-      if (statsDoc.exists) {
-        totalPendapatan = (statsDoc.data()?['totalPendapatan'] ?? 0) as int;
+      for (final doc in selesaiSnap.docs) {
+        final data = doc.data();
+        totalPendapatan += (data['totalBayar'] ?? data['totalHarga'] ?? 0) as int;
       }
     } catch (_) {
-      // Dokumen belum ada, tetap gunakan 0
+      // Gagal hitung, tetap gunakan 0
     }
 
     // 5. Booking Status Counts for Donut Chart (Apply client-side auto-expire logic by parsing them via BookingModel)
