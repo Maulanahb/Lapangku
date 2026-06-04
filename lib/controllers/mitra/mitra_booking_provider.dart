@@ -78,10 +78,10 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
     }
   }
 
-  Future<void> deleteBooking(String bookingId) async {
+  Future<void> hideBooking(String bookingId) async {
     state = {...state, bookingId};
     try {
-      await _service.deleteBooking(bookingId);
+      await _service.hideBookingForMitra(bookingId);
     } finally {
       state = state.difference({bookingId});
     }

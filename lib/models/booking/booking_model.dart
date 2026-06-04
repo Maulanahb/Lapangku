@@ -105,6 +105,8 @@ class BookingModel {
   final List<String>? rescheduleTimeSlots;
   final String? rescheduleReason;
   final String? rescheduleStatus; // 'pending', 'approved', 'rejected'
+  final bool isHiddenByCustomer;
+  final bool isHiddenByMitra;
 
   const BookingModel({
     required this.id,
@@ -139,6 +141,8 @@ class BookingModel {
     this.rescheduleTimeSlots,
     this.rescheduleReason,
     this.rescheduleStatus,
+    this.isHiddenByCustomer = false,
+    this.isHiddenByMitra = false,
   });
 
   // ─── Computed Properties ──────────────────────────────────────────────────
@@ -249,6 +253,8 @@ class BookingModel {
           : null,
       rescheduleReason: data['rescheduleReason'],
       rescheduleStatus: data['rescheduleStatus'],
+      isHiddenByCustomer: data['isHiddenByCustomer'] ?? false,
+      isHiddenByMitra: data['isHiddenByMitra'] ?? false,
     );
 
     if (model.isTicketExpired) {
@@ -293,6 +299,8 @@ class BookingModel {
       if (rescheduleTimeSlots != null) 'rescheduleTimeSlots': rescheduleTimeSlots,
       if (rescheduleReason != null) 'rescheduleReason': rescheduleReason,
       if (rescheduleStatus != null) 'rescheduleStatus': rescheduleStatus,
+      'isHiddenByCustomer': isHiddenByCustomer,
+      'isHiddenByMitra': isHiddenByMitra,
     };
   }
 

@@ -67,9 +67,10 @@ export const onBookingUpdated = onDocumentUpdated(
                 token: mitraToken,
                 title: "Pembayaran Masuk 💰",
                 body: `${after.userName || "Penyewa"} telah membayar untuk ${fieldName}. Pesanan otomatis dikonfirmasi.`,
-                data: { type: "booking", targetId: bookingId, bookingId: bookingDisplayId },
+                data: { type: "mitra_booking", targetId: bookingId, bookingId: bookingDisplayId },
                 saveToFirestore: true,
                 targetUserId: mitraId,
+                targetUserType: "mitra",
                 notificationType: "booking",
               });
             }
@@ -129,9 +130,10 @@ export const onBookingUpdated = onDocumentUpdated(
                 token: mitraToken,
                 title: "Pesanan Dibatalkan",
                 body: `Pesanan ${bookingDisplayId} untuk ${fieldName} telah dibatalkan.`,
-                data: { type: "booking", targetId: bookingId, bookingId: bookingDisplayId },
+                data: { type: "mitra_booking", targetId: bookingId, bookingId: bookingDisplayId },
                 saveToFirestore: true,
                 targetUserId: mitraId,
+                targetUserType: "mitra",
                 notificationType: "booking",
               });
             }
@@ -190,13 +192,14 @@ export const onBookingUpdated = onDocumentUpdated(
             title: "Pengajuan Reschedule 📅",
             body: `${after.userName || "Penyewa"} mengajukan perubahan jadwal untuk pesanan ${bookingDisplayId}.`,
             data: {
-              type: "booking",
+              type: "mitra_reschedule",
               targetId: bookingId,
               bookingId: bookingDisplayId,
             },
             saveToFirestore: true,
             targetUserId: mitraId,
-            notificationType: "booking",
+            targetUserType: "mitra",
+            notificationType: "reschedule",
           });
         }
       }

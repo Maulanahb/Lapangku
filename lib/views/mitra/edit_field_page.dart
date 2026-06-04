@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_location_controller.dart';
+import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
 import 'package:lapangku/views/mitra/widgets/field_form_widgets.dart';
@@ -244,6 +245,11 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
       }
     });
 
+    final profileState = ref.watch(mitraProfileProvider).value;
+    if (profileState != null) {
+      _venueController.text = profileState.businessName;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -255,7 +261,11 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
         FieldFormWidgets.buildSectionHeader('Informasi Dasar', null),
         const SizedBox(height: 16),
         FieldFormWidgets.buildLabel('Nama Tempat / Venue'),
-        FieldFormWidgets.buildTextField(_venueController, 'Contoh: SM Futsal'),
+        FieldFormWidgets.buildTextField(
+          _venueController, 
+          'Nama Venue dari Profil', 
+          readOnly: true,
+        ),
         const SizedBox(height: 20),
         FieldFormWidgets.buildLabel('Nama Lapangan'),
         FieldFormWidgets.buildTextField(

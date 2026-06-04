@@ -522,7 +522,10 @@ class BookingService {
         .limit(limit)
         .get();
 
-    return snap.docs.map((doc) => BookingModel.fromFirestore(doc)).toList();
+    return snap.docs
+        .map((doc) => BookingModel.fromFirestore(doc))
+        .where((booking) => !booking.isHiddenByCustomer)
+        .toList();
   }
 
   /// [Customer] Stream booking milik user tertentu secara real-time.
@@ -533,8 +536,10 @@ class BookingService {
         .orderBy('createdAt', descending: true)
         .limit(limit)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((doc) => BookingModel.fromFirestore(doc)).toList());
+        .map((snap) => snap.docs
+            .map((doc) => BookingModel.fromFirestore(doc))
+            .where((booking) => !booking.isHiddenByCustomer)
+            .toList());
   }
 
   /// [Customer] Membatalkan booking.
@@ -546,9 +551,25 @@ class BookingService {
     );
   }
 
-  /// Delete booking (hard delete)
+  /// Delete booking (hard delete) - Hanya untuk Admin
   Future<void> deleteBooking(String bookingId) async {
     await _db.collection('bookings').doc(bookingId).delete();
+  }
+
+  /// [Customer] Hapus booking dari riwayat (Soft Delete)
+  Future<void> hideBookingForCustomer(String bookingId) async {
+    await _db.collection('bookings').doc(bookingId).update({
+      'isHiddenByCustomer': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// [Mitra] Hapus booking dari riwayat (Soft Delete)
+  Future<void> hideBookingForMitra(String bookingId) async {
+    await _db.collection('bookings').doc(bookingId).update({
+      'isHiddenByMitra': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   /// [Customer] Mengajukan perubahan jadwal (Reschedule)
@@ -643,7 +664,9 @@ class BookingService {
 
     return query.snapshots().map((snap) {
       final bookings =
-          snap.docs.map((d) => BookingModel.fromFirestore(d)).toList();
+          snap.docs.map((d) => BookingModel.fromFirestore(d))
+          .where((booking) => !booking.isHiddenByMitra)
+          .toList();
       bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return bookings;
     });
