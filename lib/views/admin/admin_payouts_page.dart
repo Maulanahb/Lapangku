@@ -218,15 +218,15 @@ class _AdminPayoutsPageState extends ConsumerState<AdminPayoutsPage> {
 
     switch (status) {
       case 'completed':
-        statusColor = const Color(0xFF1B6B3A); // Green
+        statusColor = const Color(0xFF10B981); // Match terverifikasi color
         statusText = 'Selesai';
         break;
       case 'rejected':
-        statusColor = const Color(0xFFE53935); // Red
+        statusColor = const Color(0xFFDC2626); // Match tolak color
         statusText = 'Ditolak';
         break;
       case 'processing':
-        statusColor = const Color(0xFFFF9800); // Orange
+        statusColor = const Color(0xFFF59E0B); // Match menunggu color
         statusText = 'Diproses';
         break;
       default:
@@ -235,198 +235,233 @@ class _AdminPayoutsPageState extends ConsumerState<AdminPayoutsPage> {
     }
 
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 8,
-            offset: Offset(0, 2),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.account_balance_wallet_outlined,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      CurrencyFormatter.format(amount),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: AppColors.textHeading,
+          // 1. Image / Icon & Status Badge
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 140,
+              height: 100,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Container(
+                    color: AppColors.primary.withOpacity(0.05),
+                    child: const Icon(Icons.account_balance_wallet,
+                        size: 40, color: AppColors.primary),
+                  ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        statusText.toUpperCase(),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Oleh: $bankAccountName',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+
+          // 2. Info Section
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  CurrencyFormatter.format(amount),
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textHeading),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Oleh: $bankAccountName',
+                  style: const TextStyle(
+                      fontSize: 13, color: AppColors.textSecondary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_today_outlined,
+                            size: 14, color: AppColors.textSecondary),
+                        const SizedBox(width: 4),
+                        Text(DateFormat('dd MMM yyyy, HH:mm').format(date),
+                            style: const TextStyle(
+                                fontSize: 12, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.account_balance_outlined,
+                            size: 14, color: AppColors.textSecondary),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(bankName,
+                              style: const TextStyle(
+                                  fontSize: 12, color: AppColors.textSecondary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.numbers_outlined,
+                            size: 14, color: AppColors.textSecondary),
+                        const SizedBox(width: 4),
+                        Text(bankAccount,
+                            style: const TextStyle(
+                                fontSize: 12, color: AppColors.textSecondary)),
+                      ],
                     ),
                   ],
                 ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  statusText,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: AppColors.divider),
-          const SizedBox(height: 12),
-          Row(
+          const SizedBox(width: 16),
+
+          // 3. Actions Section
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Expanded(
-                child: _detailItem(
-                    Icons.calendar_today_outlined, 'Tanggal', DateFormat('dd MMM yyyy, HH:mm').format(date)),
-              ),
-              Expanded(
-                child: _detailItem(Icons.account_balance_outlined, 'Bank', bankName),
-              ),
-              Expanded(
-                child: _detailItem(Icons.numbers_outlined, 'No. Rek', bankAccount),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (status == 'pending') ...[
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _updateStatus(data['id'], 'rejected'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Tolak'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
+              if (status == 'pending') ...[
+                SizedBox(
+                  width: 120,
+                  height: 32,
                   child: ElevatedButton(
                     onPressed: () => _updateStatus(data['id'], 'processing'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
                       elevation: 0,
                     ),
-                    child: const Text('Proses', style: TextStyle(color: Colors.white)),
+                    child: const Text('Proses',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: 120,
+                  height: 32,
+                  child: OutlinedButton(
+                    onPressed: () => _updateStatus(data['id'], 'rejected'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFDC2626),
+                      side: const BorderSide(color: Color(0xFFDC2626)),
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
+                    ),
+                    child: const Text('Tolak',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ] else if (status == 'processing') ...[
+                SizedBox(
+                  width: 120,
+                  height: 32,
+                  child: ElevatedButton(
+                    onPressed: () => _showCompleteDialog(data['id']),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1B6B3A),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
+                      elevation: 0,
+                    ),
+                    child: const Text('Selesai',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ] else if (status == 'completed' && data['proofUrl'] != null) ...[
+                SizedBox(
+                  width: 120,
+                  height: 32,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          contentPadding: EdgeInsets.zero,
+                          content: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(16)),
+                            child: Image.network(data['proofUrl']),
+                          ),
+                          actions: [
+                            TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Tutup')),
+                          ],
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textDark,
+                      side: BorderSide(color: Colors.grey.shade300),
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
+                    ),
+                    child: const Text('Lihat Bukti',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ],
-            ),
-          ] else if (status == 'processing') ...[
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => _showCompleteDialog(data['id']),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-                child: const Text('Tandai Selesai & Upload Bukti', style: TextStyle(color: Colors.white)),
-              ),
-            ),
-          ] else if (status == 'completed' && data['proofUrl'] != null) ...[
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      contentPadding: EdgeInsets.zero,
-                      content: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                        child: Image.network(data['proofUrl']),
-                      ),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tutup')),
-                      ],
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.receipt_long, color: AppColors.primary),
-                label: const Text('Lihat Bukti Transfer', style: TextStyle(color: AppColors.primary)),
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  side: const BorderSide(color: AppColors.borderLight),
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _detailItem(IconData icon, String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 12, color: AppColors.textSecondary),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textDark),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
     );
   }
 
