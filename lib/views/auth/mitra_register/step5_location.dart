@@ -20,7 +20,6 @@ class Step5Location extends ConsumerStatefulWidget {
 class _Step5LocationState extends ConsumerState<Step5Location> {
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFF1B6B3A);
     final locationState = ref.watch(mitraLocationProvider);
 
     // Update text controller when location is found

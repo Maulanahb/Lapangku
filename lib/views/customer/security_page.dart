@@ -91,10 +91,10 @@ class _SecurityPageState extends ConsumerState<SecurityPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => OTPVerificationSheet(
+      builder: (sheetCtx) => OTPVerificationSheet(
         phoneNumber: user.phone!,
         onVerify: (otpCode) async {
-          Navigator.pop(context); // Tutup sheet
+          Navigator.pop(sheetCtx); // Tutup sheet
           LoadingOverlay.show(context, message: 'Memverifikasi OTP...');
           try {
             await ref.read(authProvider.notifier).verifyPhoneOTP(verificationId, otpCode);
@@ -359,7 +359,7 @@ class _SecurityPageState extends ConsumerState<SecurityPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow.withOpacity(0.05),
+            color: AppColors.shadow.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -400,7 +400,7 @@ class _SecurityPageState extends ConsumerState<SecurityPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: Colors.green.withAlpha(26),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Row(
@@ -421,7 +421,7 @@ class _SecurityPageState extends ConsumerState<SecurityPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: Colors.orange.withAlpha(26),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(

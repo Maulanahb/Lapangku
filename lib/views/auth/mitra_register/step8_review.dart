@@ -33,8 +33,6 @@ class Step8Review extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFF1B6B3A);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

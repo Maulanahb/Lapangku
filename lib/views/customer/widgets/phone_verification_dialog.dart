@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/controllers/customer/customer_security_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:lapangku/standards/widgets/loading_overlay.dart';
 
 class PhoneVerificationDialog extends ConsumerStatefulWidget {
   final String phoneNumber;

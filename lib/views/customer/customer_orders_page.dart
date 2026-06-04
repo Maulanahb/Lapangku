@@ -599,7 +599,10 @@ class _BookingCard extends ConsumerWidget {
               Icons.star_outline, 'Beri Ulasan', Colors.amber.shade700,
               () => _showReviewDialog(context, ref)),
         ];
-      default:
+      case BookingStatus.dibatalkan:
+      case BookingStatus.ditolak:
+      case BookingStatus.expired:
+      case BookingStatus.unknown:
         return [];
     }
   }

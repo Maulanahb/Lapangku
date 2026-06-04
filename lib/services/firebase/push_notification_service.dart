@@ -1,3 +1,5 @@
+// ignore_for_file: unreachable_from_main
+
 import 'dart:convert';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -107,7 +109,7 @@ class PushNotificationService {
         'fcmToken': token,
         'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-      print('DEBUG FCM: Token berhasil disimpan ke lapangku-db');
+      debugPrint('DEBUG FCM: Token berhasil disimpan ke lapangku-db');
 
       debugPrint('✅ [FCM] Token tersimpan: ${user.uid}');
     } catch (e) {
@@ -135,7 +137,7 @@ class PushNotificationService {
         'fcmToken': FieldValue.delete(),
         'fcmTokenUpdatedAt': FieldValue.delete(),
       });
-      print('DEBUG FCM: Token berhasil dihapus dari lapangku-db');
+      debugPrint('DEBUG FCM: Token berhasil dihapus dari lapangku-db');
     } catch (e) {
       debugPrint('⚠️ [FCM] Gagal menghapus token: $e');
     }

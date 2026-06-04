@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
@@ -8,7 +6,6 @@ import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/models/auth/user_model.dart';
 import 'package:lapangku/standards/constants/app_constants.dart';
-import 'package:lapangku/services/firebase_storage_service.dart';
 
 /// Service layer utama untuk seluruh siklus hidup booking (Booking Lifecycle).
 ///
@@ -21,7 +18,6 @@ import 'package:lapangku/services/firebase_storage_service.dart';
 /// Semua transisi status divalidasi sebelum dieksekusi.
 class BookingLifecycleService {
   final FirebaseFirestore _db = FirestoreService.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SHARED: Booking ID Generator

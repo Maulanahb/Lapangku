@@ -41,7 +41,7 @@ class _EditFieldPageState extends ConsumerState<EditFieldPage> {
   late List<String> _existingPhotoUrls;
   final ImagePicker _picker = ImagePicker();
 
-  final Color _primaryGreen = const Color(0xFF0F5A3C);
+
   final Color _textGrey = const Color(0xFF6B7280);
 
   @override

@@ -11,17 +11,6 @@ class Step7Schedule extends StatelessWidget {
   final Function(String) onDayToggled;
   final Function(String) onFacilityToggled;
 
-  static const List<Map<String, dynamic>> _facilitiesList = [
-    {'name': 'Parkir', 'icon': Icons.local_parking},
-    {'name': 'Toilet', 'icon': Icons.wc},
-    {'name': 'Wifi', 'icon': Icons.wifi},
-    {'name': 'CCTV', 'icon': Icons.videocam_outlined},
-    {'name': 'Mushola', 'icon': Icons.mosque_outlined},
-    {'name': 'Kantin', 'icon': Icons.restaurant},
-    {'name': 'Ruang Ganti', 'icon': Icons.checkroom},
-    {'name': 'Tribun', 'icon': Icons.stadium_outlined},
-  ];
-
   const Step7Schedule({
     super.key,
     required this.priceController,

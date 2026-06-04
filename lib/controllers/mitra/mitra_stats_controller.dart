@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/services/firebase/booking_service.dart';
@@ -134,10 +135,11 @@ final mitraAdvancedStatsProvider =
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
-      // FIX: Debugging print
-      print('DEBUG: mitraId: $mitraId');
-      print('DEBUG: Total bookings fetched: ${bookings.length}');
-      print('DEBUG: Filter type: $filter');
+      if (kDebugMode) {
+        debugPrint('DEBUG: mitraId: $mitraId');
+        debugPrint('DEBUG: Total bookings fetched: ${bookings.length}');
+        debugPrint('DEBUG: Filter type: $filter');
+      }
 
       // 1. Filter bookings berdasarkan range waktu
       List<BookingModel> filteredBookings = bookings.where((b) {
@@ -158,8 +160,7 @@ final mitraAdvancedStatsProvider =
         }
       }).toList();
 
-      // FIX: Debugging print filtered count
-      print('DEBUG: Filtered bookings count: ${filteredBookings.length}');
+      if (kDebugMode) debugPrint('DEBUG: Filtered bookings count: ${filteredBookings.length}');
 
       // 2. Hitung Total Berhasil (Hero Card)
       final totalSuccess =

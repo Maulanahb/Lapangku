@@ -49,7 +49,6 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _otpFocusNodes = List.generate(6, (_) => FocusNode());
   bool _isOtpSent = false;
-  bool _isSendingOtp = false;
   bool _isOtpVerified = false;
   int _resendTimer = 60;
   Timer? _timer;
@@ -150,7 +149,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
       return;
     }
 
-    setState(() => _isSendingOtp = true);
+
     try {
       EmailOTP.config(
         appName: "LapangKu Mitra",
@@ -185,6 +184,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
       );
 
       final success = await EmailOTP.sendOTP(email: email);
+      if (!mounted) return;
       if (success) {
         setState(() => _isOtpSent = true);
         _startResendTimer();
@@ -193,9 +193,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
         SnackbarHelper.showError(context, 'Gagal mengirim OTP. Coba lagi.');
       }
     } catch (e) {
-      SnackbarHelper.showError(context, 'Error: $e');
-    } finally {
-      setState(() => _isSendingOtp = false);
+      if (mounted) SnackbarHelper.showError(context, 'Error: $e');
     }
   }
 
@@ -310,80 +308,6 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
     }
   }
 
-  Widget _buildLabeledField({
-    required String label,
-    required TextEditingController controller,
-    required IconData icon,
-    required String hint,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF4A5568)),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF7FAFC),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            decoration: InputDecoration(
-              hintText: hint,
-              prefixIcon: Icon(icon, color: const Color(0xFF1B6B3A), size: 20),
-              border: InputBorder.none,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String? _validateStep2() {
-    if (_businessNameController.text.trim().isEmpty) {
-      return 'Nama bisnis wajib diisi';
-    }
-    if (_phoneController.text.trim().isEmpty) return 'No. telepon wajib diisi';
-    if (_passwordController.text.length < 8) {
-      return 'Password minimal 8 karakter';
-    }
-    if (_passwordController.text != _confirmPasswordController.text) {
-      return 'Konfirmasi password tidak cocok';
-    }
-    if (_ktpPhoto == null) return 'Foto KTP wajib diunggah';
-    if (_selfiePhoto == null) return 'Foto Selfie wajib diunggah';
-    return null;
-  }
-
-  String? _validateStep3() {
-    if (_fieldNameController.text.trim().isEmpty) {
-      return 'Nama lapangan wajib diisi';
-    }
-    if (_priceController.text.trim().isEmpty) return 'Harga sewa wajib diisi';
-    if (_selectedDays.isEmpty) return 'Pilih minimal satu hari operasional';
-    return null;
-  }
-
-  String? _validateStep4() {
-    if (_addressController.text.trim().isEmpty) return 'Alamat wajib diisi';
-    return null;
-  }
-
-  String? _validateStep5() {
-    if (_fieldPhotos.isEmpty) return 'Unggah minimal satu foto lapangan';
-    return null;
-  }
 
   void _prevStep() {
     if (_currentStep > 1) {
@@ -395,6 +319,8 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
 
   Future<void> _submitRegistration() async {
     setState(() => _isSubmitting = true);
+    // Capture context-dependent values before async gap
+    final jamOperasional = '${_openingTime.format(context)} - ${_closingTime.format(context)}';
     try {
       // 1. Create User in Firebase Auth
       final UserCredential credential =
@@ -461,8 +387,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
           'tipeLapangan': _selectedFieldType,
           'facilities': _selectedFacilities,
           'fasilitas': _selectedFacilities,
-          'jamOperasional':
-              '${_openingTime.format(context)} - ${_closingTime.format(context)}',
+          'jamOperasional': jamOperasional,
           'hariOperasional': _selectedDays,
           'photoUrls': fieldPhotoUrls,
           'ktpUrl': ktpUrl,

@@ -15,7 +15,6 @@ class AdminFieldsPage extends ConsumerStatefulWidget {
 
 class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
   static const _primary = AppColors.primary;
-  static const _secondary = Color(0xFFE0E7FF);
   static const _textDark = AppColors.textHeading;
   static const _textGrey = AppColors.textSecondary;
 

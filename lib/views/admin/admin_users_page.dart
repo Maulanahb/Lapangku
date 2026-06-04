@@ -848,11 +848,12 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                               if (!isAdmin) 'phone': phoneController.text.trim(),
                             };
 
+                            final messenger = ScaffoldMessenger.of(context);
                             Navigator.pop(context);
 
                             await ref.read(allUsersProvider.notifier).updateUser(user['uid'], data);
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              messenger.showSnackBar(
                                 const SnackBar(content: Text('Pengguna berhasil diperbarui'), backgroundColor: _primary),
                               );
                             }

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:geocoding/geocoding.dart';
 
 class GeolocationService {
@@ -22,7 +23,7 @@ class GeolocationService {
     } catch (e) {
       // Jika terjadi error (misalnya alamat tidak ditemukan atau timeout),
       // kita return null sehingga alamat teks tetap tersimpan tapi latitude/longitude kosong
-      print('Error geocoding address: $e');
+      if (kDebugMode) debugPrint('Error geocoding address: $e');
       return null;
     }
   }

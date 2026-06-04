@@ -6,7 +6,6 @@ import 'package:lapangku/controllers/customer/customer_security_controller.dart'
 import 'package:lapangku/models/auth/user_model.dart';
 import 'package:lapangku/standards/widgets/loading_overlay.dart';
 import 'package:lapangku/views/customer/change_password_page.dart';
-import 'package:lapangku/views/customer/widgets/phone_verification_dialog.dart';
 
 class CustomerSecurityPage extends ConsumerStatefulWidget {
   const CustomerSecurityPage({super.key});

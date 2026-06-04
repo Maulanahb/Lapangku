@@ -176,7 +176,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
         .toList();
     state = state.copyWith(fields: AsyncData(updated));
     try {
-      await _service.toggleFieldStatus(fieldId, newStatus);
+      await _service.toggleFieldStatus(fieldId, isActive: newStatus);
     } catch (_) {
       state = state.copyWith(fields: AsyncData(currentList));
       rethrow;

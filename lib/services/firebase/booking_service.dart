@@ -232,7 +232,7 @@ class BookingService {
         'bookingId': docRef.id,
         'totalBayar': totalBayar,
         'customerName': user.nama,
-        'customerEmail': user.email ?? '',
+        'customerEmail': user.email,
       });
       final snapToken = result.data['snap_token'] as String?;
       final paymentUrl = result.data['payment_url'] as String?;

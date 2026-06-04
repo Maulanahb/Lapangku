@@ -38,7 +38,7 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
   final List<File> _photoFiles = [];
   final ImagePicker _picker = ImagePicker();
 
-  final Color _primaryGreen = const Color(0xFF0F5A3C);
+
   final Color _textGrey = const Color(0xFF6B7280);
 
   @override

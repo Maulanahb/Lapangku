@@ -41,8 +41,8 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
   List<String> _closedByMitraSlots = [];
 
   bool _fieldInitialized = false;
-  FieldModel? _fetchedField;
-  FieldModel get _field => widget.field ?? _fetchedField!;
+  late FieldModel _fetchedField;
+  FieldModel get _field => widget.field ?? _fetchedField;
 
   void _generateDynamicSlots(FieldModel field) {
     int startHour = 8;
@@ -792,6 +792,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
               bookingId: review['bookingId'],
             );
         ref.invalidate(fieldReviewsProvider(_field.id));
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Ulasan berhasil dihapus')));
       } catch (e) {

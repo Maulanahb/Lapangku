@@ -90,7 +90,7 @@ class _MitraFieldFormSheetState extends ConsumerState<MitraFieldFormSheet> {
         });
       }
     } catch (e) {
-      SnackbarHelper.showError(context, "Gagal mengambil gambar: $e");
+      if (mounted) SnackbarHelper.showError(context, "Gagal mengambil gambar: $e");
     }
   }
 
