@@ -243,7 +243,12 @@ class BookingService {
       return booking.copyWith(snapToken: snapToken, paymentUrl: paymentUrl);
     } catch (e) {
       debugPrint('⚠️ Midtrans callable failed: $e');
-      return booking;
+      // Rollback: hapus booking dan notifikasi jika gagal generate link bayar
+      final rollbackBatch = _db.batch();
+      rollbackBatch.delete(docRef);
+      rollbackBatch.delete(notifRef);
+      await rollbackBatch.commit();
+      throw Exception('Sistem gagal menghubungi server pembayaran (Midtrans). Silakan coba lagi.');
     }
   }
 
@@ -662,6 +667,8 @@ class BookingService {
       query = query.where('status', isEqualTo: statusFilter);
     }
 
+    query = query.limit(150);
+
     return query.snapshots().map((snap) {
       final bookings =
           snap.docs.map((d) => BookingModel.fromFirestore(d))
@@ -687,6 +694,8 @@ class BookingService {
     if (statusFilter != null) {
       query = query.where('status', isEqualTo: statusFilter);
     }
+
+    query = query.limit(150);
 
     return query.snapshots().map((snap) {
       final bookings =
@@ -916,6 +925,9 @@ class BookingService {
     if (statusFilter != null) {
       query = query.where('status', isEqualTo: statusFilter);
     }
+    
+    // Gunakan limit agar tidak fetch ribuan dokumen ke HP admin
+    query = query.limit(150);
 
     return query.snapshots().map((snap) {
       final bookings =
