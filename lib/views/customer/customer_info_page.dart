@@ -309,7 +309,7 @@ class _CustomerInfoPageState extends ConsumerState<CustomerInfoPage> {
       ),
     );
   }
-  // ===== FOTO PROFIL: Upload, Hapus, Lihat Fullscreen =====
+  // --- Foto Profil: Upload, Hapus, Lihat Fullscreen ---
 
   void _showImageSourceActionSheet(BuildContext context, UserModel user) {
     showModalBottomSheet(

@@ -3,18 +3,18 @@
 class AppConstants {
   AppConstants._(); // Prevent instantiation
 
-  // ─── BOOKING ──────────────────────────────────────────────────────────────
+  // --- Booking ---
   /// Batas waktu bayar setelah booking dibuat (dalam jam)
   static const int paymentDeadlineHours = 4;
 
   /// Biaya layanan platform per transaksi (dalam Rupiah)
   static const int serviceFee = 5000;
 
-  // ─── FIRESTORE ────────────────────────────────────────────────────────────
+  // --- Firestore ---
   /// Batas maksimum item dalam query Firestore `whereIn`
   static const int firestoreWhereInLimit = 30;
 
-  // ─── ROUTES ───────────────────────────────────────────────────────────────
+  // --- Routes ---
   static const String routeSplash = '/';
   static const String routeOnboarding = '/onboarding';
   static const String routeLogin = '/login';

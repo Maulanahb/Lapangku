@@ -17,7 +17,7 @@ const List<Map<String, dynamic>> facilitiesList = [
 class FieldFormWidgets {
   FieldFormWidgets._(); // Prevent instantiation
 
-  // ─── PROGRESS BAR ─────────────────────────────────────────────
+  // --- Progress Bar ---
   static Widget buildProgressBar({
     required int currentStep,
     required int totalSteps,
@@ -100,7 +100,7 @@ class FieldFormWidgets {
     );
   }
 
-  // ─── SECTION HEADER ───────────────────────────────────────────
+  // --- Section Header ---
   static Widget buildSectionHeader(String title, String? subtitle) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,7 +128,7 @@ class FieldFormWidgets {
     );
   }
 
-  // ─── LABEL ────────────────────────────────────────────────────
+  // --- Label ---
   static Widget buildLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -143,7 +143,7 @@ class FieldFormWidgets {
     );
   }
 
-  // ─── TEXT FIELD ────────────────────────────────────────────────
+  // --- Text Field ---
   static Widget buildTextField(
     TextEditingController controller,
     String hint, {
@@ -179,7 +179,7 @@ class FieldFormWidgets {
     );
   }
 
-  // ─── PRICE FIELD ──────────────────────────────────────────────
+  // --- Price Field ---
   static Widget buildPriceField(
     TextEditingController controller,
     String hint,
@@ -219,7 +219,7 @@ class FieldFormWidgets {
     );
   }
 
-  // ─── DELETE BUTTON (Positioned, untuk foto) ───────────────────
+  // --- Delete Button (Positioned) ---
   static Widget buildPositionDetector({required VoidCallback onTap}) {
     return Positioned(
       right: 8,

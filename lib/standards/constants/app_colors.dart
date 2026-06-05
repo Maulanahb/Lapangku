@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._(); // Prevent instantiation
 
-  // ─── PRIMARY BRAND ────────────────────────────────────────────────────────
+  // --- Primary Brand ---
   /// Hijau utama brand Lapangku — dipakai di AppBar, button, highlight
   static const Color primary = Color(0xFF1B6B3A);
 
@@ -18,7 +18,7 @@ class AppColors {
   /// Overlay primary untuk card terpilih
   static const Color primarySelected = Color(0xFFD1FAE5);
 
-  // ─── TEXT ─────────────────────────────────────────────────────────────────
+  // --- Text ---
   /// Teks judul/heading gelap
   static const Color textDark = Color(0xFF2D3748);
 
@@ -34,7 +34,7 @@ class AppColors {
   /// Warna badge teks biru tua (untuk label metode pembayaran)
   static const Color textBlueDark = Color(0xFF1A365D);
 
-  // ─── BACKGROUND ───────────────────────────────────────────────────────────
+  // --- Background ---
   /// Background utama halaman — abu sangat muda
   static const Color backgroundPage = Color(0xFFF4F6F9);
 
@@ -53,7 +53,7 @@ class AppColors {
   /// Background field input (biru sangat muda)
   static const Color backgroundField = Color(0xFFEFF4FF);
 
-  // ─── STATUS — BOOKING ─────────────────────────────────────────────────────
+  // --- Status Booking ---
   /// Warna status "Menunggu Bayar" — oranye
   static const Color statusPending = Color(0xFFD97706);
 
@@ -87,14 +87,14 @@ class AppColors {
   /// Background badge "Dibatalkan"
   static const Color statusCancelledBg = Color(0xFFFEE2E2);
 
-  // ─── STATUS — FILTER (admin bookings) ────────────────────────────────────
+  // --- Status Filter ---
   /// Warna status "Dikonfirmasi" di halaman admin (biru material)
   static const Color statusConfirmedAdmin = Color(0xFF2196F3);
 
   /// Warna status "Selesai" di halaman admin (hijau)
   static const Color statusDoneAdmin = Colors.green;
 
-  // ─── UI ELEMENT ──────────────────────────────────────────────────────────
+  // --- UI Element ---
   /// Warna hint / placeholder pada TextField
   static const Color hint = Color(0xFFADB5BD);
 
@@ -107,22 +107,22 @@ class AppColors {
   /// Shadow halus universal
   static const Color shadow = Color(0x0D000000); // black @ 5%
 
-  // ─── TEXT BODY ────────────────────────────────────────────────────────────
+  // --- Text Body ---
   /// Teks body paragraf — abu gelap
   static const Color textBody = Color(0xFF4A5568);
 
-  // ─── GREEN TINTED BACKGROUNDS ─────────────────────────────────────────────
+  // --- Green Backgrounds ---
   /// Background chip/card warna hijau sangat muda (fasilitas, info row)
   static const Color backgroundChipGreen = Color(0xFFF0FDF4);
 
   /// Border chip/card hijau muda (pelengkap backgroundChipGreen)
   static const Color primaryBorder = Color(0xFFBBF7D0);
 
-  // ─── STATUS SUCCESS (alias) ───────────────────────────────────────────────
+  // --- Status Success ---
   /// Background badge status sukses/kategori (alias primarySelected)
   static const Color statusSuccessBg = primarySelected;
 
-  // ─── SEMANTIC ─────────────────────────────────────────────────────────────
+  // --- Semantic ---
   /// Warna error / destruktif
   static const Color error = Colors.red;
 

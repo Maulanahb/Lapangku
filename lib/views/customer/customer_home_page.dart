@@ -261,7 +261,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
   }
 }
 
-// ─── Custom Header Delegate ────────────────
+// --- Custom Header Delegate ---
 class _HeaderDelegate extends SliverPersistentHeaderDelegate {
   final double expandedHeight;
   final double collapsedHeight;
@@ -451,7 +451,7 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
-// ─── Field Card Widget (Grid Version - HANYA INI YANG BERUBAH) ─────────────
+// --- Field Card Widget (Grid Version) ---
 class _FieldCard extends StatelessWidget {
   final FieldModel field;
   final double? distanceInMeters;

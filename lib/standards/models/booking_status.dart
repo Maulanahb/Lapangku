@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 
-// ─── Enum ─────────────────────────────────────────────────────────────────────
+// --- Enum ---
 /// Status booking Lapangku — satu-satunya definisi yang ada di seluruh project.
 enum BookingStatus {
   menungguBayar,
@@ -15,7 +15,7 @@ enum BookingStatus {
   unknown,
 }
 
-// ─── Extension ────────────────────────────────────────────────────────────────
+// --- Extension ---
 extension BookingStatusX on BookingStatus {
   // ── Label teks yang ditampilkan ke user ───────────────────────────────────
   String get label {
@@ -202,7 +202,7 @@ extension BookingStatusX on BookingStatus {
   }
 }
 
-// ─── Factory ──────────────────────────────────────────────────────────────────
+// --- Factory ---
 extension BookingStatusParsing on BookingStatus {
   /// Parse string dari Firestore ke enum BookingStatus.
   /// Dipanggil sebagai: BookingStatus.fromString('menunggu_bayar')

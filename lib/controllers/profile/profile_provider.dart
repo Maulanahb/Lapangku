@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// Struktur data (State) untuk menyimpan informasi sementara pada halaman profil
 class ProfileState {
   final int totalOrders;
   final double rating;
@@ -36,13 +37,14 @@ class ProfileState {
   }
 }
 
+// Controller untuk mengelola state interaksi di halaman profil pengguna
 class ProfileNotifier extends StateNotifier<ProfileState> {
   ProfileNotifier() : super(const ProfileState(isLoading: true)) {
     _loadInitialData();
   }
 
   Future<void> _loadInitialData() async {
-    // Simulate API fetch delay
+    // Simulasi loading pengambilan data (dummy)
     await Future.delayed(const Duration(milliseconds: 800));
     state = state.copyWith(
       totalOrders: 12,
@@ -52,11 +54,13 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     );
   }
 
+  // Mengaktifkan/menonaktifkan switch notifikasi di halaman profil
   void toggleNotification() {
     state = state.copyWith(isNotificationOn: !state.isNotificationOn);
   }
 }
 
+// Provider utama untuk memanggil ProfileNotifier di UI
 final profileStateProvider = StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
   return ProfileNotifier();
 });

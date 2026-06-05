@@ -213,7 +213,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
       );
 }
 
-// ────────────────────────────────────────────────────────────────────────────
+// --- Item Card Favorit ---
 
 class _FavoriteFieldCard extends ConsumerWidget {
   final FieldModel field;
