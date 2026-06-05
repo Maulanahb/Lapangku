@@ -202,6 +202,12 @@ class _MitraWaitingPageState extends ConsumerState<MitraWaitingPage> {
       await FirestoreService.instance.collection('mitra').doc(currentUser.uid).delete();
       await FirestoreService.instance.collection('users').doc(currentUser.uid).delete();
       
+      // Delete their fields from 'lapangan' collection
+      final fieldsSnap = await FirestoreService.instance.collection('lapangan').where('mitraId', isEqualTo: currentUser.uid).get();
+      for (var doc in fieldsSnap.docs) {
+        await doc.reference.delete();
+      }
+      
       // Delete from Auth
       try {
         await currentUser.delete();

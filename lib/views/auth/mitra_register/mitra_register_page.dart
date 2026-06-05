@@ -426,7 +426,7 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
           'jamBuka': _openingTime.format(context),
           'jamTutup': _closingTime.format(context),
           'is_aktif':
-              true, // Auto-active when registered, or could be false pending verification
+              false, // Hidden pending verification
           'createdAt': FieldValue.serverTimestamp(),
           'avg_rating': 0.0,
           'total_ulasan': 0,
