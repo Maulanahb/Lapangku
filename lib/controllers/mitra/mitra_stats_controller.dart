@@ -53,14 +53,18 @@ final mitraTodayStatsProvider =
         return bDate.isAtSameMomentAs(today);
       }).toList();
 
-      final confirmedToday = todayBookings
-          .where((b) => b.status == 'dikonfirmasi' || b.status == 'selesai')
+      final finishedToday = todayBookings
+          .where((b) => b.status == 'selesai')
           .toList();
 
       int revenue = 0;
-      for (var b in confirmedToday) {
+      for (var b in finishedToday) {
         revenue += b.totalBayar;
       }
+
+      final confirmedToday = todayBookings
+          .where((b) => b.status == 'dikonfirmasi')
+          .toList();
 
       final waitingToday = todayBookings
           .where((b) =>
@@ -104,14 +108,18 @@ final mitraMonthlyStatsProvider =
         return b.tanggal.year == now.year && b.tanggal.month == now.month;
       }).toList();
 
-      final confirmedMonth = monthBookings
-          .where((b) => b.status == 'dikonfirmasi' || b.status == 'selesai')
+      final finishedMonth = monthBookings
+          .where((b) => b.status == 'selesai')
           .toList();
 
       int revenue = 0;
-      for (var b in confirmedMonth) {
+      for (var b in finishedMonth) {
         revenue += b.totalBayar;
       }
+
+      final confirmedMonth = monthBookings
+          .where((b) => b.status == 'dikonfirmasi' || b.status == 'selesai')
+          .toList();
 
       return {
         'totalBookings': monthBookings.length,
@@ -322,8 +330,7 @@ final mitraRevenueWeeklyProvider =
         final dayBookings = bookings.where((b) {
           final bDate =
               DateTime(b.tanggal.year, b.tanggal.month, b.tanggal.day);
-          return bDate.isAtSameMomentAs(dayDate) &&
-              (b.status == 'dikonfirmasi' || b.status == 'selesai');
+          return bDate.isAtSameMomentAs(dayDate) && b.status == 'selesai';
         });
 
         int dayRevenue = 0;
