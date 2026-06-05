@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/models/mitra/mitra_profile_model.dart';
 import 'package:lapangku/models/mitra/mitra_schedule_model.dart';
@@ -53,8 +54,10 @@ class MitraService {
     final sfx = suffix.isNotEmpty
         ? suffix
         : DateTime.now().millisecondsSinceEpoch.toString();
-    print(
-        'Mengunggah ${photos.length} foto secara paralel ke folder fields/$fieldId/...');
+    if (kDebugMode) {
+      debugPrint(
+          'Mengunggah ${photos.length} foto secara paralel ke folder fields/$fieldId/...');
+    }
 
     try {
       // 🌟 BYPASS & OPTIMASI PARALEL: Gambar langsung diupload bersamaan dalam satu waktu
@@ -74,10 +77,10 @@ class MitraService {
 
       // Tunggu semua selesai barengan
       final List<String> completedUrls = await Future.wait(uploadTasks);
-      print('Upload Sukses! Semua URL didapatkan.');
+      if (kDebugMode) debugPrint('Upload Sukses! Semua URL didapatkan.');
       return completedUrls;
     } catch (e) {
-      print('ERROR UPLOAD LAPANGAN: $e');
+      if (kDebugMode) debugPrint('ERROR UPLOAD LAPANGAN: $e');
       throw Exception('Gagal upload foto lapangan: $e');
     }
   }
@@ -113,8 +116,10 @@ class MitraService {
 
   Future<List<MitraFieldModel>> getMitraFields(String MitraId) async {
     final List<MitraFieldModel> allFields = [];
-    print('=========================================');
-    print('🔎 LOAD DATA UNTUK UID: $MitraId');
+    if (kDebugMode) {
+      debugPrint('=========================================');
+      debugPrint('🔎 LOAD DATA UNTUK UID: $MitraId');
+    }
 
     try {
       // Query dari koleksi 'lapangan' — satu-satunya sumber data
@@ -123,21 +128,25 @@ class MitraService {
           .where('MitraId', isEqualTo: MitraId)
           .get();
 
-      print('📂 Koleksi "lapangan": Ditemukan ${snap.docs.length} dokumen');
+      if (kDebugMode) debugPrint('📂 Koleksi "lapangan": Ditemukan ${snap.docs.length} dokumen');
 
       for (var doc in snap.docs) {
         final data = doc.data();
         final model = MitraFieldModel.fromMap(data, doc.id);
         allFields.add(model);
-        print(
-            '   ✅ Lapangan: ${model.namaLapangan} | ID Doc: ${doc.id} | MitraId: ${data['MitraId']}');
+        if (kDebugMode) {
+          debugPrint(
+              '   ✅ Lapangan: ${model.namaLapangan} | ID Doc: ${doc.id} | MitraId: ${data['MitraId']}');
+        }
       }
     } catch (e) {
-      print('⚠️ ERROR LOAD: $e');
+      if (kDebugMode) debugPrint('⚠️ ERROR LOAD: $e');
     }
 
-    print('📊 HASIL AKHIR: ${allFields.length} Lapangan');
-    print('=========================================');
+    if (kDebugMode) {
+      debugPrint('📊 HASIL AKHIR: ${allFields.length} Lapangan');
+      debugPrint('=========================================');
+    }
     return allFields;
   }
 
@@ -164,31 +173,33 @@ class MitraService {
 
     if (photoFiles != null && photoFiles.isNotEmpty) {
       try {
-        print('UPLOADING ${photoFiles.length} PHOTOS for new field...');
+        if (kDebugMode) debugPrint('UPLOADING ${photoFiles.length} PHOTOS for new field...');
         final List<String> photoUrls = await uploadFieldPhotos(
           docRef.id,
           photoFiles,
         );
-        print('UPLOAD SUCCESS. URLs: $photoUrls');
+        if (kDebugMode) debugPrint('UPLOAD SUCCESS. URLs: $photoUrls');
 
         // 3. Update dokumen dengan URL foto yang berhasil di-upload
         await docRef.update({
           'photoUrls': photoUrls,
           'foto_lapangan': photoUrls, // ✅ Key yang dibaca Customer
         });
-        print('FIRESTORE UPDATE SUCCESS');
+        if (kDebugMode) debugPrint('FIRESTORE UPDATE SUCCESS');
         return docRef.id;
       } catch (e) {
-        print('UPLOAD/UPDATE ERROR: $e');
+        if (kDebugMode) debugPrint('UPLOAD/UPDATE ERROR: $e');
 
         // 🚨 SAFETY FALLBACK: Jika upload foto gagal, hapus kembali dokumen Firestore
         // yang terlanjur dibuat di atas agar tidak menjadi data sampah/cacat di DB.
         try {
           await docRef.delete();
-          print(
-              'ROLLBACK SUCCESS: Dokumen cacat berhasil dihapus dari Firestore');
+          if (kDebugMode) {
+            debugPrint(
+                'ROLLBACK SUCCESS: Dokumen cacat berhasil dihapus dari Firestore');
+          }
         } catch (deleteError) {
-          print('FAILED TO ROLLBACK FIRESTORE: $deleteError');
+          if (kDebugMode) debugPrint('FAILED TO ROLLBACK FIRESTORE: $deleteError');
         }
 
         // Lemparkan error ke provider agar UI tahu kalau ini GAGAL
@@ -203,11 +214,13 @@ class MitraService {
     MitraFieldModel field, {
     List<File>? newPhotoFiles,
   }) async {
-    print('=========================================');
-    print('AKSI: UPDATE LAPANGAN ${field.namaLapangan}');
-    print('ID: ${field.id}');
-    print('FOTO BARU: ${newPhotoFiles?.length ?? 0}');
-    print('=========================================');
+    if (kDebugMode) {
+      debugPrint('=========================================');
+      debugPrint('AKSI: UPDATE LAPANGAN ${field.namaLapangan}');
+      debugPrint('ID: ${field.id}');
+      debugPrint('FOTO BARU: ${newPhotoFiles?.length ?? 0}');
+      debugPrint('=========================================');
+    }
 
     final fieldRef = _db.collection('lapangan').doc(field.id);
     final fieldDoc = await fieldRef.get();
@@ -225,13 +238,13 @@ class MitraService {
           if (!field.photoUrls.contains(url)) {
             deleteTasks.add(() async {
               try {
-                print('MENGHAPUS FOTO SAMPAH DARI STORAGE: $url');
+                if (kDebugMode) debugPrint('MENGHAPUS FOTO SAMPAH DARI STORAGE: $url');
                 // Hapus file fisik dari Firebase Storage menggunakan URL-nya
                 await _storage.refFromURL(url).delete();
-                print('BERHASIL MENGHAPUS FOTO DARI STORAGE');
+                if (kDebugMode) debugPrint('BERHASIL MENGHAPUS FOTO DARI STORAGE');
               } catch (storageError) {
                 // Gunakan catch agar jika 1 foto gagal dihapus (misal karena sudah tidak ada), proses update tidak crash
-                print('GAGAL MENGHAPUS FOTO DARI STORAGE: $storageError');
+                if (kDebugMode) debugPrint('GAGAL MENGHAPUS FOTO DARI STORAGE: $storageError');
               }
             }());
           }
@@ -248,14 +261,14 @@ class MitraService {
 
     // 2. Upload foto baru jika ada
     if (newPhotoFiles != null && newPhotoFiles.isNotEmpty) {
-      print('Uploading ${newPhotoFiles.length} new photos...');
+      if (kDebugMode) debugPrint('Uploading ${newPhotoFiles.length} new photos...');
       final uploaded = await uploadFieldPhotos(
         field.id,
         newPhotoFiles,
         suffix: 'new_${DateTime.now().millisecondsSinceEpoch}',
       );
       photoUrls.addAll(uploaded);
-      print('Total photos after upload: ${photoUrls.length}');
+      if (kDebugMode) debugPrint('Total photos after upload: ${photoUrls.length}');
     }
 
     final data = field.copyWith(photoUrls: photoUrls).toMap();
@@ -263,24 +276,24 @@ class MitraService {
     data['photoUrls'] = photoUrls;
     data['foto_lapangan'] = photoUrls;
 
-    print('FINAL DATA TO SAVE: $data');
+    if (kDebugMode) debugPrint('FINAL DATA TO SAVE: $data');
 
     // 3. Simpan perubahan ke Firestore
     if (fieldDoc.exists) {
-      print('Updating in "lapangan" collection...');
+      if (kDebugMode) debugPrint('Updating in "lapangan" collection...');
       await fieldRef.update(data);
     } else {
-      print('Document not found. Creating new in "lapangan"...');
+      if (kDebugMode) debugPrint('Document not found. Creating new in "lapangan"...');
       await fieldRef.set(data);
     }
-    print('UPDATE COMPLETED SUCCESSFULLY');
+    if (kDebugMode) debugPrint('UPDATE COMPLETED SUCCESSFULLY');
   }
 
   Future<void> deleteField(String fieldId) async {
     await _db.collection('lapangan').doc(fieldId).delete();
   }
 
-  Future<void> toggleFieldStatus(String fieldId, bool isActive) async {
+  Future<void> toggleFieldStatus(String fieldId, {required bool isActive}) async {
     await _db
         .collection('lapangan')
         .doc(fieldId)

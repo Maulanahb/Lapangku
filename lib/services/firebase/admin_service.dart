@@ -37,51 +37,43 @@ class AdminService {
         .get();
     final pesananHariIni = todayBookingsSnap.count ?? 0;
 
-    // 4. Total Pendapatan — dihitung langsung dari booking berstatus 'selesai'
+    // 4. Total Pendapatan — diambil dari metadata/stats yang diupdate oleh Cloud Functions
     int totalPendapatan = 0;
     try {
-      final selesaiSnap = await _firestore
-          .collection('bookings')
-          .where('status', isEqualTo: 'selesai')
-          .get();
-      for (final doc in selesaiSnap.docs) {
-        final data = doc.data();
-        totalPendapatan += (data['totalBayar'] ?? data['totalHarga'] ?? 0) as int;
+      final statsDoc = await _firestore.collection('metadata').doc('stats').get();
+      if (statsDoc.exists) {
+        totalPendapatan = (statsDoc.data()?['totalPendapatan'] ?? 0) as int;
       }
     } catch (_) {
-      // Gagal hitung, tetap gunakan 0
+      // Fail-safe jika dokumen belum ada
     }
 
-    // 5. Booking Status Counts for Donut Chart (Apply client-side auto-expire logic by parsing them via BookingModel)
-    final allBookingsSnap = await _firestore.collection('bookings').get();
+    // 5. Booking Status Counts for Donut Chart (Menggunakan .count() agar hemat kuota)
     int countSelesai = 0;
     int countMenungguBayar = 0;
     int countMenungguKonfirmasi = 0;
     int countDikonfirmasi = 0;
     int countDibatalkan = 0;
 
-    for (var doc in allBookingsSnap.docs) {
-      // Use global_booking.BookingModel to apply the exact same logic (auto-expire, fallbacks) used in the UI
-      final booking = global_booking.BookingModel.fromFirestore(doc);
-      switch (booking.status) {
-        case 'selesai':
-          countSelesai++;
-          break;
-        case 'menunggu_bayar':
-          countMenungguBayar++;
-          break;
-        case 'menunggu_konfirmasi':
-          countMenungguKonfirmasi++;
-          break;
-        case 'dikonfirmasi':
-          countDikonfirmasi++;
-          break;
-        case 'dibatalkan':
-        case 'ditolak':
-        case 'expired':
-          countDibatalkan++;
-          break;
-      }
+    try {
+      // Fetch all counts concurrently to speed up response time
+      final results = await Future.wait([
+        _firestore.collection('bookings').where('status', isEqualTo: 'selesai').count().get(),
+        _firestore.collection('bookings').where('status', isEqualTo: 'menunggu_bayar').count().get(),
+        _firestore.collection('bookings').where('status', isEqualTo: 'menunggu_konfirmasi').count().get(),
+        _firestore.collection('bookings').where('status', isEqualTo: 'dikonfirmasi').count().get(),
+        _firestore.collection('bookings').where('status', isEqualTo: 'dibatalkan').count().get(),
+        _firestore.collection('bookings').where('status', isEqualTo: 'ditolak').count().get(),
+        _firestore.collection('bookings').where('status', isEqualTo: 'expired').count().get(),
+      ]);
+
+      countSelesai = results[0].count ?? 0;
+      countMenungguBayar = results[1].count ?? 0;
+      countMenungguKonfirmasi = results[2].count ?? 0;
+      countDikonfirmasi = results[3].count ?? 0;
+      countDibatalkan = (results[4].count ?? 0) + (results[5].count ?? 0) + (results[6].count ?? 0);
+    } catch (e) {
+      debugPrint('Error count booking status: $e');
     }
 
     return AdminStats(
@@ -97,23 +89,17 @@ class AdminService {
     );
   }
 
-  /// Retrieves a page of users with optional pagination.
-  ///
-  /// [limit] defines the maximum number of documents returned (default 20).
-  /// [startAfter] should be the last document snapshot from the previous page
-  ///   (obtained from a previous query) to continue fetching.
-  Future<List<Map<String, dynamic>>> getUsersPaginated({
+  /// Retrieves a QuerySnapshot of users for pagination
+  Future<QuerySnapshot> getUsersPaginatedRaw({
     int limit = 20,
     DocumentSnapshot? startAfter,
   }) async {
     Query query = _firestore.collection('users').limit(limit);
+    // Remove orderBy('createdAt') to prevent Missing Index Error if index is not ready
     if (startAfter != null) {
       query = query.startAfterDocument(startAfter);
     }
-    final snap = await query.get();
-    return snap.docs
-        .map((d) => <String, dynamic>{'uid': d.id, ...(d.data()! as Map<String, dynamic>)})
-        .toList();
+    return await query.get();
   }
 
   // Backward compatible method (returns all users, may be heavy).

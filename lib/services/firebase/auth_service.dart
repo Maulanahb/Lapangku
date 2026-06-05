@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
@@ -115,7 +116,7 @@ class AuthService {
     await PushNotificationService.instance.removeToken();
 
     try {
-      print('DEBUG AUTH: Melakukan logout...');
+      if (kDebugMode) debugPrint('DEBUG AUTH: Melakukan logout...');
       await GoogleSignIn().signOut();
     } catch (e) {
       // Ignore
@@ -124,7 +125,7 @@ class AuthService {
     // Bersihkan sesi Auth
     await _auth.signOut();
     
-    print('DEBUG AUTH: Logout berhasil.');
+    if (kDebugMode) debugPrint('DEBUG AUTH: Logout berhasil.');
   }
 
   Future<void> sendPasswordReset(String email) async {
@@ -309,7 +310,7 @@ class AuthService {
 
   Future<Map<String, dynamic>> getUserData(String uid) async {
     try {
-      print('DEBUG AUTH: Mengambil data user $uid dari server...');
+      if (kDebugMode) debugPrint('DEBUG AUTH: Mengambil data user $uid dari server...');
       // Paksa ambil dari server agar tidak nyangkut di cache lama
       final doc = await _db.collection('users').doc(uid).get(
         const GetOptions(source: Source.server),
@@ -322,7 +323,7 @@ class AuthService {
       }
       return doc.data()!;
     } catch (e) {
-      print('DEBUG AUTH: Gagal ambil dari server, mencoba cache... ($e)');
+      if (kDebugMode) debugPrint('DEBUG AUTH: Gagal ambil dari server, mencoba cache... ($e)');
       // Fallback ke cache jika server gagal/timeout
       final cachedDoc = await _db.collection('users').doc(uid).get(
         const GetOptions(source: Source.cache),

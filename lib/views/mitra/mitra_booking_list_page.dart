@@ -398,7 +398,6 @@ class _BookingCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLoading = ref.watch(MitraBookingActionsProvider).contains(booking.id);
     final status = BookingStatusParsing.fromString(booking.status);
     final userInfoAsync = ref.watch(_userInfoProvider(booking.userId));
 

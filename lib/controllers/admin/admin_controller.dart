@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
@@ -70,6 +71,12 @@ final bookingsChartProvider =
 class AllUsersNotifier
     extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
   final AdminService _service;
+  DocumentSnapshot? _lastDoc;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  
+  bool get hasMore => _hasMore;
+  bool get isLoadingMore => _isLoadingMore;
 
   AllUsersNotifier(this._service) : super(const AsyncValue.loading()) {
     load();
@@ -77,16 +84,45 @@ class AllUsersNotifier
 
   Future<void> load() async {
     state = const AsyncValue.loading();
+    _lastDoc = null;
+    _hasMore = true;
+    _isLoadingMore = false;
+    
     try {
-      final users = await _service.getAllUsers();
+      final snap = await _service.getUsersPaginatedRaw(limit: 20);
+      if (snap.docs.length < 20) _hasMore = false;
+      if (snap.docs.isNotEmpty) _lastDoc = snap.docs.last;
+      
+      final users = snap.docs.map((d) => <String, dynamic>{'uid': d.id, ...(d.data()! as Map<String, dynamic>)}).toList();
       state = AsyncValue.data(users);
     } catch (e, s) {
       state = AsyncValue.error(e, s);
     }
   }
+  
+  Future<void> loadMore() async {
+    if (!_hasMore || _isLoadingMore || state is AsyncLoading) return;
+    
+    final currentList = state.value ?? [];
+    _isLoadingMore = true;
+    
+    try {
+      final snap = await _service.getUsersPaginatedRaw(limit: 20, startAfter: _lastDoc);
+      if (snap.docs.length < 20) _hasMore = false;
+      if (snap.docs.isNotEmpty) _lastDoc = snap.docs.last;
+
+      final newUsers = snap.docs.map((d) => <String, dynamic>{'uid': d.id, ...(d.data()! as Map<String, dynamic>)}).toList();
+      state = AsyncValue.data([...currentList, ...newUsers]);
+    } catch (e) {
+      debugPrint('Error loadMore: $e');
+    } finally {
+      _isLoadingMore = false;
+    }
+  }
 
   Future<void> updateVerifikasi(String uid, String status) async {
     await _service.updateUserVerifikasi(uid, status);
+    // Reload data if needed, or simply let the local state update. For PBL, reload is safer.
     await load();
   }
 

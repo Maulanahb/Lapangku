@@ -142,7 +142,7 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () => _handleLogout(context),
+                    onPressed: _handleLogout,
                     icon: const Icon(Icons.logout, color: AppColors.error),
                     label: const Text(
                       'Keluar dari Akun',
@@ -463,7 +463,7 @@ class _CustomerProfilePageState extends ConsumerState<CustomerProfilePage> {
     );
   }
 
-  Future<void> _handleLogout(BuildContext context) async {
+  Future<void> _handleLogout() async {
     final confirm = await ConfirmationDialog.show(
       context: context,
       title: 'Konfirmasi Logout',

@@ -132,13 +132,15 @@ class _JadwalLapanganPageState extends State<JadwalLapanganPage> {
       // 1. Masukkan status penonaktifan dari mitra
       if (lastJadwal != null) {
         for (var doc in lastJadwal!.docs) {
-          final data = doc.data() as Map<String, dynamic>;
-          final jam = data['jam'] as String?;
-          if (jam != null) {
-            combined[jam] = {
-              'status': data['status'] ?? 'tersedia',
-              'nama_customer': '',
-            };
+          final data = doc.data() as Map<String, dynamic>?;
+          if (data != null) {
+            final jam = data['jam'] as String?;
+            if (jam != null) {
+              combined[jam] = {
+                'status': data['status'] ?? 'tersedia',
+                'nama_customer': '',
+              };
+            }
           }
         }
       }
@@ -146,24 +148,26 @@ class _JadwalLapanganPageState extends State<JadwalLapanganPage> {
       // 2. Timpa dengan data booking riil dari customer
       if (lastBookings != null) {
         for (var doc in lastBookings!.docs) {
-          final data = doc.data() as Map<String, dynamic>;
-          final String bookingStatus = data['status'] ?? '';
-          
-          if (!['menunggu_bayar', 'menunggu_konfirmasi', 'dikonfirmasi'].contains(bookingStatus)) {
-            continue;
-          }
+          final data = doc.data() as Map<String, dynamic>?;
+          if (data != null) {
+            final String bookingStatus = data['status'] ?? '';
+            
+            if (!['menunggu_bayar', 'menunggu_konfirmasi', 'dikonfirmasi'].contains(bookingStatus)) {
+              continue;
+            }
 
-          final List<dynamic> timeSlots = data['timeSlots'] ?? [];
-          final String customerName =
-              data['userName'] ?? data['customerName'] ?? 'Customer';
+            final List<dynamic> timeSlots = data['timeSlots'] ?? [];
+            final String customerName =
+                data['userName'] ?? data['customerName'] ?? 'Customer';
 
-          for (var slot in timeSlots) {
-            if (slot is String && slot.contains(' - ')) {
-              final String jamMulai = slot.split(' - ')[0].trim();
-              combined[jamMulai] = {
-                'status': 'dibooking',
-                'nama_customer': customerName,
-              };
+            for (var slot in timeSlots) {
+              if (slot is String && slot.contains(' - ')) {
+                final String jamMulai = slot.split(' - ')[0].trim();
+                combined[jamMulai] = {
+                  'status': 'dibooking',
+                  'nama_customer': customerName,
+                };
+              }
             }
           }
         }

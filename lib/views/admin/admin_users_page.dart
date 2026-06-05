@@ -15,6 +15,24 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
   static const _primary = Color(0xFF1B6B3A);
   String _searchQuery = '';
   String _filterRole = 'semua';
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
+        ref.read(allUsersProvider.notifier).loadMore();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -202,10 +220,19 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
     }
 
     return ListView.separated(
+      controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: filtered.length,
+      itemCount: filtered.length + (ref.watch(allUsersProvider.notifier).hasMore ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => _buildUserCard(filtered[i]),
+      itemBuilder: (_, i) {
+        if (i == filtered.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator(color: _primary)),
+          );
+        }
+        return _buildUserCard(filtered[i]);
+      },
     );
   }
 
@@ -848,11 +875,12 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
                               if (!isAdmin) 'phone': phoneController.text.trim(),
                             };
 
+                            final messenger = ScaffoldMessenger.of(context);
                             Navigator.pop(context);
 
                             await ref.read(allUsersProvider.notifier).updateUser(user['uid'], data);
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              messenger.showSnackBar(
                                 const SnackBar(content: Text('Pengguna berhasil diperbarui'), backgroundColor: _primary),
                               );
                             }

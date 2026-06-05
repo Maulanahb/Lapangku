@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
@@ -8,8 +9,7 @@ class ContactCsPage extends StatelessWidget {
   Future<void> _launchUrl(String urlString) async {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      // ignore: avoid_print
-      print('Could not launch $url');
+      if (kDebugMode) debugPrint('Could not launch $url');
     }
   }
 

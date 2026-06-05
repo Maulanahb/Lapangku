@@ -9,7 +9,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:app_links/app_links.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'services/firebase/push_notification_service.dart';
+import 'package:lapangku/services/firebase/push_notification_service.dart';
 
 // â”€â”€â”€ Views (MVC) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import 'views/auth/splash_page.dart';
@@ -42,7 +42,7 @@ void main() async {
     await dotenv.load(fileName: ".env");
   } catch (e) {
     if (kDebugMode) {
-      print("Warning: .env file not found or failed to load. Error: $e");
+      debugPrint("Warning: .env file not found or failed to load. Error: $e");
     }
   }
 
@@ -107,8 +107,8 @@ void main() async {
     );
   } catch (error, stackTrace) {
     if (kDebugMode) {
-      print('CRITICAL STARTUP ERROR: $error');
-      print(stackTrace);
+      debugPrint('CRITICAL STARTUP ERROR: $error');
+      debugPrint(stackTrace.toString());
     }
     
     // Tampilkan Error di Layar agar tidak terjadi "Black Screen"

@@ -28,7 +28,6 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     final user = results[1];
 
     if (user != null) {
-      // ignore: use_build_context_synchronously
       NavigationHelper.navigateByRole(context, user);
     } else {
       Navigator.pushReplacementNamed(context, '/onboarding');

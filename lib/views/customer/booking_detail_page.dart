@@ -536,16 +536,20 @@ class BookingDetailPage extends ConsumerWidget {
             String phone = '';
             
             if (doc.exists) {
-              final data = doc.data() as Map<String, dynamic>;
-              phone = data['phone'] ?? data['noTelepon'] ?? '';
+              final data = doc.data();
+              if (data != null) {
+                phone = data['phone'] ?? data['noTelepon'] ?? '';
+              }
             }
 
             // Fallback: Jika tidak ada di 'mitra', coba cari di 'users' (saat daftar)
             if (phone.isEmpty) {
               final userDoc = await FirestoreService.instance.collection('users').doc(booking.mitraId).get();
               if (userDoc.exists) {
-                final userData = userDoc.data() as Map<String, dynamic>;
-                phone = userData['phone'] ?? userData['noTelepon'] ?? '';
+                final userData = userDoc.data();
+                if (userData != null) {
+                  phone = userData['phone'] ?? userData['noTelepon'] ?? '';
+                }
               }
             }
 
