@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:lapangku/controllers/admin/admin_controller.dart';
 import 'package:lapangku/models/admin/admin_field_model.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
+import 'package:lapangku/standards/widgets/network_image_web.dart';
 
 class AdminFieldsPage extends ConsumerStatefulWidget {
   const AdminFieldsPage({super.key});
@@ -266,12 +267,12 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                 fit: StackFit.expand,
                 children: [
                   imageUrl.isNotEmpty
-                      ? Image.network(imageUrl, fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                  color: Colors.grey.shade200,
-                                  child: const Icon(Icons.image_not_supported,
-                                      color: Colors.grey)))
+                      ? WebSafeNetworkImage(
+                          url: imageUrl,
+                          fit: BoxFit.cover,
+                          width: 140,
+                          height: 100,
+                        )
                       : Container(
                           color: Colors.grey.shade200,
                           child: const Icon(Icons.image, color: Colors.grey)),
@@ -559,13 +560,11 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                             borderRadius: BorderRadius.circular(12),
                             child: (mitra.photoUrls != null &&
                                     mitra.photoUrls!.isNotEmpty)
-                                ? Image.network(
-                                    mitra.photoUrls!.first,
+                                ? WebSafeNetworkImage(
+                                    url: mitra.photoUrls!.first,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const Icon(
-                                        Icons.store_rounded,
-                                        color: Colors.white,
-                                        size: 28),
+                                    width: 56,
+                                    height: 56,
                                   )
                                 : const Icon(Icons.store_rounded,
                                     color: Colors.white, size: 28),
@@ -854,20 +853,11 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                                       child: ClipRRect(
                                         borderRadius:
                                             BorderRadius.circular(10),
-                                        child: Image.network(
-                                          mitra.photoUrls![index],
+                                        child: WebSafeNetworkImage(
+                                          url: mitra.photoUrls![index],
                                           width: 180,
                                           height: 130,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              Container(
-                                            width: 180,
-                                            height: 130,
-                                            color: Colors.grey.shade100,
-                                            child: const Icon(
-                                                Icons.broken_image_rounded,
-                                                color: Colors.grey),
-                                          ),
                                         ),
                                       ),
                                     );
@@ -1028,17 +1018,11 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
         const SizedBox(height: 8),
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: Image.network(
-            url,
+          child: WebSafeNetworkImage(
+            url: url,
             height: 110,
             width: double.infinity,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              height: 110,
-              color: Colors.grey.shade100,
-              alignment: Alignment.center,
-              child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
-            ),
           ),
         ),
       ],
