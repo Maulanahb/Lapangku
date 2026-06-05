@@ -27,15 +27,22 @@ service cloud.firestore {
     // KOLEKSI: users (Customer / Admin)
     // ==========================================
     match /users/{userId} {
+      // Izinkan semua yang sudah login untuk BACA data user lain (agar bisa lihat nomor HP Mitra)
       allow read: if isAuthenticated();
+      
+      // Tapi untuk MENGUBAH, tetap hanya boleh pemilik akun atau Admin
       allow update: if isOwner(userId) || isAdmin();
+      
       allow create: if (isAuthenticated() && request.auth.uid == userId) || isAdmin();
-      allow delete: if isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
+
       
       match /favorites/{favoriteId} {
         allow read, write: if isOwner(userId) || isAdmin();
       }
     }
+
+
     
     // ==========================================
     // KOLEKSI: mitra (Penyedia Lapangan)
@@ -43,7 +50,8 @@ service cloud.firestore {
     match /mitra/{mitraId} {
       allow read: if true;
       allow create, update: if isOwner(mitraId) || isAdmin();
-      allow delete: if isAdmin();
+      allow delete: if isOwner(mitraId) || isAdmin();
+
     }
     
     // ==========================================
@@ -52,7 +60,7 @@ service cloud.firestore {
     match /lapangan/{lapanganId} {
       allow read: if true;
       allow create: if isAuthenticated() && (request.resource.data.mitraId == request.auth.uid || isAdmin());
-      allow update: if isAuthenticated() && (('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) || isAdmin());
+      allow update: if isAuthenticated();
       allow delete: if isAuthenticated() && (('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) || isAdmin());
       
       match /reviews/{reviewId} {
@@ -68,14 +76,12 @@ service cloud.firestore {
     match /bookings/{bookingId} {
       allow read: if isAuthenticated();
       
-      allow create: if isAuthenticated() && (
-        request.resource.data.userId == request.auth.uid || 
-        request.resource.data.mitraId == request.auth.uid ||
-        isAdmin()
-      );
+      // Dipermudah: Asal sudah login, boleh membuat pesanan
+      allow create: if isAuthenticated();
       
       allow update: if isAuthenticated() && (
         ('userId' in resource.data && resource.data.userId == request.auth.uid) || 
+        ('idUser' in resource.data && resource.data.idUser == request.auth.uid) || 
         ('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) ||
         ('MitraId' in resource.data && resource.data.MitraId == request.auth.uid) ||
         ('id_pemilik' in resource.data && resource.data.id_pemilik == request.auth.uid) ||
@@ -107,17 +113,14 @@ service cloud.firestore {
     // KOLEKSI: notifikasi
     // ==========================================
     match /notifikasi/{notificationId} {
-      allow read: if isAuthenticated() && (
-        ('customer_id' in resource.data && resource.data.customer_id == request.auth.uid) || 
-        ('mitraId' in resource.data && resource.data.mitraId == request.auth.uid)
-      );
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (
-        ('customer_id' in resource.data && resource.data.customer_id == request.auth.uid) || 
-        ('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) || 
-        isAdmin()
-      );
+      allow read: if isAuthenticated() && resource.data.customer_id == request.auth.uid;
+      
+      // TAMBAHKAN BARIS INI: Izinkan pembuatan notifikasi
+      allow create: if isAuthenticated(); 
+      
+      allow update, delete: if isAuthenticated() && (resource.data.customer_id == request.auth.uid || isAdmin());
     }
+
 
     // ==========================================
     // KOLEKSI: metadata (Stats dll)

@@ -81,7 +81,7 @@ class FieldModel extends BaseFieldModel {
       longitude: lng,
       deskripsi: data['deskripsi_fasilitas'] ?? '',
       isAktif: data['is_aktif'] ?? true,
-      ratingAvg: (data['avg_rating'] ?? 0).toDouble(),
+      ratingAvg: ((data['avg_rating'] ?? 0) as num).toDouble().clamp(0.0, 5.0),
       totalUlasan: (data['total_ulasan'] ?? 0).toInt(),
       fotoUtama: fotoLapangan.isNotEmpty ? fotoLapangan.first : '',
       fotoGaleri: fotoLapangan,

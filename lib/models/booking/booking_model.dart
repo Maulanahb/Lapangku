@@ -374,6 +374,8 @@ class BookingModel {
       rescheduleTimeSlots: rescheduleTimeSlots ?? this.rescheduleTimeSlots,
       rescheduleReason: rescheduleReason ?? this.rescheduleReason,
       rescheduleStatus: rescheduleStatus ?? this.rescheduleStatus,
+      isHiddenByCustomer: isHiddenByCustomer ?? this.isHiddenByCustomer,
+      isHiddenByMitra: isHiddenByMitra ?? this.isHiddenByMitra,
     );
   }
 

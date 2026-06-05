@@ -164,7 +164,7 @@ class MitraFieldModel extends BaseFieldModel {
       jamTutup: map['jamTutup'] ?? '22:00',
       isActive: map['is_aktif'] ?? map['isActive'] ?? true,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
-      avgRating: (map['avg_rating'] ?? map['ratingAvg'] ?? 0.0).toDouble(),
+      avgRating: ((map['avg_rating'] ?? map['ratingAvg'] ?? 0.0) as num).toDouble().clamp(0.0, 5.0),
       totalReviews: (map['total_ulasan'] ?? map['totalUlasan'] ?? 0) as int,
     );
   }
