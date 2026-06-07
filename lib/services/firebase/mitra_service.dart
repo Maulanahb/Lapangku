@@ -507,6 +507,7 @@ class MitraService {
         .doc(reviewId)
         .update({
       'replyText': replyText,
+      'isReplied': true,
       'replyDate': FieldValue.serverTimestamp(),
     });
   }

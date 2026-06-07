@@ -44,101 +44,107 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
           ),
         ],
       ),
-      body: Builder(
-        builder: (context) {
-          if (statsAsync['isLoading'] == true) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-          }
-          
-          if (statsAsync['error'] != null) {
-            return EmptyStateWidget(
-              icon: Icons.error_outline,
-              title: 'Gagal Memuat Data',
-              subtitle: statsAsync['error'].toString(),
-              actionButton: ElevatedButton(
-                onPressed: () => ref.refresh(mitraBookingsProvider(mitraId)),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                child: const Text('Coba Lagi', style: TextStyle(color: Colors.white)),
+      body: _buildBody(statsAsync, currentFilter, mitraId),
+    );
+  }
+
+  Widget _buildBody(
+    Map<String, dynamic> statsAsync,
+    StatsFilter currentFilter,
+    String mitraId,
+  ) {
+    if (statsAsync['isLoading'] == true) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (statsAsync['error'] != null) {
+      return EmptyStateWidget(
+        icon: Icons.error_outline,
+        title: 'Gagal Memuat Data',
+        subtitle: statsAsync['error'].toString(),
+        actionButton: ElevatedButton(
+          onPressed: () => ref.refresh(mitraBookingsProvider(mitraId)),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+          child: const Text('Coba Lagi', style: TextStyle(color: Colors.white)),
+        ),
+      );
+    }
+
+    final stats = statsAsync;
+
+    if (stats['filteredCount'] == 0) {
+      return RefreshIndicator(
+        onRefresh: () async => ref.refresh(mitraBookingsProvider(mitraId)),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              _buildFilterChips(currentFilter),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+              const EmptyStateWidget(
+                icon: Icons.analytics_outlined,
+                title: 'Data Belum Tersedia',
+                subtitle: 'Belum ada aktivitas booking pada periode ini.',
               ),
-            );
-          }
+            ],
+          ),
+        ),
+      );
+    }
 
-          final stats = statsAsync;
-
-          if (stats['filteredCount'] == 0) {
-            return RefreshIndicator(
-              onRefresh: () async => ref.refresh(mitraBookingsProvider(mitraId)),
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  children: [
-                    _buildFilterChips(currentFilter),
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                    const EmptyStateWidget(
-                      icon: Icons.analytics_outlined,
-                      title: 'Data Belum Tersedia',
-                      subtitle: 'Belum ada aktivitas booking pada periode ini.',
-                    ),
-                  ],
+    return RefreshIndicator(
+      onRefresh: () async => ref.refresh(mitraBookingsProvider(mitraId)),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // --- DESKRIPSI ---
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Center(
+                child: Text(
+                  'Lihat aktivitas booking dan performa lapangan secara singkat untuk mengoptimalkan bisnis Anda.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
                 ),
               ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async => ref.refresh(mitraBookingsProvider(mitraId)),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.only(bottom: 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // --- DESKRIPSI ---
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Center(
-                      child: Text(
-                        'Lihat aktivitas booking dan performa lapangan secara singkat untuk mengoptimalkan bisnis Anda.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // --- HERO CARD (Total Booking) ---
-                  _buildHeroCard(stats),
-
-                  // --- FILTER CHIPS ---
-                  _buildFilterChips(currentFilter),
-
-                  const SizedBox(height: 12),
-
-                  // --- GRID STATISTIK (2x2) ---
-                  _buildStatsGrid(stats),
-
-                  const SizedBox(height: 24),
-
-                  // --- SECTION AKTIVITAS MINGGUAN ---
-                  _buildWeeklyActivity(stats),
-
-                  const SizedBox(height: 24),
-
-                  // --- SECTION SLOT JAM TERPOPULER ---
-                  _buildPopularSlots(stats),
-
-                  const SizedBox(height: 24),
-
-                  // --- SECTION LAPANGAN PALING AKTIF ---
-                  _buildMostActiveField(stats),
-                ],
-              ),
             ),
-          );
-        },
+
+            // --- HERO CARD (Total Booking) ---
+            _buildHeroCard(stats),
+
+            // --- FILTER CHIPS ---
+            _buildFilterChips(currentFilter),
+
+            const SizedBox(height: 12),
+
+            // --- GRID STATISTIK (2x2) ---
+            _buildStatsGrid(stats),
+
+            const SizedBox(height: 24),
+
+            // --- SECTION AKTIVITAS MINGGUAN ---
+            _buildWeeklyActivity(stats),
+
+            const SizedBox(height: 24),
+
+            // --- SECTION SLOT JAM TERPOPULER ---
+            _buildPopularSlots(stats),
+
+            const SizedBox(height: 24),
+
+            // --- SECTION LAPANGAN PALING AKTIF ---
+            _buildMostActiveField(stats),
+          ],
+        ),
       ),
     );
   }
@@ -156,7 +162,7 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -188,7 +194,7 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -282,7 +288,7 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
           boxShadow: [
             if (isActive)
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.2),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -303,18 +309,31 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
   Widget _buildStatsGrid(Map<String, dynamic> stats) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 2,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childAspectRatio: 1.6, // FIX: BUG 1 - childAspectRatio ditingkatkan ke 1.6
+      child: Column(
         children: [
-          _buildGridItem('Booking Aktif', '${stats['activeCount'] ?? 0}', Icons.calendar_month, Colors.blue),
-          _buildGridItem('Booking Selesai', '${stats['finishedCount'] ?? 0}', Icons.check_circle_outline, Colors.green),
-          _buildGridItem('Jam Teramai', stats['peakHour'] ?? '00:00', Icons.access_time, Colors.orange),
-          _buildGridItem('Booking Batal', '${stats['cancelledCount'] ?? 0}', Icons.cancel_outlined, Colors.red),
+          Row(
+            children: [
+              Expanded(
+                child: _buildGridItem('Booking Aktif', '${stats['activeCount'] ?? 0}', Icons.calendar_month, Colors.blue),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildGridItem('Booking Selesai', '${stats['finishedCount'] ?? 0}', Icons.check_circle_outline, Colors.green),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildGridItem('Jam Teramai', stats['peakHour'] ?? '00:00', Icons.access_time, Colors.orange),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildGridItem('Booking Batal', '${stats['cancelledCount'] ?? 0}', Icons.cancel_outlined, Colors.red),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -328,7 +347,7 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -341,7 +360,7 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 20),
@@ -375,7 +394,14 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
 
   Widget _buildWeeklyActivity(Map<String, dynamic> stats) {
     final weeklyData = (stats['weeklyActivity'] as List? ?? []);
-    
+
+    // Hitung maxCount sekali di luar loop
+    int maxCount = 0;
+    for (var d in weeklyData) {
+      final count = (d['count'] as num?) ?? 0;
+      if (count > maxCount) maxCount = count.toInt();
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
@@ -384,7 +410,7 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -403,38 +429,55 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
           ),
           const SizedBox(height: 24),
           SizedBox(
-            height: 150,
+            height: 170,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: weeklyData.map<Widget>((data) {
-                int maxCount = 0;
-                for (var d in weeklyData) {
-                  if (d['count'] > maxCount) maxCount = d['count'];
-                }
-                double heightFactor = maxCount > 0 ? (data['count'] / maxCount) : 0;
-                
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      width: 24,
-                      height: (120 * heightFactor).clamp(4.0, 120.0),
-                      decoration: BoxDecoration(
-                        color: data['isPeak'] == true ? AppColors.primary : AppColors.primaryLight.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(4),
+                final count = (data['count'] as num?) ?? 0;
+                final double heightFactor =
+                    maxCount > 0 ? count.toDouble() / maxCount : 0;
+
+                return Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${count.toInt()}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: data['isPeak'] == true
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      data['day'],
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: data['isPeak'] == true ? FontWeight.bold : FontWeight.normal,
-                        color: data['isPeak'] == true ? AppColors.primary : AppColors.textSecondary,
+                      const SizedBox(height: 4),
+                      Container(
+                        width: 24,
+                        height: (120 * heightFactor).clamp(4.0, 120.0),
+                        decoration: BoxDecoration(
+                          color: data['isPeak'] == true
+                              ? AppColors.primary
+                              : AppColors.primaryLight,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Text(
+                        data['day'] ?? '',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: data['isPeak'] == true
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: data['isPeak'] == true
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               }).toList(),
             ),
@@ -443,7 +486,7 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primaryLight.withOpacity(0.3),
+              color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -508,7 +551,7 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
             ),
             child: Column(
               children: popularSlots.map<Widget>((slot) {
-                final double progress = (slot['percentage'] as int) / 100;
+                final double progress = ((slot['percentage'] as num?) ?? 0).toDouble() / 100;
                 Color progressColor = Colors.green;
                 if (progress < 0.7) progressColor = Colors.orange;
                 if (progress < 0.4) progressColor = Colors.red;
@@ -621,7 +664,7 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.greenAccent.withOpacity(0.2),
+                              color: Colors.greenAccent.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(

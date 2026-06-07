@@ -65,7 +65,7 @@ class ReviewService {
         'userId': userId, // Digunakan untuk memvalidasi kepemilikan ulasan di Firebase Rules
         'userName': userName,
         'userPhotoUrl': userPhotoUrl,
-        'reviewImageUrl': reviewImageUrl,
+        'photoUrls': reviewImageUrl != null ? [reviewImageUrl] : [], // Diperbaiki agar sesuai dengan MitraReviewModel
         'rating': rating,
         'comment': comment,
         'createdAt': FieldValue.serverTimestamp(),
