@@ -226,8 +226,10 @@ final mitraAdvancedStatsProvider =
               b.status == 'expired')
           .length;
 
-      // 7. Aktivitas Mingguan (7 Hari Terakhir)
+      // 7. Aktivitas Mingguan (7 Hari Terakhir) — data dari seluruh booking
       List<Map<String, dynamic>> weeklyData = [];
+      int maxDayCount = 0;
+      String peakDayName = '';
       for (int i = 6; i >= 0; i--) {
         final date = now.subtract(Duration(days: i));
         final dayDate = DateTime(date.year, date.month, date.day);
@@ -242,12 +244,27 @@ final mitraAdvancedStatsProvider =
               (b.status == 'selesai' || b.status == 'dikonfirmasi');
         }).length;
 
+        // Lacak hari dengan booking terbanyak
+        if (dayCount > maxDayCount) {
+          maxDayCount = dayCount;
+          peakDayName = DateFormat('EEEE', 'id').format(dayDate); // Senin, Selasa, dst
+        }
+
         weeklyData.add({
           'day': dayName,
           'count': dayCount,
-          'isSaturday': date.weekday == DateTime.saturday,
         });
       }
+
+      // Tandai bar chart hari dengan booking terbanyak (isPeak)
+      for (var data in weeklyData) {
+        data['isPeak'] = data['count'] == maxDayCount && maxDayCount > 0;
+      }
+
+      // Buat insight text dinamis berdasarkan hari tersibuk
+      String peakDayInsight = maxDayCount > 0
+          ? 'Booking paling ramai terjadi pada $peakDayName ($maxDayCount booking).'
+          : 'Belum ada data aktivitas minggu ini.';
 
       // 8. Slot Jam Terpopuler (Top 3)
       Map<String, int> slotMap = {};
@@ -273,7 +290,7 @@ final mitraAdvancedStatsProvider =
         popularSlots.add({'slot': '-', 'percentage': 0});
       }
 
-      // 9. Lapangan Paling Aktif
+      // 9. Lapangan Paling Aktif — termasuk imageUrl dari data booking
       Map<String, int> fieldMap = {};
       for (var b in filteredBookings) {
         fieldMap[b.fieldName] = (fieldMap[b.fieldName] ?? 0) + 1;
@@ -287,9 +304,23 @@ final mitraAdvancedStatsProvider =
         }
       });
 
+      // Cari imageUrl dari booking terakhir milik lapangan paling aktif
+      String topFieldImageUrl = '';
+      if (topField != '-') {
+        final topFieldBooking = filteredBookings
+            .where((b) => b.fieldName == topField)
+            .toList();
+        if (topFieldBooking.isNotEmpty) {
+          topFieldImageUrl = topFieldBooking.first.fieldImageUrl;
+        }
+      }
+
+      // 10. Hitung Growth Rate (perbandingan periode saat ini vs sebelumnya)
+      String growthStr = _calculateGrowth(bookings, filter, now);
+
       return {
         'totalSuccess': totalSuccess,
-        'growth': '+12%', // Simulated growth
+        'growth': growthStr,
         'todayCount': countToday,
         'attendanceRate': attendanceRate,
         'peakHour': peakHour,
@@ -297,11 +328,13 @@ final mitraAdvancedStatsProvider =
         'finishedCount': totalSuccess,
         'cancelledCount': cancelledCount,
         'weeklyActivity': weeklyData,
+        'peakDayInsight': peakDayInsight,
         'popularSlots': popularSlots,
         'mostActiveField': {
           'name': topField,
           'count': topFieldCount,
           'badge': 'PALING RAMAI',
+          'imageUrl': topFieldImageUrl,
         },
         'filteredCount': filteredBookings
             .length, // FIX: return filtered count for empty check
@@ -311,6 +344,61 @@ final mitraAdvancedStatsProvider =
     error: (e, s) => {'error': e.toString()},
   );
 });
+
+/// Menghitung persentase growth dengan membandingkan jumlah booking
+/// "selesai" pada periode saat ini vs periode sebelumnya yang sama panjang.
+String _calculateGrowth(
+    List<BookingModel> allBookings, StatsFilter filter, DateTime now) {
+  final today = DateTime(now.year, now.month, now.day);
+
+  DateTime currentStart;
+  DateTime previousStart;
+  DateTime previousEnd;
+
+  switch (filter) {
+    case StatsFilter.hariIni:
+      currentStart = today;
+      previousStart = today.subtract(const Duration(days: 1));
+      previousEnd = today;
+      break;
+    case StatsFilter.mingguIni:
+      currentStart = today.subtract(Duration(days: today.weekday - 1));
+      previousStart = currentStart.subtract(const Duration(days: 7));
+      previousEnd = currentStart;
+      break;
+    case StatsFilter.bulanIni:
+      currentStart = DateTime(now.year, now.month, 1);
+      previousStart = DateTime(now.year, now.month - 1, 1);
+      previousEnd = currentStart;
+      break;
+    case StatsFilter.tahunIni:
+      currentStart = DateTime(now.year, 1, 1);
+      previousStart = DateTime(now.year - 1, 1, 1);
+      previousEnd = currentStart;
+      break;
+  }
+
+  final currentCount = allBookings.where((b) {
+    final bDate = DateTime(b.tanggal.year, b.tanggal.month, b.tanggal.day);
+    return b.status == 'selesai' &&
+        !bDate.isBefore(currentStart) &&
+        !bDate.isAfter(today);
+  }).length;
+
+  final previousCount = allBookings.where((b) {
+    final bDate = DateTime(b.tanggal.year, b.tanggal.month, b.tanggal.day);
+    return b.status == 'selesai' &&
+        !bDate.isBefore(previousStart) &&
+        bDate.isBefore(previousEnd);
+  }).length;
+
+  if (previousCount == 0 && currentCount == 0) return '+0%';
+  if (previousCount == 0) return '+100%';
+
+  final growthPercent =
+      ((currentCount - previousCount) / previousCount * 100).round();
+  return growthPercent >= 0 ? '+$growthPercent%' : '$growthPercent%';
+}
 
 /// Provider untuk ringkasan pendapatan 7 hari terakhir (tetap dipertahankan jika ada yang pakai)
 final mitraRevenueWeeklyProvider =

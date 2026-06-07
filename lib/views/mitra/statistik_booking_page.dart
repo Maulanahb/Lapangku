@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lapangku/controllers/auth/auth_controller.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lapangku/controllers/mitra/mitra_stats_controller.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
@@ -15,8 +15,7 @@ class StatistikBookingPage extends ConsumerStatefulWidget {
 class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final mitraId = authState.user?.uid ?? '';
+    final mitraId = FirebaseAuth.instance.currentUser?.uid ?? '';
     final statsAsync = ref.watch(mitraAdvancedStatsProvider(mitraId));
     final currentFilter = ref.watch(statsFilterProvider);
 
@@ -66,20 +65,22 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
 
           final stats = statsAsync;
 
-          // FIX: BUG 2 - Tampilkan EmptyState jika data kosong pada filter terpilih
           if (stats['filteredCount'] == 0) {
             return RefreshIndicator(
               onRefresh: () async => ref.refresh(mitraBookingsProvider(mitraId)),
-              child: ListView(
-                children: [
-                  _buildFilterChips(currentFilter),
-                  const SizedBox(height: 100),
-                  const EmptyStateWidget(
-                    icon: Icons.analytics_outlined,
-                    title: 'Data Belum Tersedia',
-                    subtitle: 'Belum ada aktivitas booking pada periode ini.',
-                  ),
-                ],
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    _buildFilterChips(currentFilter),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                    const EmptyStateWidget(
+                      icon: Icons.analytics_outlined,
+                      title: 'Data Belum Tersedia',
+                      subtitle: 'Belum ada aktivitas booking pada periode ini.',
+                    ),
+                  ],
+                ),
               ),
             );
           }
@@ -420,7 +421,7 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
                       width: 24,
                       height: (120 * heightFactor).clamp(4.0, 120.0),
                       decoration: BoxDecoration(
-                        color: data['isSaturday'] == true ? AppColors.primary : AppColors.primaryLight.withOpacity(0.8),
+                        color: data['isPeak'] == true ? AppColors.primary : AppColors.primaryLight.withOpacity(0.8),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -429,8 +430,8 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
                       data['day'],
                       style: TextStyle(
                         fontSize: 10,
-                        fontWeight: data['isSaturday'] == true ? FontWeight.bold : FontWeight.normal,
-                        color: data['isSaturday'] == true ? AppColors.primary : AppColors.textSecondary,
+                        fontWeight: data['isPeak'] == true ? FontWeight.bold : FontWeight.normal,
+                        color: data['isPeak'] == true ? AppColors.primary : AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -451,7 +452,7 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Booking paling ramai terjadi pada Sabtu.',
+                    stats['peakDayInsight'] ?? 'Belum ada data aktivitas.',
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12,
@@ -592,8 +593,10 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(12),
-                    image: const DecorationImage(
-                      image: AssetImage('assets/images/placeholder_field.png'),
+                    image: DecorationImage(
+                      image: (fieldData['imageUrl'] != null && (fieldData['imageUrl'] as String).isNotEmpty)
+                          ? NetworkImage(fieldData['imageUrl'] as String) as ImageProvider
+                          : const AssetImage('assets/images/placeholder_field.png'),
                       fit: BoxFit.cover,
                     ),
                   ),

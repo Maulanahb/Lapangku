@@ -16,7 +16,7 @@ class MitraReviewsPage extends ConsumerStatefulWidget {
 
 class _MitraReviewsPageState extends ConsumerState<MitraReviewsPage> {
   String _activeFilter = 'Semua';
-  final List<String> _filters = ['Semua', 'Belum Dibalas', 'Rating 5', 'Dengan Foto'];
+  final List<String> _filters = ['Semua', 'Belum Dibalas', 'Rating 5', 'Rating Rendah', 'Dengan Foto'];
   final TextEditingController _replyController = TextEditingController();
 
   @override
@@ -31,6 +31,8 @@ class _MitraReviewsPageState extends ConsumerState<MitraReviewsPage> {
         return reviews.where((r) => !r.isReplied).toList();
       case 'Rating 5':
         return reviews.where((r) => r.rating == 5).toList();
+      case 'Rating Rendah':
+        return reviews.where((r) => r.rating <= 2).toList();
       case 'Dengan Foto':
         return reviews.where((r) => r.photoUrls.isNotEmpty).toList();
       default:
@@ -150,7 +152,10 @@ class _MitraReviewsPageState extends ConsumerState<MitraReviewsPage> {
     LoadingOverlay.show(context, message: 'Mengirim balasan...');
 
     try {
-      await ref.read(mitraReviewProvider.notifier).replyReview(
+      // Menggunakan mitraReviewActionsProvider (write-only).
+      // Setelah write ke Firestore, StreamProvider akan otomatis
+      // menerima update terbaru tanpa perlu reload manual.
+      await ref.read(mitraReviewActionsProvider).replyReview(
             fieldId: review.fieldId,
             reviewId: review.id,
             replyText: _replyController.text.trim(),
@@ -179,7 +184,8 @@ class _MitraReviewsPageState extends ConsumerState<MitraReviewsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final reviewsAsync = ref.watch(mitraReviewProvider);
+    // Menggunakan StreamProvider — data otomatis update realtime
+    final reviewsAsync = ref.watch(mitraReviewStreamProvider);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPage,
@@ -211,43 +217,40 @@ class _MitraReviewsPageState extends ConsumerState<MitraReviewsPage> {
 
           final filteredReviews = _filterReviews(reviews);
           
-          // Calculate stats
+          // Calculate stats dari data realtime
           final avgRating = reviews.isEmpty 
               ? 0.0 
               : reviews.map((e) => e.rating).reduce((a, b) => a + b) / reviews.length;
           final satisfiedCount = reviews.where((r) => r.rating >= 4).length;
           final satisfiedRate = reviews.isEmpty ? 0 : (satisfiedCount / reviews.length * 100).round();
           
-          return RefreshIndicator(
-            onRefresh: () => ref.read(mitraReviewProvider.notifier).loadReviews(),
-            color: AppColors.primary,
-            child: ListView(
-              padding: const EdgeInsets.only(bottom: 30),
-              children: [
-                _buildDescription(),
-                _buildHeroCard(avgRating, reviews.length, satisfiedRate),
-                _buildFilterChips(),
-                if (filteredReviews.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 50),
-                    child: EmptyStateWidget(
-                      icon: Icons.search_off,
-                      title: 'Tidak ada ulasan yang cocok',
-                      subtitle: 'Coba ubah filter Anda',
-                    ),
-                  )
-                else
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filteredReviews.length,
-                    separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.divider),
-                    itemBuilder: (context, index) {
-                      return _buildReviewItem(filteredReviews[index]);
-                    },
+          // Tidak perlu RefreshIndicator karena data sudah realtime via Stream
+          return ListView(
+            padding: const EdgeInsets.only(bottom: 30),
+            children: [
+              _buildDescription(),
+              _buildHeroCard(avgRating, reviews.length, satisfiedRate),
+              _buildFilterChips(),
+              if (filteredReviews.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(top: 50),
+                  child: EmptyStateWidget(
+                    icon: Icons.search_off,
+                    title: 'Tidak ada ulasan yang cocok',
+                    subtitle: 'Coba ubah filter Anda',
                   ),
-              ],
-            ),
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: filteredReviews.length,
+                  separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.divider),
+                  itemBuilder: (context, index) {
+                    return _buildReviewItem(filteredReviews[index]);
+                  },
+                ),
+            ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
