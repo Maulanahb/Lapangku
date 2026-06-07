@@ -34,10 +34,12 @@ class MitraReviewModel {
   factory MitraReviewModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data()! as Map<String, dynamic>;
     
-    // Extract fieldId from path if not present in data
-    String fieldId = data['fieldId'] ?? '';
-    if (fieldId.isEmpty && doc.reference.parent.parent != null) {
+    // Extract fieldId ALWAYS from path to ensure it's 100% correct
+    String fieldId = '';
+    if (doc.reference.parent.parent != null) {
       fieldId = doc.reference.parent.parent!.id;
+    } else {
+      fieldId = data['fieldId'] ?? '';
     }
 
     return MitraReviewModel(

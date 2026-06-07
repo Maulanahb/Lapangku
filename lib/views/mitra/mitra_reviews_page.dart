@@ -207,6 +207,7 @@ class _MitraReviewsPageState extends ConsumerState<MitraReviewsPage> {
       ),
       body: reviewsAsync.when(
         data: (reviews) {
+          print('DEBUG: Data reviews yang didapat = ${reviews.length}');
           if (reviews.isEmpty) {
             return const EmptyStateWidget(
               icon: Icons.star_outline,
@@ -600,15 +601,19 @@ class _MitraReviewsPageState extends ConsumerState<MitraReviewsPage> {
   }
 
   String _getTimeAgo(DateTime date) {
-    final diff = DateTime.now().difference(date);
-    if (diff.inDays > 7) {
-      return '${(diff.inDays / 7).floor()} minggu lalu';
-    } else if (diff.inDays > 0) {
-      return '${diff.inDays} hari lalu';
-    } else if (diff.inHours > 0) {
-      return '${diff.inHours} jam lalu';
-    } else {
-      return 'Baru saja';
-    }
+  final diff = DateTime.now().difference(date);
+  
+  if (diff.inDays > 7) {
+    return '${(diff.inDays / 7).floor()} minggu lalu';
+  } else if (diff.inDays > 0) {
+    return '${diff.inDays} hari lalu';
+  } else if (diff.inHours > 0) {
+    return '${diff.inHours} jam lalu';
+  } else if (diff.inMinutes > 0) {
+    // ✨ PERBAIKAN: Deteksi jika sudah berjalan beberapa menit
+    return '${diff.inMinutes} menit lalu';
+  } else {
+    return 'Baru saja';
   }
+}
 }
