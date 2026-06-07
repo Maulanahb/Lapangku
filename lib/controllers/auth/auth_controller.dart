@@ -2,12 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/auth/user_model.dart';
 import 'package:lapangku/services/firebase/auth_service.dart';
 
-// Provider untuk service
+// Provider utama untuk AuthService
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();
 });
 
-// State untuk auth
+// Struktur data (State) untuk menyimpan status otentikasi pengguna
 class AuthState {
   final UserModel? user;
   final bool isLoading;
@@ -48,12 +48,13 @@ String _parseAuthError(Object e) {
   return 'Terjadi kesalahan. Silakan coba lagi.';
 }
 
-// Notifier (Controller)
+// Controller utama untuk mengatur proses masuk, daftar, dan kelola akun
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService _service;
 
   AuthNotifier(this._service) : super(const AuthState());
 
+    // Proses masuk (login) dengan email dan password
     Future<void> login(String email, String password) async {
       state = state.copyWith(isLoading: true, clearError: true);
       try {
@@ -67,6 +68,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
     }
 
+    // Proses masuk otomatis menggunakan akun Google
     Future<void> loginWithGoogle() async {
       state = state.copyWith(isLoading: true, clearError: true);
       try {
@@ -82,6 +84,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
     }
 
+    // Mendaftarkan akun baru
     Future<void> register({
       required String email,
       required String password,
@@ -107,15 +110,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
     }
 
+  // Keluar dari akun (logout)
   Future<void> logout() async {
     await _service.logout();
     state = const AuthState();
   }
 
+  // Mengubah status loading manual saat ada proses berjalan
   void setLoading(bool isLoading) {
     state = state.copyWith(isLoading: isLoading);
   }
 
+  // Mengirim link reset password ke email pengguna
   Future<void> sendPasswordReset(String email) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -129,6 +135,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  // Memperbarui data profil pengguna
   Future<void> updateProfile({
     required String uid,
     required String name,
@@ -161,6 +168,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  // Memperbarui foto profil (avatar) pengguna
   Future<void> updateAvatar(String uid, String? url) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -177,6 +185,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
 
 
+  // Menyimpan pengaturan preferensi notifikasi pengguna
   Future<void> updateNotificationSettings(
       String uid, Map<String, bool> settings) async {
     state = state.copyWith(isLoading: true, clearError: true);
@@ -192,6 +201,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  // Mengirimkan email verifikasi untuk akun baru
   Future<void> sendEmailVerification() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -206,6 +216,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  // Mengirim kode OTP ke nomor telepon untuk verifikasi (SMS)
   Future<void> sendPhoneVerificationOTP({
     required String phoneNumber,
     required Function(String) onCodeSent,
@@ -230,6 +241,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  // Memverifikasi kode OTP yang dimasukkan
   Future<void> verifyPhoneOTP(String verificationId, String smsCode) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -244,6 +256,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  // Mengganti password lama dengan password baru
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,
@@ -262,13 +275,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 }
 
-// Provider utama yang dipakai UI
+// Provider untuk memanggil AuthNotifier di UI
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final service = ref.watch(authServiceProvider);
   return AuthNotifier(service);
 });
 
-// Provider untuk cek auth state (login/logout)
+// Stream untuk selalu memantau status login (apakah sedang login atau tidak)
 final authStateProvider = StreamProvider<UserModel?>((ref) {
   final service = ref.watch(authServiceProvider);
   return service.authStateChanges;

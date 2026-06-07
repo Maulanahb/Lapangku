@@ -8,6 +8,7 @@ final customerSecurityControllerProvider = StateNotifierProvider<CustomerSecurit
   return CustomerSecurityController();
 });
 
+// Controller untuk mengelola keamanan akun Customer (Password, Verifikasi Email, OTP, Perangkat Login)
 class CustomerSecurityController extends StateNotifier<AsyncValue<void>> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirestoreService.instance;
@@ -16,7 +17,8 @@ class CustomerSecurityController extends StateNotifier<AsyncValue<void>> {
 
   User? get currentUser => _auth.currentUser;
 
-  // 1. UBAH PASSWORD
+  // --- 1. UBAH PASSWORD ---
+  // Mengganti password lama dengan password baru
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -64,7 +66,8 @@ class CustomerSecurityController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  // 2. VERIFIKASI EMAIL
+  // --- 2. VERIFIKASI EMAIL ---
+  // Mengirim email berisi tautan verifikasi
   Future<void> sendEmailVerification() async {
     try {
       state = const AsyncLoading();
@@ -94,7 +97,7 @@ class CustomerSecurityController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  // Refresh auth state setelah user verify email
+  // Mengecek apakah user sudah berhasil memverifikasi emailnya
   Future<void> refreshEmailVerificationStatus() async {
     try {
       final user = currentUser;
@@ -113,7 +116,8 @@ class CustomerSecurityController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  // 3. VERIFIKASI NOMOR HP
+  // --- 3. VERIFIKASI NOMOR HP ---
+  // Memverifikasi kode OTP SMS yang dimasukkan
   Future<void> verifyPhoneOTP({
     required String verificationId,
     required String smsCode,
@@ -160,7 +164,8 @@ class CustomerSecurityController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  // 4. PERANGKAT LOGIN
+  // --- 4. PERANGKAT LOGIN ---
+  // Mengambil daftar perangkat (device) yang pernah digunakan untuk login
   Stream<List<Map<String, dynamic>>> getUserDevices() {
     final user = currentUser;
     if (user == null) return Stream.value([]);

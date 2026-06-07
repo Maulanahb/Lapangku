@@ -8,7 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class BookingStatusHelper {
   BookingStatusHelper._();
 
-  // ─── String Constants (Firestore values) ─────────────────────────────────
+  // --- Konstanta String (Nilai Firestore) ---
   static const String menungguBayar = 'menunggu_bayar';
   static const String dikonfirmasi = 'dikonfirmasi';
   static const String selesai = 'selesai';
@@ -145,7 +145,7 @@ class BookingModel {
     this.isHiddenByMitra = false,
   });
 
-  // ─── Computed Properties ──────────────────────────────────────────────────
+  // --- Properti Kalkulasi ---
 
   /// Apakah booking masih aktif (memblokir slot)
   bool get isActive => BookingStatusHelper.activeStatuses.contains(status);
@@ -189,7 +189,7 @@ class BookingModel {
     return false;
   }
 
-  // ─── Factory: fromFirestore ───────────────────────────────────────────────
+  // --- Factory: fromFirestore ---
 
   factory BookingModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data()! as Map<String, dynamic>;
@@ -264,7 +264,7 @@ class BookingModel {
     return model;
   }
 
-  // ─── Method: toFirestore ──────────────────────────────────────────────────
+  // --- Method: toFirestore ---
 
   Map<String, dynamic> toFirestore() {
     return {
@@ -304,7 +304,7 @@ class BookingModel {
     };
   }
 
-  // ─── Method: copyWith ─────────────────────────────────────────────────────
+  // --- Method: copyWith ---
 
   /// Membuat salinan BookingModel dengan field yang diubah
   BookingModel copyWith({

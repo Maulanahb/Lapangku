@@ -309,7 +309,7 @@ class _MitraProfileDocumentPageState
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      // ─── HERO SECTION (AVATAR LOGO) ───
+                      // --- Bagian Profil/Logo ---
                       Container(
                         width: double.infinity,
                         decoration: const BoxDecoration(
@@ -378,7 +378,7 @@ class _MitraProfileDocumentPageState
                         ),
                       ),
 
-                      // ─── FORM SECTION ───
+                      // --- Bagian Form ---
                       Transform.translate(
                         offset: const Offset(0, -20),
                         child: Container(
@@ -564,7 +564,7 @@ class _MitraProfileDocumentPageState
                 ),
               ),
 
-              // ─── STICKY BOTTOM BUTTON ───
+              // --- Tombol Simpan ---
               Container(
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                 decoration: BoxDecoration(
@@ -611,7 +611,7 @@ class _MitraProfileDocumentPageState
     );
   }
 
-  // ─── WIDGET BANTUAN DENGAN UI BARU ───
+  // --- Komponen Widget ---
 
   Widget _buildModernTextField({
     required TextEditingController controller,

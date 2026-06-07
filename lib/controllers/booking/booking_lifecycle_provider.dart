@@ -4,39 +4,31 @@ import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/models/auth/user_model.dart';
 import 'package:lapangku/services/firebase/booking_lifecycle_service.dart';
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SERVICE PROVIDER (Singleton)
-// ═══════════════════════════════════════════════════════════════════════════════
+// --- SERVICE PROVIDER ---
 
-/// Provider tunggal untuk BookingLifecycleService.
-/// Seluruh role (Customer, Mitra, Admin) menggunakan service yang sama.
+// Provider utama untuk memanggil BookingLifecycleService (digunakan oleh semua role)
 final bookingLifecycleServiceProvider =
     Provider<BookingLifecycleService>((ref) {
   return BookingLifecycleService();
 });
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CUSTOMER PROVIDERS
-// ═══════════════════════════════════════════════════════════════════════════════
+// --- CUSTOMER PROVIDERS ---
 
-/// Stream booking milik Customer tertentu (real-time per booking).
-/// Usage: ref.watch(customerBookingStreamProvider('bookingDocId'))
+// Memantau status satu pesanan milik Customer secara real-time
 final customerBookingStreamProvider =
     StreamProvider.family<BookingModel?, String>((ref, bookingId) {
   final service = ref.watch(bookingLifecycleServiceProvider);
   return service.streamBooking(bookingId);
 });
 
-/// FutureProvider: semua booking milik Customer.
-/// Usage: ref.watch(customerBookingsProvider('userId'))
+// Mengambil seluruh riwayat pesanan milik Customer
 final customerBookingsProvider =
     FutureProvider.family<List<BookingModel>, String>((ref, userId) async {
   final service = ref.watch(bookingLifecycleServiceProvider);
   return service.getUserBookings(userId);
 });
 
-/// FutureProvider: slot yang sudah dipesan untuk tanggal tertentu.
-/// Parameter format: "fieldId|yyyy-MM-dd"
+// Mengambil daftar jam yang sudah dibooking pada tanggal tertentu
 final customerBookedSlotsProvider =
     FutureProvider.family<List<String>, String>((ref, param) async {
   final parts = param.split('|');
@@ -46,15 +38,14 @@ final customerBookedSlotsProvider =
   return service.getBookedSlots(fieldId: fieldId, date: date);
 });
 
-/// Notifier untuk aksi-aksi Customer (create, pay, cancel).
-/// State: loading indicator + error tracking.
+// Controller untuk aksi transaksi Customer (Buat, Bayar, Batal)
 class CustomerBookingActionsNotifier extends StateNotifier<AsyncValue<void>> {
   final BookingLifecycleService _service;
 
   CustomerBookingActionsNotifier(this._service)
       : super(const AsyncValue.data(null));
 
-  /// Membuat booking baru.
+  // Membuat pesanan (booking) baru
   Future<BookingModel?> createBooking({
     required FieldModel field,
     required UserModel user,
@@ -81,7 +72,7 @@ class CustomerBookingActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Batalkan booking.
+  // Membatalkan pesanan
   Future<bool> cancelBooking(String bookingId) async {
     state = const AsyncValue.loading();
     try {
@@ -102,14 +93,9 @@ final customerBookingActionsProvider =
       ref.watch(bookingLifecycleServiceProvider));
 });
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MITRA PROVIDERS
-// ═══════════════════════════════════════════════════════════════════════════════
+// --- MITRA PROVIDERS ---
 
-/// Stream semua booking milik Mitra (berdasarkan mitraId langsung).
-/// Real-time — UI otomatis update saat Customer membuat booking baru.
-///
-/// Parameter format: "mitraId" atau "mitraId|statusFilter"
+// Memantau pesanan yang masuk ke Mitra secara real-time (bisa di-filter)
 final mitraBookingsByIdStreamProvider =
     StreamProvider.family<List<BookingModel>, String>((ref, param) {
   final service = ref.watch(bookingLifecycleServiceProvider);
@@ -122,8 +108,7 @@ final mitraBookingsByIdStreamProvider =
   );
 });
 
-/// Stream booking menunggu bayar khusus Mitra (shortcut).
-/// UI: Badge notifikasi di dashboard Mitra.
+// Memantau khusus pesanan yang sedang menunggu pembayaran (untuk notifikasi Mitra)
 final mitraPendingBookingsProvider =
     StreamProvider.family<List<BookingModel>, String>((ref, mitraId) {
   final service = ref.watch(bookingLifecycleServiceProvider);
@@ -133,17 +118,16 @@ final mitraPendingBookingsProvider =
   );
 });
 
-/// Notifier untuk aksi Mitra (confirm/reject booking).
-/// State: Set<String> berisi bookingId yang sedang diproses.
+// Controller untuk aksi Mitra (Konfirmasi / Tolak pesanan)
 class MitraBookingLifecycleActionsNotifier extends StateNotifier<Set<String>> {
   final BookingLifecycleService _service;
 
   MitraBookingLifecycleActionsNotifier(this._service) : super({});
 
-  /// Apakah booking tertentu sedang diproses?
+  // Cek apakah pesanan sedang loading diproses
   bool isProcessing(String bookingId) => state.contains(bookingId);
 
-  /// [Mitra] Konfirmasi booking.
+  // Mitra mengkonfirmasi pesanan
   Future<bool> confirmBooking(String bookingId) async {
     state = {...state, bookingId};
     try {
@@ -156,7 +140,7 @@ class MitraBookingLifecycleActionsNotifier extends StateNotifier<Set<String>> {
     }
   }
 
-  /// [Mitra] Tolak booking.
+  // Mitra menolak pesanan
   Future<bool> rejectBooking(String bookingId, {String? reason}) async {
     state = {...state, bookingId};
     try {
@@ -177,35 +161,30 @@ final mitraBookingLifecycleActionsProvider =
       ref.watch(bookingLifecycleServiceProvider));
 });
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ADMIN PROVIDERS
-// ═══════════════════════════════════════════════════════════════════════════════
+// --- ADMIN PROVIDERS ---
 
-/// Stream seluruh booking (Admin monitoring).
-/// Admin melihat semua booking dari semua Mitra & Customer.
-///
-/// Parameter (nullable): statusFilter. Null = semua status.
+// Memantau seluruh pesanan di aplikasi secara real-time (Dashboard Admin)
 final adminAllBookingsStreamProvider =
     StreamProvider.family<List<BookingModel>, String?>((ref, statusFilter) {
   final service = ref.watch(bookingLifecycleServiceProvider);
   return service.streamAllBookings(statusFilter: statusFilter);
 });
 
-/// FutureProvider: statistik booking (Admin dashboard).
+// Mengambil statistik transaksi untuk Dashboard Admin
 final adminBookingStatsProvider =
     FutureProvider<Map<String, dynamic>>((ref) async {
   final service = ref.watch(bookingLifecycleServiceProvider);
   return service.getBookingStats();
 });
 
-/// Notifier untuk aksi Admin (force update, auto-complete trigger).
+// Controller untuk aksi Admin (Ubah status paksa & Auto-complete)
 class AdminBookingActionsNotifier extends StateNotifier<AsyncValue<void>> {
   final BookingLifecycleService _service;
 
   AdminBookingActionsNotifier(this._service)
       : super(const AsyncValue.data(null));
 
-  /// Force-update status booking (untuk kasus darurat).
+  // Mengubah status pesanan secara paksa (darurat)
   Future<bool> forceUpdateStatus(
     String bookingId, {
     required String newStatus,
@@ -226,7 +205,7 @@ class AdminBookingActionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Trigger auto-complete untuk semua booking yang jam mainnya sudah lewat.
+  // Menyelesaikan otomatis pesanan yang jam mainnya sudah berlalu
   Future<int> triggerAutoComplete() async {
     state = const AsyncValue.loading();
     try {

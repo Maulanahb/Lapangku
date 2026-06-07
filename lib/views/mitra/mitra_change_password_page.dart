@@ -93,7 +93,7 @@ class _MitraChangePasswordPageState
       ),
       body: Column(
         children: [
-          // ─── AREA FORM (SCROLLABLE) ───
+          // --- Area Form ---
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -198,7 +198,7 @@ class _MitraChangePasswordPageState
             ),
           ),
 
-          // ─── AREA TOMBOL SIMPAN (STICKY BOTTOM) ───
+          // --- Area Tombol Simpan ---
           Container(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
             decoration: BoxDecoration(

@@ -5,9 +5,7 @@ import 'package:lapangku/services/geolocation_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 
-/// Hasil dari operasi update profil.
-/// Menyertakan flag [geocodingFailed] agar UI bisa menampilkan
-/// pesan informatif jika geocoding gagal (profil tetap tersimpan).
+// Hasil penyimpanan profil (untuk mengecek apakah geocoding alamat gagal atau tidak)
 class ProfileUpdateResult {
   final bool geocodingFailed;
 
@@ -20,6 +18,7 @@ class CustomerInfoController {
 
   CustomerInfoController(this._ref);
 
+  // Menghitung persentase kelengkapan profil (berdasarkan 6 field utama)
   double calculateProgress(UserModel user) {
     int totalFields = 6;
     int filledFields = 0;
@@ -34,11 +33,7 @@ class CustomerInfoController {
     return filledFields / totalFields;
   }
 
-  /// Menyimpan profil customer ke Firestore.
-  ///
-  /// Geocoding dilakukan dengan fallback: jika API gagal (timeout, limit habis,
-  /// sinyal buruk), profil tetap disimpan dan koordinat lama dipertahankan.
-  /// Mengembalikan [ProfileUpdateResult] agar UI bisa menampilkan toast notifikasi.
+  // Menyimpan data profil Customer ke database (termasuk memproses koordinat alamat jika berubah)
   Future<ProfileUpdateResult> updateCustomerProfile({
     required String nama,
     required String phone,
@@ -86,8 +81,7 @@ class CustomerInfoController {
       }
     }
 
-    // Standarisasi: gunakan 'nama' saja sebagai field name di Firestore.
-    // Field 'name' (English) tidak lagi ditulis untuk menghindari redundansi data.
+    // Standarisasi penyimpanan field: gunakan 'nama' bukan 'name'
     final updatedData = {
       'nama': nama.trim(),
       'phone': phone.trim(),

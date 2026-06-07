@@ -999,7 +999,7 @@ class _StatData {
   const _StatData(this.label, this.value, this.icon, this.color, {this.isGreen = false});
 }
 
-// ─── Notification Bell Widget ────────────────────────────────────────────────
+// --- Notification Bell Widget ---
 class _NotificationBell extends StatelessWidget {
   final int pendingCount;
   final VoidCallback onTap;
@@ -1046,7 +1046,7 @@ class _NotificationBell extends StatelessWidget {
   }
 }
 
-// ─── Profile Menu Widget ─────────────────────────────────────────────────────
+// --- Profile Menu Widget ---
 class _ProfileMenu extends ConsumerWidget {
   final String adminName;
   const _ProfileMenu({required this.adminName});

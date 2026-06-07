@@ -11,7 +11,7 @@ import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lapangku/services/firebase/push_notification_service.dart';
 
-// â”€â”€â”€ Views (MVC) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Views ---
 import 'views/auth/splash_page.dart';
 import 'views/auth/onboarding_page.dart';
 import 'views/auth/login_page.dart';
@@ -25,7 +25,7 @@ import 'views/admin/admin_dashboard_page.dart';
 import 'views/admin/admin_login_page.dart';
 import 'views/auth/mitra_register/mitra_waiting_page.dart';
 
-// [RESOLVED] Menggabungkan import milik server (profile) dan milikmu (search, detail, model)
+// --- Customer Views ---
 import 'views/customer/customer_profile_page.dart';
 import 'views/customer/customer_search_page.dart';
 import 'views/customer/customer_field_detail_page.dart';
@@ -34,10 +34,10 @@ import 'views/customer/booking_detail_page.dart';
 import 'models/field/field_model.dart';
 
 void main() async {
-  // Pastikan binding terinisialisasi sebelum memanggil platform channel
+  // Inisialisasi bindings
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Load environment variables safely (TIDAK BOLEH memblokir aplikasi jika gagal)
+  // Load environment variables
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
@@ -47,19 +47,19 @@ void main() async {
   }
 
   try {
-    // 2. Inisialisasi locale Indonesia untuk intl (DateFormat)
+    // Inisialisasi locale
     await initializeDateFormatting('id', null);
 
-    // 3. Inisialisasi Firebase
+    // Inisialisasi Firebase
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
-    // 4. Push Notification Setup
+    // Setup Push Notification
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     await PushNotificationService.instance.initialize();
 
-    // 5. Konfigurasi Email OTP
+    // Konfigurasi Email OTP
     EmailOTP.config(
       appName: 'LapangKu Mitra',
       otpType: OTPType.numeric,
@@ -99,7 +99,7 @@ void main() async {
       password: dotenv.env['SMTP_PASSWORD'] ?? 'grhnkjzimuukanyn',
     );
 
-    // 6. Jalankan Aplikasi Utama
+    // Run App
     runApp(
       const ProviderScope(
         child: MyApp(),
@@ -111,7 +111,7 @@ void main() async {
       debugPrint(stackTrace.toString());
     }
     
-    // Tampilkan Error di Layar agar tidak terjadi "Black Screen"
+    // Tampilkan error di layar
     runApp(
       MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -164,14 +164,14 @@ class _MyAppState extends ConsumerState<MyApp> {
   void _initDeepLinks() {
     _appLinks = AppLinks();
 
-    // Handle deep links when app is running (foreground/background)
+    // Handle deep links in foreground
     _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
       _handleDeepLink(uri);
     }, onError: (err) {
       debugPrint('⚠️ [DeepLink] Error listening to links: $err');
     });
 
-    // Handle deep link when app is launched from terminated state (cold start)
+    // Handle deep links on cold start
     _appLinks.getInitialLink().then((uri) {
       if (uri != null) {
         _handleDeepLink(uri);
@@ -187,7 +187,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       return;
     }
 
-    // Scheme: lapangku://field-detail?id=xxx atau lapangku://booking-detail?id=xxx
+    // Handle lapangku schemes
     if (uri.scheme == 'lapangku') {
       final path = uri.host;
       final id = uri.queryParameters['id'];

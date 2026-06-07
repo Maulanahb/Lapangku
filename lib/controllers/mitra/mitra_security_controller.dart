@@ -7,7 +7,7 @@ import 'package:lapangku/models/mitra/mitra_device_model.dart';
 import 'package:lapangku/models/mitra/mitra_security_log_model.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 
-// ─── State ───────────────────────────────────────────────────────────────────
+// --- Struktur Data (State) ---
 
 class MitraSecurityState {
   final bool isLoading;
@@ -48,14 +48,14 @@ class MitraSecurityState {
   }
 }
 
-// ─── Provider ────────────────────────────────────────────────────────────────
+// --- Provider Utama ---
 
 final mitraSecurityControllerProvider =
     StateNotifierProvider<MitraSecurityController, MitraSecurityState>((ref) {
   return MitraSecurityController();
 });
 
-// ─── Controller ──────────────────────────────────────────────────────────────
+// --- Controller ---
 
 class MitraSecurityController extends StateNotifier<MitraSecurityState> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -68,7 +68,7 @@ class MitraSecurityController extends StateNotifier<MitraSecurityState> {
   User? get _currentUser => _auth.currentUser;
   String? get _uid => _currentUser?.uid;
 
-  // ─── Load ─────────────────────────────────────────────────────────────────
+  // --- Load Data Awal ---
 
   Future<void> _loadSecurityData() async {
     final uid = _uid;
@@ -103,7 +103,7 @@ class MitraSecurityController extends StateNotifier<MitraSecurityState> {
 
   Future<void> refresh() => _loadSecurityData();
 
-  // ─── PIN ──────────────────────────────────────────────────────────────────
+  // --- PIN Keamanan ---
 
   /// Hash PIN sebelum simpan ke Firestore (SHA-256)
   String _hashPin(String pin) {
@@ -173,7 +173,7 @@ class MitraSecurityController extends StateNotifier<MitraSecurityState> {
     return _hashPin(pin) == storedHash;
   }
 
-  // ─── Email Verification ───────────────────────────────────────────────────
+  // --- Verifikasi Email ---
 
   Future<void> sendEmailVerification() async {
     final user = _currentUser;
@@ -220,7 +220,7 @@ class MitraSecurityController extends StateNotifier<MitraSecurityState> {
     } catch (_) {}
   }
 
-  // ─── Perangkat Login ──────────────────────────────────────────────────────
+  // --- Perangkat Login ---
 
   Stream<List<MitraDeviceModel>> watchDevices() {
     final uid = _uid;
@@ -254,7 +254,7 @@ class MitraSecurityController extends StateNotifier<MitraSecurityState> {
     }
   }
 
-  // ─── Security Logs ────────────────────────────────────────────────────────
+  // --- Riwayat Keamanan (Security Logs) ---
 
   Stream<List<MitraSecurityLogModel>> watchSecurityLogs({int limit = 10}) {
     final uid = _uid;
@@ -288,7 +288,7 @@ class MitraSecurityController extends StateNotifier<MitraSecurityState> {
     } catch (_) {}
   }
 
-  // ─── Update lastPasswordChange (dipanggil setelah ChangePasswordPage) ─────
+  // --- Update lastPasswordChange ---
 
   Future<void> markPasswordChanged() async {
     final uid = _uid;
@@ -304,7 +304,7 @@ class MitraSecurityController extends StateNotifier<MitraSecurityState> {
     state = state.copyWith(lastPasswordChange: DateTime.now());
   }
 
-  // ─── Ubah Password ────────────────────────────────────────────────────────
+  // --- Ubah Password ---
 
   Future<void> changePassword(String oldPassword, String newPassword) async {
     final user = _currentUser;
@@ -342,4 +342,4 @@ class MitraSecurityController extends StateNotifier<MitraSecurityState> {
       rethrow;
     }
   }
-} // <--- PERHATIKAN: Kurung kurawal penutup class sekarang ada di paling bawah sini
+}

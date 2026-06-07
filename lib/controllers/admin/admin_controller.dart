@@ -10,14 +10,14 @@ import 'package:lapangku/models/admin/admin_field_model.dart';
 import 'package:lapangku/models/admin/booking_model.dart';
 import 'package:lapangku/models/admin/admin_stats.dart';
 import 'package:lapangku/services/firebase/admin_service.dart';
-// â”€â”€â”€ Service Provider â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
+// --- Service Provider ---
 final adminServiceProvider = Provider<AdminService>((ref) {
   return AdminService();
 });
 
-// â”€â”€â”€ Stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Statistik Admin ---
 
+// Controller untuk mengambil dan menyimpan statistik admin (total user, transaksi, dll)
 class AdminStatsNotifier extends StateNotifier<AsyncValue<AdminStats>> {
   final AdminService _service;
 
@@ -41,8 +41,9 @@ final adminStatsProvider =
   return AdminStatsNotifier(ref.watch(adminServiceProvider));
 });
 
-// â”€â”€â”€ Bookings Per Hari (chart) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Grafik Transaksi Harian ---
 
+// Controller untuk mengambil data grafik transaksi per hari
 class BookingsChartNotifier extends StateNotifier<AsyncValue<List<int>>> {
   final AdminService _service;
 
@@ -66,8 +67,9 @@ final bookingsChartProvider =
   return BookingsChartNotifier(ref.watch(adminServiceProvider));
 });
 
-// â”€â”€â”€ All Users â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Manajemen Pengguna ---
 
+// Controller untuk mengambil daftar pengguna dengan sistem paginasi (agar tidak berat)
 class AllUsersNotifier
     extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
   final AdminService _service;
@@ -147,8 +149,9 @@ final allUsersProvider = StateNotifierProvider<AllUsersNotifier,
   return AllUsersNotifier(ref.watch(adminServiceProvider));
 });
 
-// â”€â”€â”€ Fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Manajemen Lapangan ---
 
+// Controller untuk mengambil seluruh daftar lapangan untuk keperluan Admin
 class AdminFieldsNotifier extends StateNotifier<AsyncValue<List<AdminFieldModel>>> {
   final AdminService _service;
 
@@ -184,8 +187,9 @@ final adminFieldsProvider =
   return AdminFieldsNotifier(ref.watch(adminServiceProvider));
 });
 
-// â”€â”€â”€ Bookings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Manajemen Transaksi ---
 
+// Controller untuk mengambil semua data riwayat transaksi
 class BookingsNotifier
     extends StateNotifier<AsyncValue<List<BookingModel>>> {
   final AdminService _service;
@@ -210,7 +214,8 @@ final bookingsProvider =
         (ref) {
   return BookingsNotifier(ref.watch(adminServiceProvider));
 });
-// â”€â”€â”€ Recent Activities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Aktivitas Terbaru ---
+// Controller untuk memantau aktivitas terbaru secara langsung
 class ActivitiesNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
   final AdminService _service;
 
@@ -233,7 +238,7 @@ final activitiesProvider = StateNotifierProvider<ActivitiesNotifier, AsyncValue<
   return ActivitiesNotifier(ref.watch(adminServiceProvider));
 });
 
-// ─── NEW REQUIREMENTS ────────────────────────────────────────────────────────
+// --- Provider Tambahan ---
 
 final bookingServiceProvider = Provider<BookingService>((ref) {
   return BookingService();
@@ -294,6 +299,7 @@ final adminAllUsersStreamProvider = StreamProvider<List<Map<String, dynamic>>>((
   });
 });
 
+// Struktur data untuk Statistik Dashboard Admin
 class AdminDashboardStats {
   final int totalPengguna;
   final int totalMitra;
@@ -335,6 +341,7 @@ final adminDashboardStatsProvider = Provider<AsyncValue<AdminDashboardStats>>((r
   ));
 });
 
+// Provider untuk memantau riwayat penarikan saldo (payout) Mitra
 final adminPayoutsProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
   final service = ref.watch(adminServiceProvider);
   return service.streamAllPayouts();
