@@ -2,13 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/services/firebase/favorite_service.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 
-/// Provider untuk FavoriteService
+// Provider utama untuk memanggil FavoriteService
 final favoriteServiceProvider = Provider<FavoriteService>((ref) {
   return FavoriteService();
 });
 
-/// Stream provider: apakah sebuah field sudah difavoritkan?
-/// Parameter: fieldId
+// Mengecek apakah suatu lapangan sudah difavoritkan oleh user (secara real-time)
 final isFavoritedProvider = StreamProvider.family<bool, String>((ref, fieldId) {
   final user = ref.watch(authStateProvider).value;
   if (user == null) return Stream.value(false);
@@ -16,7 +15,7 @@ final isFavoritedProvider = StreamProvider.family<bool, String>((ref, fieldId) {
   return service.watchIsFavorited(user.uid, fieldId);
 });
 
-/// Stream provider: daftar ID field favorit user
+// Mengambil seluruh daftar ID lapangan favorit milik user (secara real-time)
 final favoriteIdsProvider = StreamProvider<List<String>>((ref) {
   final user = ref.watch(authStateProvider).value;
   if (user == null) return Stream.value([]);
@@ -24,7 +23,7 @@ final favoriteIdsProvider = StreamProvider<List<String>>((ref) {
   return service.watchFavoriteIds(user.uid);
 });
 
-/// Provider untuk jumlah favorit (untuk profil)
+// Mengambil total jumlah lapangan yang difavoritkan user (misal untuk ditampilkan di profil)
 final favoritesCountProvider = FutureProvider<int>((ref) async {
   final user = ref.watch(authStateProvider).value;
   if (user == null) return 0;

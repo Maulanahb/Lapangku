@@ -4,30 +4,34 @@ import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/services/firebase/booking_service.dart';
 
+// Service provider untuk koneksi ke backend Booking
 final _bookingSvcProvider =
     Provider<BookingService>((ref) => BookingService());
 
-// ── Stream Provider: booking berdasarkan mitraId (langsung dari auth) ──
+// Stream data booking khusus untuk Mitra yang sedang login
 final MitraBookingStreamProvider =
     StreamProvider.family<List<BookingModel>, String?>((ref, statusFilter) {
-  // Watch authStateProvider agar provider ini otomatis refresh saat login/logout
+  
+  // Pantau status login agar data otomatis update
   final user = ref.watch(authStateProvider).value;
   final uid = user?.uid ?? '';
   
   if (uid.isEmpty) return Stream.value([]);
 
   final service = ref.watch(_bookingSvcProvider);
-  // Query langsung via mitraId — tidak perlu tunggu field provider load
+  
+  // Ambil data langsung dari service berdasarkan mitraId
   return service.streamMitraBookingsByMitraId(uid, statusFilter: statusFilter);
 });
 
-// ── Mutating actions ───────────────────────────────────────────────
+// --- Aksi-aksi State Booking ---
 class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
   final BookingService _service;
   final String _mitraId;
 
   MitraBookingActionsNotifier(this._service, this._mitraId) : super({});
 
+  // Konfirmasi booking yang masuk dari pelanggan
   Future<void> confirmBooking(String bookingId) async {
     state = {...state, bookingId};
     try {
@@ -37,6 +41,7 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
     }
   }
 
+  // Tolak booking dari pelanggan beserta alasannya
   Future<void> rejectBooking(String bookingId, {String? reason}) async {
     state = {...state, bookingId};
     try {
@@ -46,6 +51,7 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
     }
   }
 
+  // Setujui permintaan pemindahan jadwal (reschedule)
   Future<void> approveReschedule(String bookingId) async {
     state = {...state, bookingId};
     try {
@@ -55,6 +61,7 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
     }
   }
 
+  // Tolak permintaan pemindahan jadwal (reschedule)
   Future<void> rejectReschedule(String bookingId) async {
     state = {...state, bookingId};
     try {
@@ -64,9 +71,10 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
     }
   }
 
+  // Mengecek apakah suatu proses booking sedang loading
   bool isLoading(String bookingId) => state.contains(bookingId);
 
-  /// Validasi E-Ticket via QR scan — returns BookingModel jika sukses
+  // Validasi e-ticket saat pelanggan melakukan scan QR di lapangan
   Future<BookingModel> validateTicket(String bookingId) async {
     state = {...state, bookingId};
     try {
@@ -77,6 +85,7 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
     }
   }
 
+  // Menyembunyikan riwayat booking dari daftar Mitra
   Future<void> hideBooking(String bookingId) async {
     state = {...state, bookingId};
     try {
@@ -86,7 +95,7 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
     }
   }
 
-  /// Buat booking offline (manual) untuk memblokir slot.
+  // Membuat booking manual secara offline (misal ada yang pesan lewat telepon) untuk memblokir jadwal
   Future<BookingModel> createOfflineBooking({
     required MitraFieldModel field,
     required String mitraId,
@@ -113,9 +122,11 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
   }
 }
 
+// Provider utama untuk memanggil aksi-aksi state booking di atas
 final MitraBookingActionsProvider =
     StateNotifierProvider<MitraBookingActionsNotifier, Set<String>>((ref) {
   final service = ref.watch(_bookingSvcProvider);
   final uid = ref.watch(currentUidProvider);
   return MitraBookingActionsNotifier(service, uid);
 });
+

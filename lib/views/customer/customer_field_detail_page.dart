@@ -84,7 +84,8 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
     _fieldInitialized = true;
     _generateDynamicSlots(field);
     final imgsCount = field.fotoGaleri.length;
-    _pageController = PageController(initialPage: imgsCount > 0 ? imgsCount * 1000 : 0);
+    _pageController =
+        PageController(initialPage: imgsCount > 0 ? imgsCount * 1000 : 0);
     _listenToMitraSchedules(field.id, _selectedDate);
   }
 
@@ -101,37 +102,36 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
   void _listenToMitraSchedules(String fieldId, DateTime selectedDate) {
     _schedulesSubscription?.cancel();
     final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
-    
     _schedulesSubscription = FirestoreService.instance
         .collection('schedules')
         .where('fieldId', isEqualTo: fieldId)
         .where('tanggal', isEqualTo: dateStr)
         .snapshots()
         .listen((snapshot) {
-          final List<String> closed = [];
-          for (var doc in snapshot.docs) {
-            final data = doc.data();
-            if (data['status'] == 'ditutup') {
-              final jam = data['jam'] as String?;
-              if (jam != null && jam.isNotEmpty) {
-                try {
-                  final parts = jam.split(':');
-                  final hour = int.parse(parts[0]);
-                  final startStr = hour.toString().padLeft(2, '0');
-                  final endStr = (hour + 1).toString().padLeft(2, '0');
-                  closed.add("$startStr:00 - $endStr:00");
-                } catch (_) {}
-              }
-            }
+      final List<String> closed = [];
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        if (data['status'] == 'ditutup') {
+          final jam = data['jam'] as String?;
+          if (jam != null && jam.isNotEmpty) {
+            try {
+              final parts = jam.split(':');
+              final hour = int.parse(parts[0]);
+              final startStr = hour.toString().padLeft(2, '0');
+              final endStr = (hour + 1).toString().padLeft(2, '0');
+              closed.add("$startStr:00 - $endStr:00");
+            } catch (_) {}
           }
-          if (mounted) {
-            setState(() {
-              _closedByMitraSlots = closed;
-            });
-          }
-        }, onError: (e) {
-          debugPrint("Error loading schedules: $e");
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _closedByMitraSlots = closed;
         });
+      }
+    }, onError: (e) {
+      debugPrint("Error loading schedules: $e");
+    });
   }
 
   void _generateDates() {
@@ -168,7 +168,8 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
         return _buildMainContent();
       },
       loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        body:
+            Center(child: CircularProgressIndicator(color: AppColors.primary)),
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(title: const Text('Detail Lapangan')),
@@ -195,9 +196,9 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
   Widget _heroAppBar() {
     final imgs = _field.fotoGaleri;
     return SliverAppBar(
-      expandedHeight: 280, pinned: true,
-      backgroundColor:
-          AppColors.primary,
+      expandedHeight: 280,
+      pinned: true,
+      backgroundColor: AppColors.primary,
       leading: _cBtn(Icons.arrow_back, () => Navigator.pop(context)),
       actions: [
         _cBtn(Icons.share_outlined, () {
@@ -352,12 +353,12 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
   Widget _headerInfo() {
     final f = _field;
     final now = TimeOfDay.now();
-    
+
     // Calculate real-time ratings from the stream
     final reviewsAsync = ref.watch(fieldReviewsProvider(f.id));
     double displayRating = f.ratingAvg;
     int displayTotal = f.totalUlasan;
-    
+
     reviewsAsync.whenData((reviews) {
       int t = reviews.length;
       if (t > 0) {
@@ -742,6 +743,8 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
     final s = review['rating'] ?? 5;
     final t = review['comment'] ?? '';
     final reviewImageUrl = review['reviewImageUrl'] ?? '';
+    final replyText = review['replyText'] ?? '';
+    final isReplied = review['isReplied'] ?? false;
     DateTime date = DateTime.now();
     if (review['createdAt'] != null) {
       if (review['createdAt'] is DateTime) {
@@ -758,6 +761,8 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
       t: t,
       time: time,
       reviewImageUrl: reviewImageUrl,
+      replyText: replyText,
+      isReplied: isReplied,
       isMine: isMine,
       onDelete: isMine ? () => _deleteReview(review) : null,
     );
@@ -805,8 +810,8 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
     }
   }
 
-  Widget _buildSummaryBox(
-      FieldModel f, int totalReviews, double avgRating, double p5, double p4, double p3, double p2, double p1) {
+  Widget _buildSummaryBox(FieldModel f, int totalReviews, double avgRating,
+      double p5, double p4, double p3, double p2, double p1) {
     return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -867,6 +872,8 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
           required String t,
           required String time,
           required String reviewImageUrl,
+          String replyText = '',
+          bool isReplied = false,
           bool isMine = false,
           VoidCallback? onDelete}) =>
       Container(
@@ -931,6 +938,38 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
                       color: Colors.grey.shade200,
                       child: const Center(
                           child: Icon(Icons.broken_image, color: Colors.grey))),
+                ),
+              ),
+            ],
+            if (isReplied && replyText.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'LapangKu Mitra',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      replyText,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textBody,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1037,9 +1076,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              _field.alamat.isNotEmpty
-                  ? _field.alamat
-                  : 'Alamat belum diisi',
+              _field.alamat.isNotEmpty ? _field.alamat : 'Alamat belum diisi',
               style: TextStyle(
                 fontSize: 13,
                 color: _field.alamat.isNotEmpty
@@ -1210,7 +1247,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
                   border = Colors.grey.shade300;
                   txt = Colors.grey.shade500;
                   isStrikeThrough = true;
-                  
+
                   if (isClosedByMitra) {
                     sub = 'TUTUP';
                   } else if (isBooked) {
@@ -1248,10 +1285,12 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
                     child: Column(children: [
                       Text(slot,
                           style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: txt,
-                              decoration: isStrikeThrough ? TextDecoration.lineThrough : null,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: txt,
+                            decoration: isStrikeThrough
+                                ? TextDecoration.lineThrough
+                                : null,
                           )),
                       if (sub.isNotEmpty)
                         Padding(

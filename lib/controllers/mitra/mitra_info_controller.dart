@@ -10,6 +10,7 @@ final mitraInfoControllerProvider = StateNotifierProvider<MitraInfoController, A
   return MitraInfoController();
 });
 
+// Controller untuk mengelola informasi profil dan bisnis Mitra
 class MitraInfoController extends StateNotifier<AsyncValue<void>> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirestoreService.instance;
@@ -19,6 +20,7 @@ class MitraInfoController extends StateNotifier<AsyncValue<void>> {
 
   User? get currentUser => _auth.currentUser;
 
+  // Menyimpan pembaruan data profil Mitra ke database
   Future<void> updateProfile({
     required String namaLengkap, 
     required String nomorHp,
@@ -49,6 +51,7 @@ class MitraInfoController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  // Mengunggah gambar profil/logo Mitra ke Firebase Storage
   Future<String?> uploadProfilePicture(File imageFile) async {
     try {
       state = const AsyncLoading();
@@ -72,6 +75,7 @@ class MitraInfoController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  // Mengambil daftar lapangan yang didaftarkan oleh Mitra secara real-time
   Stream<List<MitraFieldModel>> getLapanganTerdaftar(String uid) {
     if (uid.isEmpty) return Stream.value([]);
     

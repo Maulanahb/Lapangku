@@ -2,9 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // ==========================================
-    // FUNGSI BANTUAN (HELPER FUNCTIONS)
-    // ==========================================
+    // --- Helper Functions ---
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -13,7 +11,6 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Cek admin
     function isAdmin() {
       return isAuthenticated() && (
         ('email' in request.auth.token && request.auth.token.email == 'adminlapangku@gmail.com') ||
@@ -23,32 +20,25 @@ service cloud.firestore {
       );
     }
     
-    // ==========================================
-    // KOLEKSI: users (Customer / Admin)
-    // ==========================================
+    // --- Users ---
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow update: if isOwner(userId) || isAdmin();
+      allow update, delete: if isOwner(userId) || isAdmin();
       allow create: if (isAuthenticated() && request.auth.uid == userId) || isAdmin();
-      allow delete: if isAdmin();
       
       match /favorites/{favoriteId} {
         allow read, write: if isOwner(userId) || isAdmin();
       }
     }
-    
-    // ==========================================
-    // KOLEKSI: mitra (Penyedia Lapangan)
-    // ==========================================
+
+    // --- Mitra ---
     match /mitra/{mitraId} {
       allow read: if isAuthenticated();
       allow create, update: if isOwner(mitraId) || isAdmin();
       allow delete: if isAdmin();
     }
     
-    // ==========================================
-    // KOLEKSI: lapangan
-    // ==========================================
+    // --- Lapangan ---
     match /lapangan/{lapanganId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && (
@@ -68,15 +58,19 @@ service cloud.firestore {
       match /reviews/{reviewId} {
         allow read: if isAuthenticated();
         allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
+        
+        // Izinkan Customer mengubah ulasannya, ATAU izinkan Mitra membalas ulasan
         allow update: if isAuthenticated() && (
-          ('userId' in resource.data && resource.data.userId == request.auth.uid) ||
+          ('userId' in resource.data && resource.data.userId == request.auth.uid) || 
+          ('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) || 
           (exists(/databases/$(database)/documents/lapangan/$(lapanganId)) && (
-            get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.mitraId == request.auth.uid ||
-            get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.MitraId == request.auth.uid ||
-            get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.id_pemilik == request.auth.uid
+            ('mitraId' in get(/databases/$(database)/documents/lapangan/$(lapanganId)).data && get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.mitraId == request.auth.uid) ||
+            ('MitraId' in get(/databases/$(database)/documents/lapangan/$(lapanganId)).data && get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.MitraId == request.auth.uid) ||
+            ('id_pemilik' in get(/databases/$(database)/documents/lapangan/$(lapanganId)).data && get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.id_pemilik == request.auth.uid)
           )) ||
           isAdmin()
         );
+        
         allow delete: if isAuthenticated() && (
           ('userId' in resource.data && resource.data.userId == request.auth.uid) || 
           isAdmin()
@@ -84,31 +78,20 @@ service cloud.firestore {
       }
     }
     
-    // ==========================================
-    // KOLEKSI: bookings (Transaksi)
-    // ==========================================
+    // --- Bookings ---
     match /bookings/{bookingId} {
-      allow read: if isAuthenticated();
-      
-      allow create: if isAuthenticated() && (
-        request.resource.data.userId == request.auth.uid || 
-        request.resource.data.mitraId == request.auth.uid ||
-        isAdmin()
-      );
-      
+      allow read, create: if isAuthenticated();
       allow update: if isAuthenticated() && (
         ('userId' in resource.data && resource.data.userId == request.auth.uid) || 
+        ('idUser' in resource.data && resource.data.idUser == request.auth.uid) || 
         ('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) ||
         ('MitraId' in resource.data && resource.data.MitraId == request.auth.uid) ||
         ('id_pemilik' in resource.data && resource.data.id_pemilik == request.auth.uid) ||
         isAdmin()
       );
-      
       allow delete: if isAdmin();
     }
     
-    // ==========================================
-    // KOLEKSI: schedules (Jadwal operasional / block jadwal)
     // ==========================================
     // KOLEKSI: schedules (Jadwal operasional / block jadwal)
     // ==========================================
@@ -161,9 +144,7 @@ service cloud.firestore {
       );
     }
     
-    // ==========================================
-    // KOLEKSI: payouts (Penarikan Saldo Mitra)
-    // ==========================================
+    // --- Payouts ---
     match /payouts/{payoutId} {
       allow read: if isAuthenticated() && (resource.data.mitraId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() && (request.resource.data.mitraId == request.auth.uid || isAdmin());

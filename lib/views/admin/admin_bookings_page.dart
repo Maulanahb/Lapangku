@@ -48,7 +48,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
     );
   }
 
-  // ─── Header ────────────────────────────────────────────────────────────────
+  // --- Header ---
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
@@ -104,7 +104,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
     );
   }
 
-  // ─── Search + Filter ───────────────────────────────────────────────────────
+  // --- Search + Filter ---
   Widget _buildSearchFilter(AsyncValue<List<BookingModel>> bookingsAsync) {
     final filters = [
       {'value': 'semua', 'label': 'Semua'},
@@ -190,7 +190,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
     );
   }
 
-  // ─── Main Content ──────────────────────────────────────────────────────────
+  // --- Main Content ---
   Widget _buildContent(List<BookingModel> bookings) {
     // Filter by status group
     var filtered = bookings.where((b) {
@@ -238,7 +238,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
   }
 
 
-  // ─── Table Card ────────────────────────────────────────────────────────────
+  // --- Table Card ---
   Widget _buildTableCard(List<BookingModel> bookings) {
     return Container(
       width: double.infinity,
@@ -387,7 +387,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
     );
   }
 
-  // ─── Data Row ──────────────────────────────────────────────────────────────
+  // --- Data Row ---
   DataRow _buildDataRow(BookingModel booking) {
     final statusColor = _statusColor(booking.status);
     final statusLabel = BookingStatusHelper.getLabel(booking.status);
@@ -557,7 +557,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
     );
   }
 
-  // ─── Detail Dialog ─────────────────────────────────────────────────────────
+  // --- Detail Dialog ---
   void _showBookingDetail(BookingModel booking) {
     final statusColor = _statusColor(booking.status);
     final dateStr =
@@ -798,7 +798,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
     );
   }
 
-  // ─── Helpers ───────────────────────────────────────────────────────────────
+  // --- Helpers ---
   Color _statusColor(String status) {
     switch (status) {
       case BookingStatusHelper.menungguBayar:

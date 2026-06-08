@@ -8,9 +8,7 @@ final fieldServiceProvider = Provider<FieldService>((ref) {
   return FieldService();
 });
 
-/// Data lapangan di-cache selama sesi (keepAlive) agar tidak fetch ulang
-/// setiap kali user pindah tab dan kembali ke Home.
-/// Gunakan ref.invalidate(fieldsProvider) untuk force-refresh jika diperlukan.
+/// Mengambil dan menyimpan daftar lapangan sementara (cache) agar aplikasi lebih cepat
 final fieldsProvider = FutureProvider<List<FieldModel>>((ref) async {
   ref.keepAlive();
   final service = ref.watch(fieldServiceProvider);
@@ -22,7 +20,7 @@ final fieldDetailProvider = FutureProvider.family<FieldModel, String>((ref, id) 
   return service.getFieldById(id);
 });
 
-// ─── Model untuk menyimpan field beserta jarak yang sudah dihitung ─────────
+// Model bantuan untuk menyimpan data lapangan sekaligus info jarak
 class FieldWithDistance {
   final FieldModel field;
   final double? distanceInMeters;
@@ -30,9 +28,7 @@ class FieldWithDistance {
   const FieldWithDistance({required this.field, this.distanceInMeters});
 }
 
-// ─── Derived Provider: menghitung jarak & mengurutkan field ────────────────
-// Komputasi hanya dijalankan ulang ketika data field ATAU lokasi user berubah,
-// BUKAN setiap kali layar di-scroll (menghindari frame drop/jank).
+// Mengurutkan lapangan berdasarkan jarak terdekat dari lokasi pengguna
 final sortedFieldsWithDistanceProvider =
     FutureProvider<List<FieldWithDistance>>((ref) async {
   final fields = await ref.watch(fieldsProvider.future);

@@ -6,7 +6,7 @@ import 'package:lapangku/services/firebase/mitra_service.dart';
 import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 
-// ─── State ─────────────────────────────────────────────────────────────────
+// --- Struktur Data (State) ---
 class MitraFieldState {
   final AsyncValue<List<MitraFieldModel>> fields;
   final bool isMutating; 
@@ -30,7 +30,7 @@ class MitraFieldState {
       );
 }
 
-// ─── Notifier ──────────────────────────────────────────────────────────────
+// --- Controller ---
 class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
   final MitraService _service;
   final String _uid; // Passing UID dari provider agar lebih testable
@@ -53,6 +53,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     }
   }
 
+  // Menambahkan lapangan baru ke database Mitra
   Future<bool> addField({
     required String namaVenue,
     required String namaLapangan,
@@ -99,6 +100,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     }
   }
 
+  // Mengubah data lapangan yang sudah ada
   Future<bool> editField(
     String fieldId, {
     required String namaVenue,
@@ -154,6 +156,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     }
   }
 
+  // Menghapus lapangan dari database
   Future<bool> deleteField(String fieldId) async {
     state = state.copyWith(isMutating: true, errorMessage: null);
     try {
@@ -168,6 +171,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
     }
   }
 
+  // Mengubah status lapangan (Aktif / Tidak Aktif)
   Future<void> toggleFieldStatus(String fieldId, bool currentStatus) async {
     final newStatus = !currentStatus;
     final currentList = state.fields.value ?? [];
@@ -184,6 +188,7 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
   }
 }
 
+
 final mitraFieldProvider =
     StateNotifierProvider<MitraFieldNotifier, MitraFieldState>((ref) {
   final service = ref.watch(mitraServiceProvider);
@@ -192,7 +197,7 @@ final mitraFieldProvider =
   return MitraFieldNotifier(service, uid);
 });
 
-// Perbaikan penulisan nama ke camelCase
+// Provider untuk mengekspos list data lapangan ke UI
 final mitraFieldListProvider =
     Provider<AsyncValue<List<MitraFieldModel>>>((ref) {
   return ref.watch(mitraFieldProvider).fields;

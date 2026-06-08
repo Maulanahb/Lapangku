@@ -404,6 +404,33 @@ class _MitraRegisterPageState extends ConsumerState<MitraRegisterPage> {
           'statusVerifikasi': 'menunggu',
           'createdAt': FieldValue.serverTimestamp(),
         }),
+        // Save to 'lapangan' collection so the Mitra has an initial field
+        db.collection('lapangan').doc().set({
+          'mitraId': newMitraId,
+          'MitraId': newMitraId, // backward-compat key
+          'id_pemilik': newMitraId, // backward-compat key
+          'nama_venue': _businessNameController.text.trim(),
+          'nama_lapangan': _fieldNameController.text.trim(),
+          'jenisLapangan': _selectedSport,
+          'kategori_lapangan': _selectedSport,
+          'tipe_lapangan': _selectedFieldType,
+          'hargaPerJam': int.tryParse(_priceController.text) ?? 0,
+          'harga_sewa_jam': int.tryParse(_priceController.text) ?? 0,
+          'deskripsi': _fieldDescriptionController.text.trim(),
+          'deskripsi_fasilitas': _fieldDescriptionController.text.trim(),
+          'alamat': _addressController.text.trim(),
+          'alamat_lengkap': _addressController.text.trim(),
+          'photoUrls': fieldPhotoUrls,
+          'foto_lapangan': fieldPhotoUrls,
+          'fasilitas': _selectedFacilities,
+          'jamBuka': _openingTime.format(context),
+          'jamTutup': _closingTime.format(context),
+          'is_aktif':
+              false, // Hidden pending verification
+          'createdAt': FieldValue.serverTimestamp(),
+          'avg_rating': 0.0,
+          'total_ulasan': 0,
+        }),
       ]);
 
       await FirebaseAuth.instance.signOut();

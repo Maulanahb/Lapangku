@@ -586,7 +586,7 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
+                      color: Colors.black.withOpacity(0.08),
                       blurRadius: 8,
                     ),
                   ],
@@ -689,7 +689,7 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-          color: const Color(0xFFF0F4FF).withValues(alpha: 0.5),
+          color: const Color(0xFFF0F4FF).withOpacity(0.5),
           borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -721,7 +721,7 @@ class _AddFieldPageState extends ConsumerState<AddFieldPage> {
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
       decoration: BoxDecoration(color: Colors.white, boxShadow: [
         BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, -5))
       ]),

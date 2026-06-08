@@ -476,6 +476,25 @@ class MitraService {
     return reviews;
   }
 
+  /// Stream realtime untuk semua review milik mitra.
+  /// Digunakan oleh halaman Ulasan Pelanggan agar auto-update
+  /// saat customer menambah, mengedit, atau menghapus review.
+  Stream<List<MitraReviewModel>> streamReviews(String mitraId) {
+    if (mitraId.isEmpty) return Stream.value([]);
+    return _db
+        .collectionGroup('reviews')
+        .where('mitraId', isEqualTo: mitraId)
+        .snapshots()
+        .map((snapshot) {
+      final reviews = snapshot.docs
+          .map((doc) => MitraReviewModel.fromFirestore(doc))
+          .toList();
+      // Sort locally descending by date
+      reviews.sort((a, b) => b.date.compareTo(a.date));
+      return reviews;
+    });
+  }
+
   Future<void> replyReview({
     required String fieldId,
     required String reviewId,
@@ -488,6 +507,7 @@ class MitraService {
         .doc(reviewId)
         .update({
       'replyText': replyText,
+      'isReplied': true,
       'replyDate': FieldValue.serverTimestamp(),
     });
   }

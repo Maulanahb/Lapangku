@@ -17,7 +17,7 @@ const List<Map<String, dynamic>> facilitiesList = [
 class FieldFormWidgets {
   FieldFormWidgets._(); // Prevent instantiation
 
-  // ─── PROGRESS BAR ─────────────────────────────────────────────
+  // --- Progress Bar ---
   static Widget buildProgressBar({
     required int currentStep,
     required int totalSteps,
@@ -27,80 +27,80 @@ class FieldFormWidgets {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       color: Colors.white,
       child: Row(
-        children: List.generate(totalSteps, (index) {
-          final stepNum = index + 1;
-          final isActive = stepNum <= currentStep;
-          final isLast = stepNum == totalSteps;
-          return Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: isActive
-                                  ? const Color(0xFF0F5A3C)
-                                  : const Color(0xFFE2E8F0),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: isActive && stepNum < currentStep
-                                  ? const Icon(Icons.check,
-                                      color: Colors.white, size: 16)
-                                  : Text(
-                                      '$stepNum',
-                                      style: TextStyle(
-                                        color: isActive
-                                            ? Colors.white
-                                            : const Color(0xFF9CA3AF),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                          if (!isLast)
-                            Expanded(
-                              child: Container(
-                                height: 2,
-                                color: stepNum < currentStep
-                                    ? const Color(0xFF0F5A3C)
-                                    : const Color(0xFFE2E8F0),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(totalSteps * 2 - 1, (i) {
+          if (i.isOdd) {
+            // Garis penghubung
+            final stepIndex = i ~/ 2;
+            final isActive = (stepIndex + 1) < currentStep;
+            return Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(top: 13), // 28/2 = 14 (approx center)
+                height: 2,
+                color: isActive
+                    ? const Color(0xFF0F5A3C)
+                    : const Color(0xFFE2E8F0),
+              ),
+            );
+          } else {
+            // Lingkaran dan teks
+            final stepIndex = i ~/ 2;
+            final stepNum = stepIndex + 1;
+            final isActive = stepNum <= currentStep;
+            return SizedBox(
+              width: 85, // Menjaga teks tetap rapi dan terpusat dengan lingkaran
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? const Color(0xFF0F5A3C)
+                          : const Color(0xFFE2E8F0),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: isActive && stepNum < currentStep
+                          ? const Icon(Icons.check,
+                              color: Colors.white, size: 16)
+                          : Text(
+                              '$stepNum',
+                              style: TextStyle(
+                                color: isActive
+                                    ? Colors.white
+                                    : const Color(0xFF9CA3AF),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        labels[index],
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight:
-                              isActive ? FontWeight.bold : FontWeight.w500,
-                          color: isActive
-                              ? const Color(0xFF0F5A3C)
-                              : const Color(0xFF9CA3AF),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
+                  const SizedBox(height: 6),
+                  Text(
+                    labels[stepIndex],
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                      color: isActive
+                          ? const Color(0xFF0F5A3C)
+                          : const Color(0xFF9CA3AF),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            );
+          }
         }),
       ),
     );
   }
 
-  // ─── SECTION HEADER ───────────────────────────────────────────
+  // --- Section Header ---
   static Widget buildSectionHeader(String title, String? subtitle) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,7 +128,7 @@ class FieldFormWidgets {
     );
   }
 
-  // ─── LABEL ────────────────────────────────────────────────────
+  // --- Label ---
   static Widget buildLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -143,7 +143,7 @@ class FieldFormWidgets {
     );
   }
 
-  // ─── TEXT FIELD ────────────────────────────────────────────────
+  // --- Text Field ---
   static Widget buildTextField(
     TextEditingController controller,
     String hint, {
@@ -179,7 +179,7 @@ class FieldFormWidgets {
     );
   }
 
-  // ─── PRICE FIELD ──────────────────────────────────────────────
+  // --- Price Field ---
   static Widget buildPriceField(
     TextEditingController controller,
     String hint,
@@ -219,7 +219,7 @@ class FieldFormWidgets {
     );
   }
 
-  // ─── DELETE BUTTON (Positioned, untuk foto) ───────────────────
+  // --- Delete Button (Positioned) ---
   static Widget buildPositionDetector({required VoidCallback onTap}) {
     return Positioned(
       right: 8,

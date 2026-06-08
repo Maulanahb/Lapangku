@@ -30,6 +30,8 @@ class MitraProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(mitraProfileProvider);
+    final fieldAsync = ref.watch(
+        mitraFieldListProvider); // Ambil data lapangan untuk hitung rating dinamis
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPage,
@@ -67,167 +69,188 @@ class MitraProfilePage extends ConsumerWidget {
                 const Text('Coba Lagi', style: TextStyle(color: Colors.white)),
           ),
         ),
-        data: (profile) => SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildHeroSection(context, ref, profile), // Diperbarui UI/UX-nya
-              const SizedBox(height: 24),
-              _buildMenuSection(
-                title: "MANAJEMEN BISNIS",
-                items: [
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.stadium_outlined,
-                    title: "Lapangan Saya",
-                    subtitle: "${profile.totalFields} lapangan aktif",
-                    subtitleColor: Colors.green,
-                    onTap: () => Navigator.push(
+        data: (profile) {
+          // Hitung rating dinamis berdasarkan seluruh lapangan milik Mitra
+          double dynamicRating = profile.rating;
+          if (fieldAsync is AsyncData) {
+            final fields = fieldAsync.value!;
+            // Hanya hitung lapangan yang sudah punya rating (avgRating > 0)
+            final ratedFields = fields.where((f) => f.avgRating > 0).toList();
+            if (ratedFields.isNotEmpty) {
+              final totalRating = ratedFields
+                  .map((f) => f.avgRating)
+                  .fold(0.0, (a, b) => a + b);
+              dynamicRating = totalRating / ratedFields.length;
+            } else {
+              dynamicRating = 0.0;
+            }
+          }
+          final ratingStr = dynamicRating.toStringAsFixed(1);
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildHeroSection(
+                    context, ref, profile), // Diperbarui UI/UX-nya
+                const SizedBox(height: 24),
+                _buildMenuSection(
+                  title: "MANAJEMEN BISNIS",
+                  items: [
+                    _buildMenuItem(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const LapanganSayaPage()),
+                      icon: Icons.stadium_outlined,
+                      title: "Lapangan Saya",
+                      subtitle: "${profile.totalFields} lapangan aktif",
+                      subtitleColor: Colors.green,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const LapanganSayaPage()),
+                      ),
+                    ),
+                    _buildMenuItem(
+                      context,
+                      icon: Icons.calendar_month_outlined,
+                      title: "Jadwal & Ketersediaan",
+                      subtitle: "Atur slot booking",
+                      onTap: () => _navigateToJadwalKetersediaan(context, ref),
+                    ),
+                    _buildMenuItem(
+                      context,
+                      icon: Icons.receipt_long_outlined,
+                      title: "Pesanan Masuk",
+                      subtitle: "${profile.totalOrders} perlu konfirmasi",
+                      subtitleColor: Colors.orange,
+                      badgeCount: profile.totalOrders,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const MitraBookingListPage()),
+                      ),
+                    ),
+                  ],
+                ),
+                _buildMenuSection(
+                  title: "LAPORAN",
+                  items: [
+                    _buildMenuItem(
+                      context,
+                      icon: Icons.trending_up,
+                      title: "Pendapatan",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const MitraRevenuePage()),
+                      ),
+                    ),
+                    _buildMenuItem(
+                      context,
+                      icon: Icons.star,
+                      title: "Ulasan Pelanggan",
+                      subtitle: "$ratingStr rata-rata",
+                      subtitleColor: Colors.orange,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const MitraReviewsPage()),
+                      ),
+                    ),
+                    _buildMenuItem(
+                      context,
+                      icon: Icons.bar_chart,
+                      title: "Statistik Booking",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const StatistikBookingPage()),
+                      ),
+                    ),
+                  ],
+                ),
+                _buildMenuSection(
+                  title: "AKUN & PENGATURAN",
+                  items: [
+                    _buildMenuItem(
+                      context,
+                      icon: Icons.person_outline,
+                      title: "Informasi Pribadi",
+                      subtitle: "Ubah data diri & profil",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const MitraProfileDocumentPage()),
+                      ),
+                    ),
+                    _buildMenuItem(
+                      context,
+                      icon: Icons.lock_outlined,
+                      title: "Keamanan",
+                      subtitle: "Kata sandi & PIN",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const MitraSecurityPage()),
+                      ),
+                    ),
+                    _buildMenuItem(
+                      context,
+                      icon: Icons.notifications_outlined,
+                      title: "Notifikasi",
+                      subtitle: "Atur pemberitahuan",
+                      onTap: () {}, // Kosong dulu
+                    ),
+                    _buildMenuItem(
+                      context,
+                      icon: Icons.info_outline,
+                      title: "Tentang LapangKu",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const MitraHelpPage()),
+                      ),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: OutlinedButton.icon(
+                    onPressed: () => _handleLogout(context, ref),
+                    icon: const Icon(Icons.logout, color: Colors.red),
+                    label: const Text(
+                      'Keluar dari Akun',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity,
+                          52), // Dibuat lebih tebal sedikit (UX)
+                      side: const BorderSide(color: Colors.red, width: 1.5),
+                      backgroundColor:
+                          Colors.red.withOpacity(0.05), // Sedikit tint merah
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.calendar_month_outlined,
-                    title: "Jadwal & Ketersediaan",
-                    subtitle: "Atur slot booking",
-                    onTap: () => _navigateToJadwalKetersediaan(context, ref),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.receipt_long_outlined,
-                    title: "Pesanan Masuk",
-                    subtitle: "${profile.totalOrders} perlu konfirmasi",
-                    subtitleColor: Colors.orange,
-                    badgeCount: profile.totalOrders,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const MitraBookingListPage()),
-                    ),
-                  ),
-                ],
-              ),
-              _buildMenuSection(
-                title: "LAPORAN",
-                items: [
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.trending_up,
-                    title: "Pendapatan",
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const MitraRevenuePage()),
-                    ),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.star,
-                    title: "Ulasan Pelanggan",
-                    subtitle: "${profile.rating} rata-rata",
-                    subtitleColor: Colors.orange,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const MitraReviewsPage()),
-                    ),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.bar_chart,
-                    title: "Statistik Booking",
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const StatistikBookingPage()),
-                    ),
-                  ),
-                ],
-              ),
-              _buildMenuSection(
-                title: "AKUN & PENGATURAN",
-                items: [
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.person_outline,
-                    title: "Informasi Pribadi",
-                    subtitle: "Ubah data diri & profil",
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const MitraProfileDocumentPage()),
-                    ),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.lock_outlined,
-                    title: "Keamanan",
-                    subtitle: "Kata sandi & PIN",
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const MitraSecurityPage()),
-                    ),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.notifications_outlined,
-                    title: "Notifikasi",
-                    subtitle: "Atur pemberitahuan",
-                    onTap: () {}, // Kosong dulu
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.info_outline,
-                    title: "Tentang LapangKu",
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MitraHelpPage()),
-                    ),
-                  ),
-                ],
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: OutlinedButton.icon(
-                  onPressed: () => _handleLogout(context, ref),
-                  icon: const Icon(Icons.logout, color: Colors.red),
-                  label: const Text(
-                    'Keluar dari Akun',
+                ),
+                const Center(
+                  child: Text(
+                    'Versi Aplikasi 1.0.4',
                     style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(
-                        double.infinity, 52), // Dibuat lebih tebal sedikit (UX)
-                    side: const BorderSide(color: Colors.red, width: 1.5),
-                    backgroundColor:
-                        Colors.red.withOpacity(0.05), // Sedikit tint merah
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
                     ),
                   ),
                 ),
-              ),
-              const Center(
-                child: Text(
-                  'Versi Aplikasi 1.0.4',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-            ],
-          ),
-        ),
+                const SizedBox(height: 32),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -460,7 +483,7 @@ class MitraProfilePage extends ConsumerWidget {
     );
   }
 
-  // ─── LOGIKA APLIKASI (TIDAK ADA YANG DIRUBAH) ───
+  // --- Logika Aplikasi ---
 
   void _navigateToJadwalKetersediaan(BuildContext context, WidgetRef ref) {
     final fieldsState = ref.read(mitraFieldProvider);
