@@ -10,6 +10,7 @@ import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 import 'package:lapangku/views/mitra/mitra_offline_booking_page.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
+import 'package:lapangku/views/mitra/widgets/mitra_notification_bell.dart';
 
 class MitraBookingListPage extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -97,10 +98,7 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF0F4C36)),
-            onPressed: () {},
-          ),
+          const MitraNotificationBell(),
           const SizedBox(width: 8),
         ],
         bottom: TabBar(
