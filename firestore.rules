@@ -68,7 +68,19 @@ service cloud.firestore {
       match /reviews/{reviewId} {
         allow read: if isAuthenticated();
         allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
-        allow update, delete: if isAuthenticated() && (('userId' in resource.data && resource.data.userId == request.auth.uid) || isAdmin());
+        allow update: if isAuthenticated() && (
+          ('userId' in resource.data && resource.data.userId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/lapangan/$(lapanganId)) && (
+            get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.mitraId == request.auth.uid ||
+            get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.MitraId == request.auth.uid ||
+            get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.id_pemilik == request.auth.uid
+          )) ||
+          isAdmin()
+        );
+        allow delete: if isAuthenticated() && (
+          ('userId' in resource.data && resource.data.userId == request.auth.uid) || 
+          isAdmin()
+        );
       }
     }
     
@@ -190,6 +202,13 @@ service cloud.firestore {
         ('mitra_id' in resource.data && resource.data.mitra_id == request.auth.uid) ||
         isAdmin()
       );
+    }
+
+    // ==========================================
+    // KOLEKSI GROUP: reviews (Ulasan untuk collection group queries)
+    // ==========================================
+    match /{path=**}/reviews/{reviewId} {
+      allow read: if isAuthenticated();
     }
 
     // ==========================================
