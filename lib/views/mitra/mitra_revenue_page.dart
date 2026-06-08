@@ -29,7 +29,7 @@ class MitraRevenuePage extends ConsumerStatefulWidget {
 }
 
 class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
-  String _selectedFilter = 'Bulan Ini';
+  String _selectedFilter = 'Hari Ini';
   bool _isExporting = false;
 
   Future<void> _pickDateRange() async {
@@ -466,6 +466,11 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to date range changes to trigger loadRevenue smoothly
+    ref.listen<DateRange>(revenueDateRangeProvider, (previous, next) {
+      ref.read(mitraRevenueProvider.notifier).loadRevenue(next);
+    });
+
     final revenueAsync = ref.watch(mitraRevenueProvider);
 
     return Scaffold(
@@ -514,60 +519,76 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
           ),
         ],
       ),
-      body: revenueAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
-        error: (err, stack) => EmptyStateWidget(
-          icon: Icons.error_outline,
-          title: 'Gagal memuat data',
-          subtitle: err.toString(),
-        ),
-        data: (revenue) => RefreshIndicator(
-          onRefresh: () => ref.read(mitraRevenueProvider.notifier).loadRevenue(),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: revenueAsync.hasValue
+          ? Stack(
               children: [
-                _buildDescriptionText(),
-                _buildHeroCard(revenue),
-                _buildFilterChips(),
-                _buildSectionTitle("Ringkasan"),
-                _buildSummaryGrid(revenue),
-                _buildSectionTitle("Tren Pendapatan"),
-                _buildTrendCard(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Transaksi Terbaru",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textHeading,
+                RefreshIndicator(
+                  onRefresh: () => ref.read(mitraRevenueProvider.notifier).loadRevenue(),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDescriptionText(),
+                        _buildHeroCard(revenueAsync.value!),
+                        _buildFilterChips(),
+                        _buildSectionTitle("Ringkasan"),
+                        _buildSummaryGrid(revenueAsync.value!),
+                        _buildSectionTitle("Tren Pendapatan"),
+                        _buildTrendCard(),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                "Transaksi Terbaru",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textHeading,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {},
+                                child: const Text(
+                                  "Lihat Semua",
+                                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text(
-                          "Lihat Semua",
-                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
+                        _buildTransactionList(revenueAsync.value!.transactions),
+                        _buildPayoutStatus(),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
                   ),
                 ),
-                _buildTransactionList(revenue.transactions),
-                _buildPayoutStatus(),
-                const SizedBox(height: 32),
+                if (revenueAsync.isLoading)
+                  const Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: LinearProgressIndicator(
+                      color: AppColors.primary,
+                      minHeight: 3,
+                    ),
+                  ),
               ],
+            )
+          : revenueAsync.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+              error: (err, stack) => EmptyStateWidget(
+                icon: Icons.error_outline,
+                title: 'Gagal memuat data',
+                subtitle: err.toString(),
+              ),
+              data: (_) => const SizedBox.shrink(),
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -617,11 +638,18 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.trending_up, color: Colors.white, size: 14),
-                    SizedBox(width: 4),
-                    Text("18%", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Icon(
+                      revenue.revenueGrowth >= 0 ? Icons.trending_up : Icons.trending_down,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      "${revenue.revenueGrowth >= 0 ? '+' : ''}${revenue.revenueGrowth.toStringAsFixed(0)}%",
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
               ),
@@ -679,7 +707,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
               _buildMiniStat("${revenue.totalOrders}", "BOOKING"), // FIX: Menggunakan totalOrders dinamis
               _buildMiniStat(
                 CurrencyFormatter.formatShort( // FIX: Menggunakan formatShort untuk rata-rata
-                  revenue.totalOrders > 0 ? (revenue.totalRevenue ~/ revenue.totalOrders) : 0,
+                  revenue.totalOrders > 0 ? (revenue.periodRevenue ~/ revenue.totalOrders) : 0,
                 ).toUpperCase(),
                 "RATA-RATA",
               ),

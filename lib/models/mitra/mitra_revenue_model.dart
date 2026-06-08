@@ -24,6 +24,8 @@ class MitraRevenueModel {
   final int availableBalance;
   final int activeBookings;
   final double payoutSuccessRate;
+  final double revenueGrowth;
+  final int periodRevenue;
 
   const MitraRevenueModel({
     required this.totalRevenue,
@@ -35,5 +37,7 @@ class MitraRevenueModel {
     this.availableBalance = 0,
     this.activeBookings = 0,
     this.payoutSuccessRate = 0.92,
+    this.revenueGrowth = 0.0,
+    this.periodRevenue = 0,
   });
 }

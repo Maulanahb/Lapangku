@@ -12,40 +12,50 @@ class DateRange {
 
 final revenueDateRangeProvider = StateProvider<DateRange>((ref) {
   final now = DateTime.now();
-  return DateRange(DateTime(now.year, now.month, 1),
-      DateTime(now.year, now.month + 1, 0)); // This month
+  return DateRange(
+    DateTime(now.year, now.month, now.day),
+    DateTime(now.year, now.month, now.day, 23, 59, 59),
+  ); // Today
 });
 
 final mitraRevenueProvider =
     StateNotifierProvider<MitraRevenueNotifier, AsyncValue<MitraRevenueModel>>(
         (ref) {
   final service = ref.watch(mitraServiceProvider);
-  final dateRange = ref.watch(revenueDateRangeProvider);
   final uid = ref.watch(currentUidProvider);
   
-  return MitraRevenueNotifier(service, dateRange, uid);
+  return MitraRevenueNotifier(service, ref, uid);
 });
 
 class MitraRevenueNotifier
     extends StateNotifier<AsyncValue<MitraRevenueModel>> {
   final MitraService _service;
-  final DateRange _dateRange;
+  final Ref _ref;
   final String _uid;
 
-  MitraRevenueNotifier(this._service, this._dateRange, this._uid)
+  MitraRevenueNotifier(this._service, this._ref, this._uid)
       : super(const AsyncLoading()) {
-    loadRevenue();
+    final initialRange = _ref.read(revenueDateRangeProvider);
+    loadRevenue(initialRange);
   }
 
-  Future<void> loadRevenue() async {
+  Future<void> loadRevenue([DateRange? range]) async {
     if (_uid.isEmpty) {
       state = AsyncError('Pengguna tidak login', StackTrace.current);
       return;
     }
-    state = const AsyncLoading();
+
+    final previousState = state;
+    if (previousState.hasValue) {
+      state = AsyncValue<MitraRevenueModel>.loading().copyWithPrevious(previousState);
+    } else {
+      state = const AsyncLoading();
+    }
+
     try {
+      final targetRange = (range ?? _ref.read(revenueDateRangeProvider))!;
       final revenue =
-          await _service.getRevenue(_uid, _dateRange.start, _dateRange.end);
+          await _service.getRevenue(_uid, targetRange.start, targetRange.end);
       state = AsyncData(revenue);
     } catch (e, st) {
       state = AsyncError(e, st);
