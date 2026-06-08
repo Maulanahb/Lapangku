@@ -15,8 +15,7 @@ class StatistikBookingPage extends ConsumerStatefulWidget {
 class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final mitraId = authState.user?.uid ?? '';
+    final mitraId = ref.watch(currentUidProvider);
     final statsAsync = ref.watch(mitraAdvancedStatsProvider(mitraId));
     final currentFilter = ref.watch(statsFilterProvider);
 
@@ -38,12 +37,7 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
             fontSize: 18,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today_outlined, color: Colors.white),
-            onPressed: () {},
-          ),
-        ],
+
       ),
       body: Builder(
         builder: (context) {
@@ -66,23 +60,6 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
 
           final stats = statsAsync;
 
-          // FIX: BUG 2 - Tampilkan EmptyState jika data kosong pada filter terpilih
-          if (stats['filteredCount'] == 0) {
-            return RefreshIndicator(
-              onRefresh: () async => ref.refresh(mitraBookingsProvider(mitraId)),
-              child: ListView(
-                children: [
-                  _buildFilterChips(currentFilter),
-                  const SizedBox(height: 100),
-                  const EmptyStateWidget(
-                    icon: Icons.analytics_outlined,
-                    title: 'Data Belum Tersedia',
-                    subtitle: 'Belum ada aktivitas booking pada periode ini.',
-                  ),
-                ],
-              ),
-            );
-          }
 
           return RefreshIndicator(
             onRefresh: () async => ref.refresh(mitraBookingsProvider(mitraId)),

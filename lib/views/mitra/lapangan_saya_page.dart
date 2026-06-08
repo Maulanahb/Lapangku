@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/controllers/booking/booking_controller.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
@@ -96,7 +96,7 @@ class LapanganSayaPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final uid = ref.watch(currentUidProvider);
     final fieldState = ref.watch(mitraFieldProvider);
     final fieldsAsync = fieldState.fields;
     final bookingsAsync = ref.watch(mitraBookingsStreamProvider(uid));

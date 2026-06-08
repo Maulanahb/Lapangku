@@ -2,11 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lapangku/controllers/mitra/mitra_stats_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_booking_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/views/mitra/mitra_booking_list_page.dart';
@@ -33,7 +33,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
     decimalDigits: 0,
   );
 
-  String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
+  String get _uid => ref.watch(currentUidProvider);
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,4 @@
 import 'dart:io'; // NEW: Import File
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart'; // NEW: Import ImagePicker
@@ -58,8 +57,8 @@ class MitraProfilePage extends ConsumerWidget {
           subtitle: err.toString(),
           actionButton: ElevatedButton(
             onPressed: () {
-              final uid = FirebaseAuth.instance.currentUser?.uid;
-              if (uid != null) {
+              final uid = ref.read(currentUidProvider);
+              if (uid.isNotEmpty) {
                 ref.read(mitraProfileProvider.notifier).loadProfile(uid);
               }
             },

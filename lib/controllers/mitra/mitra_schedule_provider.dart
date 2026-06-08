@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/mitra/mitra_schedule_model.dart';
 import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 import 'package:lapangku/services/firebase/mitra_service.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 
 // â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class MitraScheduleState {
@@ -77,5 +78,6 @@ class MitraScheduleNotifier extends StateNotifier<MitraScheduleState> {
 final mitraScheduleProvider =
     StateNotifierProvider<MitraScheduleNotifier, MitraScheduleState>((ref) {
   final service = ref.watch(mitraServiceProvider);
+  ref.watch(currentUidProvider); // Recreate/reset on user change
   return MitraScheduleNotifier(service);
 });

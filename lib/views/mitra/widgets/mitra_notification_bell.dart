@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/views/mitra/mitra_notification_page.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
 
-class MitraNotificationBell extends StatelessWidget {
+class MitraNotificationBell extends ConsumerWidget {
   const MitraNotificationBell({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final User? currentUser = FirebaseAuth.instance.currentUser;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final String uid = ref.watch(currentUidProvider);
 
     // Fungsi navigasi dipisah agar mudah dipanggil
     void goToNotificationPage() {
@@ -19,7 +21,7 @@ class MitraNotificationBell extends StatelessWidget {
     }
 
     // Jika belum login, tampilkan icon button biasa
-    if (currentUser == null) {
+    if (uid.isEmpty) {
       return IconButton(
         icon: const Icon(Icons.notifications_none, size: 28),
         onPressed: goToNotificationPage,
@@ -27,9 +29,9 @@ class MitraNotificationBell extends StatelessWidget {
     }
 
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
+      stream: FirestoreService.instance
           .collection('notifikasi')
-          .where('mitraId', isEqualTo: currentUser.uid)
+          .where('mitraId', isEqualTo: uid)
           .where('isRead', isEqualTo: false)
           .snapshots(),
       builder: (context, snapshot) {

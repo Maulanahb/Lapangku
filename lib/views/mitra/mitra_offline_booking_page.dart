@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_booking_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
@@ -85,7 +85,7 @@ class _MitraOfflineBookingPageState
 
     setState(() => _isLoading = true);
     try {
-      final mitraId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final mitraId = ref.read(currentUidProvider);
       // Sort slots agar berurutan
       _selectedSlots.sort();
       await ref.read(MitraBookingActionsProvider.notifier).createOfflineBooking(

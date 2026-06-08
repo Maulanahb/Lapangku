@@ -1,18 +1,18 @@
 import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/mitra/mitra_profile_model.dart';
 import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 import 'package:lapangku/services/firebase/mitra_service.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 
-// â”€â”€ Notifier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Notifier ──────────────────────────────────────────────────────────────
 class MitraProfileNotifier
     extends StateNotifier<AsyncValue<MitraProfileModel>> {
   final MitraService _service;
+  final String _uid;
 
-  MitraProfileNotifier(this._service) : super(const AsyncLoading()) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) loadProfile(uid);
+  MitraProfileNotifier(this._service, this._uid) : super(const AsyncLoading()) {
+    if (_uid.isNotEmpty) loadProfile(_uid);
   }
 
   Future<void> loadProfile(String uid, {bool silent = false}) async {
@@ -153,16 +153,9 @@ class MitraProfileNotifier
   }
 }
 
-// Provider yang reaktif terhadap perubahan auth state
-// Ini memastikan profil di-reset saat user ganti akun (logout/login)
-final _profileAuthUidProvider = StreamProvider<String?>((ref) {
-  return FirebaseAuth.instance.authStateChanges().map((user) => user?.uid);
-});
-
 final mitraProfileProvider = StateNotifierProvider<MitraProfileNotifier,
     AsyncValue<MitraProfileModel>>((ref) {
   final service = ref.watch(mitraServiceProvider);
-  // Watch UID — saat UID berubah (ganti akun), provider ini otomatis di-recreate
-  ref.watch(_profileAuthUidProvider);
-  return MitraProfileNotifier(service);
+  final uid = ref.watch(currentUidProvider);
+  return MitraProfileNotifier(service, uid);
 });

@@ -26,10 +26,13 @@ class EmptyStateWidget extends StatelessWidget {
     
     return LayoutBuilder(
       builder: (context, constraints) {
+        final double minHeight = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : 0.0;
         return SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            constraints: BoxConstraints(minHeight: minHeight),
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),

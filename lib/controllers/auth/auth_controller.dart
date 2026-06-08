@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lapangku/models/auth/user_model.dart';
 import 'package:lapangku/services/firebase/auth_service.dart';
 
@@ -260,16 +261,41 @@ class AuthNotifier extends StateNotifier<AuthState> {
       rethrow;
     }
   }
+
+  void syncUser(UserModel? user) {
+    state = state.copyWith(
+      user: user,
+      clearUser: user == null,
+      clearError: true,
+    );
+  }
 }
 
 // Provider utama yang dipakai UI
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final service = ref.watch(authServiceProvider);
-  return AuthNotifier(service);
+  final notifier = AuthNotifier(service);
+
+  // Sync auth state from stream provider to keep it updated on app startup and state changes
+  ref.listen<AsyncValue<UserModel?>>(authStateProvider, (previous, next) {
+    next.when(
+      data: (user) => notifier.syncUser(user),
+      error: (e, s) {},
+      loading: () {},
+    );
+  }, fireImmediately: true);
+
+  return notifier;
 });
 
 // Provider untuk cek auth state (login/logout)
 final authStateProvider = StreamProvider<UserModel?>((ref) {
   final service = ref.watch(authServiceProvider);
   return service.authStateChanges;
+});
+
+/// Provider untuk mendapatkan UID pengguna saat ini secara reaktif
+final currentUidProvider = Provider<String>((ref) {
+  final user = ref.watch(authStateProvider).value;
+  return user?.uid ?? FirebaseAuth.instance.currentUser?.uid ?? '';
 });

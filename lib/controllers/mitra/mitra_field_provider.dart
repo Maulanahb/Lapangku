@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:collection/collection.dart'; // Ditambahkan untuk firstWhereOrNull
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/services/firebase/mitra_service.dart';
 import 'package:lapangku/controllers/mitra/mitra_controller.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 
 // ─── State ─────────────────────────────────────────────────────────────────
 class MitraFieldState {
@@ -184,18 +184,10 @@ class MitraFieldNotifier extends StateNotifier<MitraFieldState> {
   }
 }
 
-// Stream Provider untuk UID Auth
-final _authUidProvider = StreamProvider<String?>((ref) {
-  return FirebaseAuth.instance.authStateChanges().map((user) => user?.uid);
-});
-
 final mitraFieldProvider =
     StateNotifierProvider<MitraFieldNotifier, MitraFieldState>((ref) {
   final service = ref.watch(mitraServiceProvider);
-  final uidAsync = ref.watch(_authUidProvider);
-  
-  // Ambil value string UID, berikan fallback string kosong jika belum login/loading
-  final uid = uidAsync.value ?? '';
+  final uid = ref.watch(currentUidProvider);
   
   return MitraFieldNotifier(service, uid);
 });

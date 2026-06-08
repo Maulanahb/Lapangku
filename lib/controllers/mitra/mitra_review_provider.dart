@@ -48,7 +48,6 @@ class MitraReviewNotifier extends StateNotifier<AsyncValue<List<MitraReviewModel
 
 final mitraReviewProvider = StateNotifierProvider<MitraReviewNotifier, AsyncValue<List<MitraReviewModel>>>((ref) {
   final service = ref.watch(mitraServiceProvider);
-  final user = ref.watch(authProvider).user;
-  final mitraId = user?.uid ?? '';
+  final mitraId = ref.watch(currentUidProvider);
   return MitraReviewNotifier(service, mitraId);
 });

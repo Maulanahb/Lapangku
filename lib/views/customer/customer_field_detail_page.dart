@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -17,6 +16,7 @@ import 'package:lapangku/standards/widgets/shimmer_loading.dart';
 import 'package:lapangku/standards/utils/facility_helper.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:lapangku/controllers/field/field_controller.dart';
+import 'package:lapangku/core/services/firestore_service.dart';
 
 class CustomerFieldDetailPage extends ConsumerStatefulWidget {
   final FieldModel? field;
@@ -102,7 +102,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
     _schedulesSubscription?.cancel();
     final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
     
-    _schedulesSubscription = FirebaseFirestore.instance
+    _schedulesSubscription = FirestoreService.instance
         .collection('schedules')
         .where('fieldId', isEqualTo: fieldId)
         .where('tanggal', isEqualTo: dateStr)
