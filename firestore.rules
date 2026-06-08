@@ -33,19 +33,30 @@ service cloud.firestore {
 
     // --- Mitra ---
     match /mitra/{mitraId} {
-      allow read: if true;
-      allow create, update, delete: if isOwner(mitraId) || isAdmin();
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(mitraId) || isAdmin();
+      allow delete: if isAdmin();
     }
     
     // --- Lapangan ---
     match /lapangan/{lapanganId} {
-      allow read: if true;
-      allow create: if isAuthenticated() && (request.resource.data.mitraId == request.auth.uid || isAdmin());
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        ('mitraId' in request.resource.data && request.resource.data.mitraId == request.auth.uid) ||
+        ('MitraId' in request.resource.data && request.resource.data.MitraId == request.auth.uid) ||
+        ('id_pemilik' in request.resource.data && request.resource.data.id_pemilik == request.auth.uid) ||
+        isAdmin()
+      );
       allow update: if isAuthenticated();
-      allow delete: if isAuthenticated() && (('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) || isAdmin());
+      allow delete: if isAuthenticated() && (
+        ('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) ||
+        ('MitraId' in resource.data && resource.data.MitraId == request.auth.uid) ||
+        ('id_pemilik' in resource.data && resource.data.id_pemilik == request.auth.uid) ||
+        isAdmin()
+      );
       
       match /reviews/{reviewId} {
-        allow read: if true;
+        allow read: if isAuthenticated();
         allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
         
         // Izinkan Customer mengubah ulasannya, ATAU izinkan Mitra membalas ulasan
@@ -76,11 +87,56 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
-    // --- Schedules ---
+    // ==========================================
+    // KOLEKSI: schedules (Jadwal operasional / block jadwal)
+    // ==========================================
     match /schedules/{scheduleId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && (request.resource.data.mitraId == request.auth.uid || isAdmin());
-      allow update, delete: if isAuthenticated() && (('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) || isAdmin());
+      allow create: if isAuthenticated() && (
+        ('fieldId' in request.resource.data && 
+          exists(/databases/$(database)/documents/lapangan/$(request.resource.data.fieldId)) && (
+            get(/databases/$(database)/documents/lapangan/$(request.resource.data.fieldId)).data.mitraId == request.auth.uid ||
+            get(/databases/$(database)/documents/lapangan/$(request.resource.data.fieldId)).data.MitraId == request.auth.uid ||
+            get(/databases/$(database)/documents/lapangan/$(request.resource.data.fieldId)).data.id_pemilik == request.auth.uid
+          )
+        ) ||
+        isAdmin()
+      );
+      allow update, delete: if isAuthenticated() && (
+        ('fieldId' in resource.data && 
+          exists(/databases/$(database)/documents/lapangan/$(resource.data.fieldId)) && (
+            get(/databases/$(database)/documents/lapangan/$(resource.data.fieldId)).data.mitraId == request.auth.uid ||
+            get(/databases/$(database)/documents/lapangan/$(resource.data.fieldId)).data.MitraId == request.auth.uid ||
+            get(/databases/$(database)/documents/lapangan/$(resource.data.fieldId)).data.id_pemilik == request.auth.uid
+          )
+        ) ||
+        isAdmin()
+      );
+    }
+    
+    // --- Jadwal ---
+    match /jadwal/{jadwalId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        ('lapangan_id' in request.resource.data && 
+          exists(/databases/$(database)/documents/lapangan/$(request.resource.data.lapangan_id)) && (
+            get(/databases/$(database)/documents/lapangan/$(request.resource.data.lapangan_id)).data.mitraId == request.auth.uid ||
+            get(/databases/$(database)/documents/lapangan/$(request.resource.data.lapangan_id)).data.MitraId == request.auth.uid ||
+            get(/databases/$(database)/documents/lapangan/$(request.resource.data.lapangan_id)).data.id_pemilik == request.auth.uid
+          )
+        ) ||
+        isAdmin()
+      );
+      allow update, delete: if isAuthenticated() && (
+        ('lapangan_id' in resource.data && 
+          exists(/databases/$(database)/documents/lapangan/$(resource.data.lapangan_id)) && (
+            get(/databases/$(database)/documents/lapangan/$(resource.data.lapangan_id)).data.mitraId == request.auth.uid ||
+            get(/databases/$(database)/documents/lapangan/$(resource.data.lapangan_id)).data.MitraId == request.auth.uid ||
+            get(/databases/$(database)/documents/lapangan/$(resource.data.lapangan_id)).data.id_pemilik == request.auth.uid
+          )
+        ) ||
+        isAdmin()
+      );
     }
     
     // --- Payouts ---
@@ -90,11 +146,38 @@ service cloud.firestore {
       allow update, delete: if isAdmin(); 
     }
     
+    // --- Mitra Devices ---
+    match /mitra_devices/{deviceId} {
+      allow read: if isAuthenticated() && (resource.data.mitraId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && (request.resource.data.mitraId == request.auth.uid || isAdmin());
+      allow update, delete: if isAuthenticated() && (
+        ('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) || 
+        isAdmin()
+      );
+    }
+    
+    // --- Mitra Security Logs ---
+    match /mitra_security_logs/{logId} {
+      allow read: if isAuthenticated() && (resource.data.mitraId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && (request.resource.data.mitraId == request.auth.uid || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+    
     // --- Notifikasi ---
     match /notifikasi/{notificationId} {
-      allow read: if isAuthenticated() && resource.data.customer_id == request.auth.uid;
+      allow read: if isAuthenticated() && (
+        ('customer_id' in resource.data && resource.data.customer_id == request.auth.uid) ||
+        ('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) ||
+        ('mitra_id' in resource.data && resource.data.mitra_id == request.auth.uid) ||
+        isAdmin()
+      );
       allow create: if isAuthenticated(); 
-      allow update, delete: if isAuthenticated() && (resource.data.customer_id == request.auth.uid || isAdmin());
+      allow update, delete: if isAuthenticated() && (
+        ('customer_id' in resource.data && resource.data.customer_id == request.auth.uid) ||
+        ('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) ||
+        ('mitra_id' in resource.data && resource.data.mitra_id == request.auth.uid) ||
+        isAdmin()
+      );
     }
 
     // --- Metadata ---

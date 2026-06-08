@@ -320,7 +320,7 @@ class _JadwalLapanganPageState extends State<JadwalLapanganPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Jadwal',
+          'Jadwal & Ketersediaan',
           style: TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.w900,
