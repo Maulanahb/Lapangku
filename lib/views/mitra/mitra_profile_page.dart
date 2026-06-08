@@ -194,13 +194,6 @@ class MitraProfilePage extends ConsumerWidget {
                     ),
                     _buildMenuItem(
                       context,
-                      icon: Icons.notifications_outlined,
-                      title: "Notifikasi",
-                      subtitle: "Atur pemberitahuan",
-                      onTap: () {}, // Kosong dulu
-                    ),
-                    _buildMenuItem(
-                      context,
                       icon: Icons.info_outline,
                       title: "Tentang LapangKu",
                       onTap: () => Navigator.push(
