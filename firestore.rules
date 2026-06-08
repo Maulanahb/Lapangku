@@ -63,13 +63,18 @@ service cloud.firestore {
         allow update: if isAuthenticated() && (
           ('userId' in resource.data && resource.data.userId == request.auth.uid) || 
           ('mitraId' in resource.data && resource.data.mitraId == request.auth.uid) || 
-          ('mitraId' in get(/databases/$(database)/documents/lapangan/$(lapanganId)).data && get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.mitraId == request.auth.uid) ||
-          ('MitraId' in get(/databases/$(database)/documents/lapangan/$(lapanganId)).data && get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.MitraId == request.auth.uid) ||
-          ('id_pemilik' in get(/databases/$(database)/documents/lapangan/$(lapanganId)).data && get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.id_pemilik == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/lapangan/$(lapanganId)) && (
+            ('mitraId' in get(/databases/$(database)/documents/lapangan/$(lapanganId)).data && get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.mitraId == request.auth.uid) ||
+            ('MitraId' in get(/databases/$(database)/documents/lapangan/$(lapanganId)).data && get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.MitraId == request.auth.uid) ||
+            ('id_pemilik' in get(/databases/$(database)/documents/lapangan/$(lapanganId)).data && get(/databases/$(database)/documents/lapangan/$(lapanganId)).data.id_pemilik == request.auth.uid)
+          )) ||
           isAdmin()
         );
         
-        allow delete: if isAuthenticated() && (('userId' in resource.data && resource.data.userId == request.auth.uid) || isAdmin());
+        allow delete: if isAuthenticated() && (
+          ('userId' in resource.data && resource.data.userId == request.auth.uid) || 
+          isAdmin()
+        );
       }
     }
     
@@ -180,7 +185,16 @@ service cloud.firestore {
       );
     }
 
-    // --- Metadata ---
+    // ==========================================
+    // KOLEKSI GROUP: reviews (Ulasan untuk collection group queries)
+    // ==========================================
+    match /{path=**}/reviews/{reviewId} {
+      allow read: if isAuthenticated();
+    }
+
+    // ==========================================
+    // KOLEKSI: metadata (Stats dll)
+    // ==========================================
     match /metadata/{documentId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
