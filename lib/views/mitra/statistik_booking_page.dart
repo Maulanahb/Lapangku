@@ -70,26 +70,6 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
 
     final stats = statsAsync;
 
-    if (stats['filteredCount'] == 0) {
-      return RefreshIndicator(
-        onRefresh: () async => ref.refresh(mitraBookingsProvider(mitraId)),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              _buildFilterChips(currentFilter),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-              const EmptyStateWidget(
-                icon: Icons.analytics_outlined,
-                title: 'Data Belum Tersedia',
-                subtitle: 'Belum ada aktivitas booking pada periode ini.',
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return RefreshIndicator(
       onRefresh: () async => ref.refresh(mitraBookingsProvider(mitraId)),
       child: SingleChildScrollView(
