@@ -16,10 +16,11 @@ class AdminBookingsPage extends ConsumerStatefulWidget {
 
 class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
   static const _primary = Color(0xFF1B6B3A);
+  static const _pageSize = 10;
 
   String _searchQuery = '';
   String _filterStatus = 'semua';
-
+  int _currentPage = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +52,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
   // --- Header ---
   Widget _buildHeader() {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
       color: Colors.white,
       child: Row(
@@ -70,7 +72,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
               ),
               SizedBox(height: 4),
               Text(
-                'Pantau seluruh transaksi dan status booking.',
+                'Pantau seluruh transaksi dan status booking secara realtime.',
                 style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -108,7 +110,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
   Widget _buildSearchFilter(AsyncValue<List<BookingModel>> bookingsAsync) {
     final filters = [
       {'value': 'semua', 'label': 'Semua'},
-      {'value': 'menunggu_bayar', 'label': 'Menunggu'},
+      {'value': 'menunggu_bayar', 'label': 'Menunggu Bayar'},
       {'value': 'dikonfirmasi', 'label': 'Dikonfirmasi'},
       {'value': 'selesai', 'label': 'Selesai'},
       {'value': 'dibatalkan', 'label': 'Dibatalkan'},
@@ -120,11 +122,13 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
       child: Column(
         children: [
           TextField(
-            onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+            onChanged: (v) => setState(() {
+              _searchQuery = v.toLowerCase();
+              _currentPage = 0;
+            }),
             decoration: InputDecoration(
               hintText: 'Cari ID pesanan, pelanggan, atau lapangan...',
-              hintStyle:
-                  const TextStyle(color: AppColors.hint, fontSize: 13),
+              hintStyle: const TextStyle(color: AppColors.hint, fontSize: 13),
               prefixIcon:
                   const Icon(Icons.search, color: AppColors.hint, size: 20),
               filled: true,
@@ -149,7 +153,10 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: GestureDetector(
-                    onTap: () => setState(() => _filterStatus = val),
+                    onTap: () => setState(() {
+                      _filterStatus = val;
+                      _currentPage = 0;
+                    }),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
@@ -157,9 +164,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                         color: isSelected ? _primary : Colors.white,
                         borderRadius: BorderRadius.circular(30),
                         border: Border.all(
-                          color: isSelected
-                              ? _primary
-                              : Colors.grey.shade300,
+                          color: isSelected ? _primary : Colors.grey.shade300,
                         ),
                       ),
                       child: Row(
@@ -237,9 +242,19 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
     );
   }
 
-
   // --- Table Card ---
   Widget _buildTableCard(List<BookingModel> bookings) {
+    final totalPages = bookings.isEmpty
+        ? 1
+        : ((bookings.length - 1) ~/ _pageSize) + 1;
+    final currentPage =
+        _currentPage >= totalPages ? totalPages - 1 : _currentPage;
+    final startIndex = currentPage * _pageSize;
+    final endIndex = startIndex + _pageSize > bookings.length
+        ? bookings.length
+        : startIndex + _pageSize;
+    final pageItems = bookings.sublist(startIndex, endIndex);
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -257,8 +272,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
         children: [
           // Table header
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -306,7 +320,8 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                 scrollDirection: Axis.horizontal,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    minWidth: constraints.maxWidth < 900 ? 900 : constraints.maxWidth,
+                    minWidth:
+                        constraints.maxWidth < 900 ? 900 : constraints.maxWidth,
                   ),
                   child: DataTable(
                     horizontalMargin: 24,
@@ -317,71 +332,143 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                     headingRowColor:
                         WidgetStateProperty.all(const Color(0xFFF8F9FA)),
                     dividerThickness: 0.8,
-                columns: const [
-                  DataColumn(
-                      label: Text('ID PESANAN',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3))),
-                  DataColumn(
-                      label: Text('PELANGGAN',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3))),
-                  DataColumn(
-                      label: Text('LAPANGAN',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3))),
-                  DataColumn(
-                      label: Text('TANGGAL',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3))),
-                  DataColumn(
-                      label: Text('JAM MAIN',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3))),
-                  DataColumn(
-                      label: Text('TOTAL',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3)),
-                      numeric: true),
-                  DataColumn(
-                      label: Text('METODE',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3))),
-                  DataColumn(
-                      label: Text('STATUS',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3))),
-                ],
-                rows: bookings.map((b) => _buildDataRow(b)).toList(),
+                    columns: const [
+                      DataColumn(
+                          label: Text('ID PESANAN',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.3))),
+                      DataColumn(
+                          label: Text('PELANGGAN',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.3))),
+                      DataColumn(
+                          label: Text('LAPANGAN',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.3))),
+                      DataColumn(
+                          label: Text('TANGGAL',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.3))),
+                      DataColumn(
+                          label: Text('JAM MAIN',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.3))),
+                      DataColumn(
+                          label: Text('TOTAL',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.3)),
+                          numeric: true),
+                      DataColumn(
+                          label: Text('METODE',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.3))),
+                      DataColumn(
+                          label: Text('STATUS',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.3))),
+                    ],
+                rows: pageItems.map((b) => _buildDataRow(b)).toList(),
               ),
             ),
           );
         },
       ),
+          if (bookings.length > _pageSize)
+            _buildPaginationFooter(
+              currentPage: currentPage,
+              totalPages: totalPages,
+              totalItems: bookings.length,
+              startItem: startIndex + 1,
+              endItem: endIndex,
+              onPrevious: currentPage == 0
+                  ? null
+                  : () => setState(() => _currentPage = currentPage - 1),
+              onNext: currentPage >= totalPages - 1
+                  ? null
+                  : () => setState(() => _currentPage = currentPage + 1),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaginationFooter({
+    required int currentPage,
+    required int totalPages,
+    required int totalItems,
+    required int startItem,
+    required int endItem,
+    required VoidCallback? onPrevious,
+    required VoidCallback? onNext,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Menampilkan $startItem-$endItem dari $totalItems pesanan',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          OutlinedButton(
+            onPressed: onPrevious,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _primary,
+              disabledForegroundColor: Colors.grey.shade400,
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+            child: const Text('Sebelumnya'),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '${currentPage + 1} / $totalPages',
+            style: const TextStyle(
+              color: AppColors.textHeading,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 10),
+          OutlinedButton(
+            onPressed: onNext,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _primary,
+              disabledForegroundColor: Colors.grey.shade400,
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+            child: const Text('Berikutnya'),
+          ),
         ],
       ),
     );
@@ -391,25 +478,23 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
   DataRow _buildDataRow(BookingModel booking) {
     final statusColor = _statusColor(booking.status);
     final statusLabel = BookingStatusHelper.getLabel(booking.status);
-    final dateStr =
-        DateFormat('dd MMM yyyy', 'id').format(booking.tanggal);
+    final dateStr = DateFormat('dd MMM yyyy', 'id').format(booking.tanggal);
+    final customerName = booking.userName.trim().isNotEmpty
+        ? booking.userName.trim()
+        : 'Tanpa nama';
+    final fieldName = booking.fieldName.trim().isNotEmpty
+        ? booking.fieldName.trim()
+        : 'Belum tersedia';
     final timeStr = booking.timeSlots.isNotEmpty
         ? booking.timeSlots.first.split(' - ').first
         : '-';
     final timeEnd = booking.timeSlots.isNotEmpty
         ? booking.timeSlots.last.split(' - ').last
         : '';
-    final jamStr =
-        timeEnd.isNotEmpty ? '$timeStr – $timeEnd' : timeStr;
+    final jamStr = timeEnd.isNotEmpty ? '$timeStr – $timeEnd' : timeStr;
 
-    final initials = booking.userName.trim().isNotEmpty
-        ? booking.userName
-            .trim()
-            .split(' ')
-            .map((w) => w[0])
-            .take(2)
-            .join()
-            .toUpperCase()
+    final initials = customerName != 'Tanpa nama'
+        ? customerName.split(' ').map((w) => w[0]).take(2).join().toUpperCase()
         : '?';
 
     String metode = booking.metodePembayaran;
@@ -452,7 +537,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
             SizedBox(
               width: 110,
               child: Text(
-                booking.userName,
+                customerName,
                 style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -471,7 +556,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                booking.fieldName,
+                fieldName,
                 style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -481,8 +566,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
               if (booking.fieldCategory.isNotEmpty)
                 Text(
                   booking.fieldCategory,
-                  style: TextStyle(
-                      fontSize: 11, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                   overflow: TextOverflow.ellipsis,
                 ),
             ],
@@ -492,8 +576,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
         // Tanggal
         DataCell(Text(
           dateStr,
-          style: const TextStyle(
-              fontWeight: FontWeight.w600, fontSize: 13),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         )),
 
         // Jam Main
@@ -502,28 +585,26 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(jamStr,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 12)),
-            Text('${booking.durasi} jam',
-                style: TextStyle(
-                    fontSize: 11, color: Colors.grey.shade500)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+            Text(booking.durasi > 0 ? '${booking.durasi} jam' : '-',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
           ],
         )),
 
         // Total
         DataCell(Text(
-          CurrencyFormatter.format(booking.totalBayar),
+          booking.totalBayar > 0
+              ? CurrencyFormatter.format(booking.totalBayar)
+              : '-',
           style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-              color: _primary),
+              fontWeight: FontWeight.w700, fontSize: 13, color: _primary),
           textAlign: TextAlign.right,
         )),
 
         // Metode
         DataCell(Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.grey.shade100,
             borderRadius: BorderRadius.circular(6),
@@ -539,8 +620,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
 
         // Status
         DataCell(Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             color: statusColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
@@ -548,9 +628,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
           child: Text(
             statusLabel,
             style: TextStyle(
-                color: statusColor,
-                fontSize: 10,
-                fontWeight: FontWeight.w700),
+                color: statusColor, fontSize: 10, fontWeight: FontWeight.w700),
           ),
         )),
       ],
@@ -568,8 +646,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         insetPadding: const EdgeInsets.all(24),
         child: Container(
           width: 560,
@@ -583,8 +660,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                 padding: const EdgeInsets.all(24),
                 decoration: const BoxDecoration(
                   color: _primary,
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 child: Row(
                   children: [
@@ -629,8 +705,8 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                     const SizedBox(width: 12),
                     IconButton(
                       onPressed: () => Navigator.pop(ctx),
-                      icon: const Icon(Icons.close_rounded,
-                          color: Colors.white),
+                      icon:
+                          const Icon(Icons.close_rounded, color: Colors.white),
                       style: IconButton.styleFrom(
                           backgroundColor: Colors.white.withOpacity(0.15)),
                     ),
@@ -654,19 +730,23 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                       _detailSection('Informasi Lapangan', [
                         _detailRow(Icons.stadium_outlined, 'Lapangan',
                             booking.fieldName),
-                        _detailRow(Icons.category_outlined, 'Kategori',
+                        _detailRow(
+                            Icons.category_outlined,
+                            'Kategori',
                             booking.fieldCategory.isEmpty
                                 ? '-'
                                 : booking.fieldCategory),
-                        _detailRow(Icons.location_on_outlined, 'Alamat',
+                        _detailRow(
+                            Icons.location_on_outlined,
+                            'Alamat',
                             booking.fieldAddress.isEmpty
                                 ? '-'
                                 : booking.fieldAddress),
                       ]),
                       const SizedBox(height: 16),
                       _detailSection('Jadwal Booking', [
-                        _detailRow(Icons.calendar_today_outlined,
-                            'Tanggal', dateStr),
+                        _detailRow(
+                            Icons.calendar_today_outlined, 'Tanggal', dateStr),
                         _detailRow(
                             Icons.access_time_outlined,
                             'Slot Waktu',
@@ -678,8 +758,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                       ]),
                       const SizedBox(height: 16),
                       _detailSection('Pembayaran', [
-                        _detailRow(Icons.payments_outlined,
-                            'Harga Lapangan',
+                        _detailRow(Icons.payments_outlined, 'Harga Lapangan',
                             CurrencyFormatter.format(booking.hargaLapangan)),
                         _detailRow(Icons.percent_outlined, 'Biaya Layanan',
                             CurrencyFormatter.format(booking.biayaLayanan)),
@@ -689,7 +768,8 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                           CurrencyFormatter.format(booking.totalBayar),
                           highlight: true,
                         ),
-                        _detailRow(Icons.credit_card_outlined,
+                        _detailRow(
+                            Icons.credit_card_outlined,
                             'Metode Bayar',
                             booking.metodePembayaran.isEmpty
                                 ? '-'
@@ -724,7 +804,6 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
                             ),
                           ],
                         ),
-
                       ]),
                     ],
                   ),
@@ -773,8 +852,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon,
-              size: 16,
-              color: highlight ? _primary : AppColors.textSecondary),
+              size: 16, color: highlight ? _primary : AppColors.textSecondary),
           const SizedBox(width: 10),
           Text(label,
               style: TextStyle(
@@ -786,8 +864,7 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
               value,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight:
-                    highlight ? FontWeight.w700 : FontWeight.w600,
+                fontWeight: highlight ? FontWeight.w700 : FontWeight.w600,
                 color: highlight ? _primary : AppColors.textDark,
               ),
               textAlign: TextAlign.end,
@@ -816,4 +893,3 @@ class _AdminBookingsPageState extends ConsumerState<AdminBookingsPage> {
     }
   }
 }
-

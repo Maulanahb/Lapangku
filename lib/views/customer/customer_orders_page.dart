@@ -26,6 +26,7 @@ class CustomerOrdersPage extends ConsumerStatefulWidget {
 
 class _State extends ConsumerState<CustomerOrdersPage> {
   String _filter = 'Semua';
+  final ScrollController _filterScrollController = ScrollController();
   final List<String> _filters = [
     'Semua',
     'Menunggu Bayar',
@@ -37,6 +38,12 @@ class _State extends ConsumerState<CustomerOrdersPage> {
 
   bool _isSelectionMode = false;
   final Set<String> _selectedIds = {};
+
+  @override
+  void dispose() {
+    _filterScrollController.dispose();
+    super.dispose();
+  }
 
   void _toggleSelectionMode() {
     setState(() {
@@ -81,7 +88,8 @@ class _State extends ConsumerState<CustomerOrdersPage> {
     if (mounted) LoadingOverlay.show(context);
 
     try {
-      final futures = _selectedIds.map((id) => service.hideBookingForCustomer(id));
+      final futures =
+          _selectedIds.map((id) => service.hideBookingForCustomer(id));
       await Future.wait(futures);
 
       ref.invalidate(userBookingsStreamProvider(userId));
@@ -111,6 +119,52 @@ class _State extends ConsumerState<CustomerOrdersPage> {
     }
   }
 
+  void _setFilter(String filter, int index) {
+    setState(() => _filter = filter);
+    if (!_filterScrollController.hasClients) return;
+
+    final targetOffset = (index * 96.0) - 24.0;
+    final maxOffset = _filterScrollController.position.maxScrollExtent;
+    _filterScrollController.animateTo(
+      targetOffset.clamp(0.0, maxOffset),
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
+  }
+
+  String _effectiveStatusValue(BookingModel booking) {
+    if (booking.isRescheduleRequested &&
+        booking.rescheduleStatus == 'pending') {
+      return BookingStatus.menungguKonfirmasi.firestoreValue;
+    }
+    return booking.status;
+  }
+
+  bool _matchesFilter(BookingModel booking) {
+    if (_filter == 'Semua') return true;
+
+    final status =
+        BookingStatusParsing.fromString(_effectiveStatusValue(booking));
+
+    switch (_filter) {
+      case 'Menunggu Bayar':
+        return status == BookingStatus.menungguBayar;
+      case 'Menunggu':
+        return status == BookingStatus.menungguKonfirmasi;
+      case 'Aktif':
+        return status == BookingStatus.dikonfirmasi ||
+            status == BookingStatus.aktif;
+      case 'Selesai':
+        return status == BookingStatus.selesai;
+      case 'Dibatalkan':
+        return status == BookingStatus.dibatalkan ||
+            status == BookingStatus.ditolak ||
+            status == BookingStatus.expired;
+      default:
+        return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(authStateProvider);
@@ -123,8 +177,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
       backgroundColor: AppColors.backgroundPage,
       appBar: AppBar(
         title: const Text('Pesanan Saya',
-            style:
-                TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: AppColors.primary,
         centerTitle: true,
         elevation: 0,
@@ -144,10 +197,6 @@ class _State extends ConsumerState<CustomerOrdersPage> {
               );
             },
             orElse: () => const SizedBox.shrink(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () => ref.invalidate(userBookingsStreamProvider(user.uid)),
           ),
         ],
       ),
@@ -187,6 +236,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
       height: 56,
       color: Colors.white,
       child: ListView.builder(
+        controller: _filterScrollController,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         itemCount: _filters.length,
@@ -196,7 +246,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
-              onTap: () => setState(() => _filter = f),
+              onTap: () => _setFilter(f, i),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -204,16 +254,13 @@ class _State extends ConsumerState<CustomerOrdersPage> {
                   color: sel ? AppColors.primary : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: sel
-                          ? AppColors.primary
-                          : Colors.grey.shade300),
+                      color: sel ? AppColors.primary : Colors.grey.shade300),
                 ),
                 child: Text(
                   f,
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight:
-                        sel ? FontWeight.bold : FontWeight.w500,
+                    fontWeight: sel ? FontWeight.bold : FontWeight.w500,
                     color: sel ? Colors.white : AppColors.textSecondary,
                   ),
                 ),
@@ -226,20 +273,8 @@ class _State extends ConsumerState<CustomerOrdersPage> {
   }
 
   Widget _buildBookingList(List<BookingModel> bookings, String userId) {
-    final filtered = _filter == 'Semua'
-        ? bookings
-        : bookings.where((b) {
-            final status = b.status.toLowerCase();
-            final filterKey = _filter.toLowerCase();
-            if (filterKey == 'menunggu bayar') return status == 'menunggu_bayar';
-            if (filterKey == 'aktif') {
-              return status == 'dikonfirmasi' || status == 'aktif';
-            }
-            if (filterKey == 'menunggu') {
-              return status == 'menunggu_bayar';
-            }
-            return status == filterKey;
-          }).toList();
+    final filtered =
+        _filter == 'Semua' ? bookings : bookings.where(_matchesFilter).toList();
 
     if (filtered.isEmpty) {
       return RefreshIndicator(
@@ -273,8 +308,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
         if (_isSelectionMode)
           Container(
             color: Colors.white,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
                 Checkbox(
@@ -355,8 +389,7 @@ class _State extends ConsumerState<CustomerOrdersPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Gagal: $e'),
-            backgroundColor: AppColors.error));
+            content: Text('Gagal: $e'), backgroundColor: AppColors.error));
       }
     }
   }
@@ -383,9 +416,10 @@ class _BookingCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Gunakan BookingStatus untuk semua mapping status → UI
-    final displayStatus = (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending')
-        ? 'menunggu_bayar'
-        : booking.status;
+    final displayStatus =
+        (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending')
+            ? BookingStatus.menungguKonfirmasi.firestoreValue
+            : booking.status;
     final status = BookingStatusParsing.fromString(displayStatus);
     final dateStr =
         DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
@@ -414,9 +448,7 @@ class _BookingCard extends ConsumerWidget {
               : null,
           boxShadow: const [
             BoxShadow(
-                color: AppColors.shadow,
-                blurRadius: 12,
-                offset: Offset(0, 4))
+                color: AppColors.shadow, blurRadius: 12, offset: Offset(0, 4))
           ],
         ),
         child: Column(
@@ -452,8 +484,8 @@ class _BookingCard extends ConsumerWidget {
                   ),
                   // Badge — pakai status.backgroundColor & status.badgeLabel
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: status.backgroundColor,
                       borderRadius: BorderRadius.circular(12),
@@ -488,7 +520,8 @@ class _BookingCard extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Center(
-                        child: Icon(Icons.stadium_outlined, size: 28, color: AppColors.primary),
+                        child: Icon(Icons.stadium_outlined,
+                            size: 28, color: AppColors.primary),
                       ),
                     ),
                   ),
@@ -507,8 +540,7 @@ class _BookingCard extends ConsumerWidget {
                           const SizedBox(height: 4),
                           Row(children: [
                             const Icon(Icons.calendar_today_outlined,
-                                size: 12,
-                                color: AppColors.textSecondary),
+                                size: 12, color: AppColors.textSecondary),
                             const SizedBox(width: 4),
                             Expanded(
                                 child: Text('$dateStr • $timeStr',
@@ -525,8 +557,7 @@ class _BookingCard extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
               decoration: BoxDecoration(
-                border:
-                    Border(top: BorderSide(color: Colors.grey.shade100)),
+                border: Border(top: BorderSide(color: Colors.grey.shade100)),
               ),
               child: Row(
                 children: [
@@ -582,8 +613,7 @@ class _BookingCard extends ConsumerWidget {
       case BookingStatus.dikonfirmasi:
       case BookingStatus.aktif:
         return [
-          _actionBtn(Icons.qr_code_2, 'E-Ticket',
-              AppColors.primary, () {
+          _actionBtn(Icons.qr_code_2, 'E-Ticket', AppColors.primary, () {
             Navigator.pushNamed(context, '/booking-detail',
                 arguments: booking.id);
           }),
@@ -595,8 +625,7 @@ class _BookingCard extends ConsumerWidget {
           ];
         }
         return [
-          _actionBtn(
-              Icons.star_outline, 'Beri Ulasan', Colors.amber.shade700,
+          _actionBtn(Icons.star_outline, 'Beri Ulasan', Colors.amber.shade700,
               () => _showReviewDialog(context, ref)),
         ];
       case BookingStatus.dibatalkan:
@@ -619,8 +648,8 @@ class _BookingCard extends ConsumerWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             contentPadding: const EdgeInsets.all(24),
             title: const Center(
               child: Text('Beri Ulasan',
@@ -649,18 +678,23 @@ class _BookingCard extends ConsumerWidget {
                           },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 2, vertical: 8),
                             child: Stack(
                               alignment: Alignment.center,
                               children: [
                                 Icon(
                                   Icons.star_rounded,
-                                  color: index < rating ? AppColors.star : Colors.transparent,
+                                  color: index < rating
+                                      ? AppColors.star
+                                      : Colors.transparent,
                                   size: 32,
                                 ),
                                 Icon(
                                   Icons.star_outline_rounded,
-                                  color: index < rating ? Colors.black.withValues(alpha: 0.8) : Colors.grey.shade500,
+                                  color: index < rating
+                                      ? Colors.black.withValues(alpha: 0.8)
+                                      : Colors.grey.shade500,
                                   size: 32,
                                 ),
                               ],
@@ -692,16 +726,22 @@ class _BookingCard extends ConsumerWidget {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                        borderSide: const BorderSide(
+                            color: AppColors.primary, width: 1.5),
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text('Upload Foto (Opsional)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark)),
+                  const Text('Upload Foto (Opsional)',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: AppColors.textDark)),
                   const SizedBox(height: 12),
                   GestureDetector(
                     onTap: () async {
-                      final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+                      final XFile? image = await picker.pickImage(
+                          source: ImageSource.gallery, imageQuality: 70);
                       if (image != null) {
                         setState(() => imageFile = File(image.path));
                       }
@@ -712,7 +752,8 @@ class _BookingCard extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+                        border: Border.all(
+                            color: const Color(0xFFE2E8F0), width: 1.5),
                       ),
                       child: imageFile != null
                           ? Stack(
@@ -720,19 +761,23 @@ class _BookingCard extends ConsumerWidget {
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(14),
-                                  child: Image.file(imageFile!, fit: BoxFit.cover),
+                                  child:
+                                      Image.file(imageFile!, fit: BoxFit.cover),
                                 ),
                                 Positioned(
-                                  top: 8, right: 8,
+                                  top: 8,
+                                  right: 8,
                                   child: GestureDetector(
-                                    onTap: () => setState(() => imageFile = null),
+                                    onTap: () =>
+                                        setState(() => imageFile = null),
                                     child: Container(
                                       padding: const EdgeInsets.all(6),
                                       decoration: BoxDecoration(
-                                        color: Colors.black.withValues(alpha: 0.6), 
-                                        shape: BoxShape.circle
-                                      ),
-                                      child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.6),
+                                          shape: BoxShape.circle),
+                                      child: const Icon(Icons.close,
+                                          color: Colors.white, size: 16),
                                     ),
                                   ),
                                 ),
@@ -744,20 +789,25 @@ class _BookingCard extends ConsumerWidget {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.03),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      )
-                                    ]
-                                  ),
-                                  child: const Icon(Icons.add_a_photo_outlined, size: 24, color: AppColors.primary),
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black
+                                              .withValues(alpha: 0.03),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        )
+                                      ]),
+                                  child: const Icon(Icons.add_a_photo_outlined,
+                                      size: 24, color: AppColors.primary),
                                 ),
                                 const SizedBox(height: 12),
-                                const Text('Ketuk untuk tambah foto', style: TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
+                                const Text('Ketuk untuk tambah foto',
+                                    style: TextStyle(
+                                        color: Color(0xFF64748B),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500)),
                               ],
                             ),
                     ),
@@ -770,11 +820,14 @@ class _BookingCard extends ConsumerWidget {
               TextButton(
                 onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text('Batal',
-                    style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
               ),
               ElevatedButton(
                 onPressed: isSubmitting
@@ -784,9 +837,11 @@ class _BookingCard extends ConsumerWidget {
                         try {
                           String? imageUrl;
                           if (imageFile != null) {
-                            imageUrl = await FirebaseStorageService.uploadImage(imageFile!, folder: 'reviews');
+                            imageUrl = await FirebaseStorageService.uploadImage(
+                                imageFile!,
+                                folder: 'reviews');
                           }
-                          
+
                           final service = ref.read(reviewServiceProvider);
                           await service.submitReview(
                             bookingId: booking.id,
@@ -801,8 +856,8 @@ class _BookingCard extends ConsumerWidget {
                             Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                  content: Text(
-                                      'Terima kasih atas ulasan Anda!'),
+                                  content:
+                                      Text('Terima kasih atas ulasan Anda!'),
                                   backgroundColor: AppColors.primary),
                             );
                             onRefresh();
@@ -821,7 +876,8 @@ class _BookingCard extends ConsumerWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
@@ -836,11 +892,15 @@ class _BookingCard extends ConsumerWidget {
                                   color: Colors.white, strokeWidth: 2)),
                           SizedBox(width: 8),
                           Text('Mengunggah...',
-                              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold)),
                         ],
                       )
                     : const Text('Kirim Ulasan',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ],
           );
@@ -864,9 +924,7 @@ class _BookingCard extends ConsumerWidget {
           const SizedBox(width: 4),
           Text(label,
               style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color)),
+                  fontSize: 12, fontWeight: FontWeight.w600, color: color)),
         ]),
       ),
     );

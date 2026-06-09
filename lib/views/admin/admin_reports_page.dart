@@ -23,9 +23,11 @@ class AdminReportsPage extends ConsumerStatefulWidget {
 
 class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
   static const _primary = Color(0xFF1B6B3A);
+  static const _pageSize = 10;
   String _selectedReportType = 'Booking'; // 'Booking' or 'Penghasilan'
   DateTimeRange? _selectedDateRange;
   bool _isExporting = false;
+  int _reportPage = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -54,12 +56,12 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
     final allBookings = bookingsAsync.value ?? [];
 
     return Container(
+      width: double.infinity,
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -77,7 +79,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Analisis performa platform dan statistik transaksi.',
+                    'Analisis performa platform dan statistik transaksi secara realtime.',
                     style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
                   ),
                 ],
@@ -136,7 +138,10 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
                       padding: const EdgeInsets.only(left: 4),
                       child: IconButton(
                         icon: Icon(Icons.close_rounded, color: Colors.red.shade400, size: 18),
-                        onPressed: () => setState(() => _selectedDateRange = null),
+                        onPressed: () => setState(() {
+                          _selectedDateRange = null;
+                          _reportPage = 0;
+                        }),
                         splashRadius: 16,
                         constraints: const BoxConstraints(),
                         padding: const EdgeInsets.all(4),
@@ -169,7 +174,10 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
   Widget _buildTabItem(String label, String type) {
     final isSelected = _selectedReportType == type;
     return GestureDetector(
-      onTap: () => setState(() => _selectedReportType = type),
+      onTap: () => setState(() {
+        _selectedReportType = type;
+        _reportPage = 0;
+      }),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
@@ -286,6 +294,11 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
   }
 
   Widget _buildChartSection(String title, List<double> data, String yAxisLabel, {bool isRevenue = false}) {
+    final maxData = data.isEmpty
+        ? 0.0
+        : data.reduce((a, b) => a > b ? a : b);
+    final maxY = maxData <= 0 ? 10.0 : maxData * 1.18;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -308,6 +321,34 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
             height: 250,
             child: LineChart(
               LineChartData(
+                minY: 0,
+                maxY: maxY,
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (_) => _primary,
+                    getTooltipItems: (spots) {
+                      return spots.map((spot) {
+                        final value = spot.y;
+                        final text = isRevenue
+                            ? NumberFormat.currency(
+                                locale: 'id',
+                                symbol: 'Rp ',
+                                decimalDigits: 0,
+                              ).format(value)
+                            : value.toInt().toString();
+
+                        return LineTooltipItem(
+                          text,
+                          const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
                 gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (val) => FlLine(color: Colors.grey.shade200, strokeWidth: 1)),
                 titlesData: FlTitlesData(
                   rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -366,6 +407,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
                   LineChartBarData(
                     spots: List.generate(data.length, (i) => FlSpot(i.toDouble(), data[i])),
                     isCurved: true,
+                    preventCurveOverShooting: true,
                     color: _primary,
                     barWidth: 3,
                     isStrokeCapRound: true,
@@ -384,6 +426,16 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
   Widget _buildDetailTable(List<BookingModel> bookings, {required bool isRevenue}) {
     final currencyFormat = NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
     final dateFormat = DateFormat('dd MMM yyyy');
+    final totalPages = bookings.isEmpty
+        ? 1
+        : ((bookings.length - 1) ~/ _pageSize) + 1;
+    final currentPage =
+        _reportPage >= totalPages ? totalPages - 1 : _reportPage;
+    final startIndex = currentPage * _pageSize;
+    final endIndex = startIndex + _pageSize > bookings.length
+        ? bookings.length
+        : startIndex + _pageSize;
+    final pageItems = bookings.sublist(startIndex, endIndex);
 
     return Container(
       width: double.infinity,
@@ -437,7 +489,7 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
                   if (isRevenue) const DataColumn(label: Text('NOMINAL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8), letterSpacing: 0.5))),
                   if (!isRevenue) const DataColumn(label: Text('STATUS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8), letterSpacing: 0.5))),
                 ],
-                rows: bookings.take(15).map((b) {
+                rows: pageItems.map((b) {
                   return DataRow(
                     cells: [
                       DataCell(Text(dateFormat.format(b.tanggal), style: const TextStyle(fontSize: 13, color: Color(0xFF334155), fontWeight: FontWeight.w500))),
@@ -457,6 +509,80 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
                  child: Text('Tidak ada data.', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14)),
                ),
              ),
+          if (bookings.length > _pageSize)
+            _buildPaginationFooter(
+              currentPage: currentPage,
+              totalPages: totalPages,
+              totalItems: bookings.length,
+              startItem: startIndex + 1,
+              endItem: endIndex,
+              onPrevious: currentPage == 0
+                  ? null
+                  : () => setState(() => _reportPage = currentPage - 1),
+              onNext: currentPage >= totalPages - 1
+                  ? null
+                  : () => setState(() => _reportPage = currentPage + 1),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaginationFooter({
+    required int currentPage,
+    required int totalPages,
+    required int totalItems,
+    required int startItem,
+    required int endItem,
+    required VoidCallback? onPrevious,
+    required VoidCallback? onNext,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Menampilkan $startItem-$endItem dari $totalItems data',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          OutlinedButton.icon(
+            onPressed: onPrevious,
+            icon: const Icon(Icons.chevron_left_rounded, size: 18),
+            label: const Text('Sebelumnya'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _primary,
+              disabledForegroundColor: Colors.grey.shade400,
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '${currentPage + 1} / $totalPages',
+            style: const TextStyle(
+              color: AppColors.textHeading,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 10),
+          OutlinedButton.icon(
+            onPressed: onNext,
+            label: const Text('Berikutnya'),
+            icon: const Icon(Icons.chevron_right_rounded, size: 18),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _primary,
+              disabledForegroundColor: Colors.grey.shade400,
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+          ),
         ],
       ),
     );
@@ -538,7 +664,10 @@ class _AdminReportsPageState extends ConsumerState<AdminReportsPage> {
       },
     );
     if (range != null) {
-      setState(() => _selectedDateRange = range);
+      setState(() {
+        _selectedDateRange = range;
+        _reportPage = 0;
+      });
     }
   }
 

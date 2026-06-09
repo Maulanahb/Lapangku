@@ -54,8 +54,8 @@ class BookingService {
     }
 
     final now = DateTime.now();
-    final timeline = List<Map<String, dynamic>>.from(
-        doc.data()?['statusTimeline'] ?? []);
+    final timeline =
+        List<Map<String, dynamic>>.from(doc.data()?['statusTimeline'] ?? []);
     timeline.add({
       'status': newStatus,
       'waktu': Timestamp.fromDate(now),
@@ -98,9 +98,9 @@ class BookingService {
   // CUSTOMER ACTIONS
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// [Customer] Membuat booking baru.
+  /// Customer: Membuat booking baru.
   ///
-  /// WAJIB menerima `mitraId` melalui [field.mitraId] agar query Mitra efisien.
+  /// WAJIB menerima `mitraId` melalui `field.mitraId` agar query Mitra efisien.
   /// Status awal: `menunggu_bayar`
   ///
   /// **PENTING — Asumsi Harga:**
@@ -206,7 +206,8 @@ class BookingService {
       'mitraId': mitraId,
       'isRead': false,
       'title': 'Pesanan Baru!',
-      'message': '${user.nama} memesan $fieldDisplayName pada $dateFormatted ($slotsFormatted)',
+      'message':
+          '${user.nama} memesan $fieldDisplayName pada $dateFormatted ($slotsFormatted)',
       'type': 'booking',
       'createdAt': FieldValue.serverTimestamp(),
       'data': {
@@ -220,7 +221,8 @@ class BookingService {
     });
 
     await batch.commit();
-    debugPrint('✅ Booking + Notifikasi saved: ${booking.bookingId} | mitraId: ${booking.mitraId}');
+    debugPrint(
+        '✅ Booking + Notifikasi saved: ${booking.bookingId} | mitraId: ${booking.mitraId}');
 
     // ═══════════════════════════════════════════════════════════════════
     // MIDTRANS SNAP: Create payment transaction via Cloud Function
@@ -248,11 +250,12 @@ class BookingService {
       rollbackBatch.delete(docRef);
       rollbackBatch.delete(notifRef);
       await rollbackBatch.commit();
-      throw Exception('Sistem gagal menghubungi server pembayaran (Midtrans). Silakan coba lagi.');
+      throw Exception(
+          'Sistem gagal menghubungi server pembayaran (Midtrans). Silakan coba lagi.');
     }
   }
 
-  /// [Customer] Stream real-time slot yang sudah dipesan & ditutup untuk tanggal tertentu.
+  /// Customer: Stream real-time slot yang sudah dipesan & ditutup untuk tanggal tertentu.
   /// Juga memblokir slot dari pengajuan reschedule yang masih pending.
   Stream<List<String>> streamBookedSlots({
     required String fieldId,
@@ -261,25 +264,30 @@ class BookingService {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
-    
+
     final controller = StreamController<List<String>>.broadcast();
-    
+
     List<String> currentBooked = [];
     List<String> currentClosed = [];
     List<String> currentRescheduleSlots = [];
-    
+
     void emit() {
-      final combined = <String>{...currentBooked, ...currentClosed, ...currentRescheduleSlots}.toList();
+      final combined = <String>{
+        ...currentBooked,
+        ...currentClosed,
+        ...currentRescheduleSlots
+      }.toList();
       if (!controller.isClosed) {
         controller.add(combined);
       }
     }
-    
+
     // Sub1: Listen to existing bookings on this date
     final sub1 = _db
         .collection('bookings')
         .where('fieldId', isEqualTo: fieldId)
-        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('tanggal',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
         .where('tanggal', isLessThan: Timestamp.fromDate(endOfDay))
         .snapshots()
         .listen((snap) {
@@ -358,9 +366,10 @@ class BookingService {
         final data = doc.data();
         final rescheduleDate = (data['rescheduleDate'] as Timestamp?)?.toDate();
         if (rescheduleDate == null) continue;
-        
+
         // Check if the reschedule targets this date
-        final reschedDay = DateTime(rescheduleDate.year, rescheduleDate.month, rescheduleDate.day);
+        final reschedDay = DateTime(
+            rescheduleDate.year, rescheduleDate.month, rescheduleDate.day);
         if (reschedDay.isAtSameMomentAs(startOfDay)) {
           final rescheduleTimeSlots = data['rescheduleTimeSlots'];
           if (rescheduleTimeSlots != null) {
@@ -373,17 +382,17 @@ class BookingService {
     }, onError: (e) {
       if (!controller.isClosed) controller.addError(e);
     });
-    
+
     controller.onCancel = () {
       sub1.cancel();
       sub2.cancel();
       sub3.cancel();
     };
-    
+
     return controller.stream;
   }
 
-  /// [Customer] Get slot yang sudah dipesan untuk tanggal tertentu.
+  /// Customer: Get slot yang sudah dipesan untuk tanggal tertentu.
   /// Juga auto-expire booking yang melewati batas waktu pembayaran.
   Future<List<String>> getBookedSlots({
     required String fieldId,
@@ -398,7 +407,8 @@ class BookingService {
     final snap = await _db
         .collection('bookings')
         .where('fieldId', isEqualTo: fieldId)
-        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('tanggal',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
         .where('tanggal', isLessThan: Timestamp.fromDate(endOfDay))
         .get();
 
@@ -418,8 +428,7 @@ class BookingService {
 
       // Auto-expire: jika menunggu_bayar tapi sudah lewat batas waktu
       if (status == BookingStatusHelper.menungguBayar) {
-        final batasWaktu =
-            (data['batasWaktuBayar'] as Timestamp?)?.toDate();
+        final batasWaktu = (data['batasWaktuBayar'] as Timestamp?)?.toDate();
         if (batasWaktu != null && now.isAfter(batasWaktu)) {
           _expireBooking(doc.id, data['statusTimeline']);
           continue; // Skip slot ini, sudah expired
@@ -481,7 +490,8 @@ class BookingService {
         final rescheduleDate = (data['rescheduleDate'] as Timestamp?)?.toDate();
         if (rescheduleDate == null) continue;
 
-        final reschedDay = DateTime(rescheduleDate.year, rescheduleDate.month, rescheduleDate.day);
+        final reschedDay = DateTime(
+            rescheduleDate.year, rescheduleDate.month, rescheduleDate.day);
         if (reschedDay.isAtSameMomentAs(startOfDay)) {
           final rescheduleTimeSlots = data['rescheduleTimeSlots'];
           if (rescheduleTimeSlots != null) {
@@ -496,30 +506,27 @@ class BookingService {
     return bookedSlots;
   }
 
-  /// [Customer] Get single booking by document ID.
+  /// Customer: Get single booking by document ID.
   Future<BookingModel?> getBookingById(String bookingId) async {
     final doc = await _db.collection('bookings').doc(bookingId).get();
     if (!doc.exists) return null;
     return BookingModel.fromFirestore(doc);
   }
 
-  /// [Customer] Stream single booking untuk real-time updates.
+  /// Customer: Stream single booking untuk real-time updates.
   Stream<BookingModel?> streamBooking(String bookingId) {
-    return _db
-        .collection('bookings')
-        .doc(bookingId)
-        .snapshots()
-        .map((doc) {
+    return _db.collection('bookings').doc(bookingId).snapshots().map((doc) {
       if (!doc.exists) return null;
       return BookingModel.fromFirestore(doc);
     });
   }
 
-  /// [Customer] Get booking milik user tertentu.
+  /// Customer: Get booking milik user tertentu.
   ///
   /// Menggunakan orderBy + limit agar tidak mendownload seluruh riwayat
   /// booking sejak akun dibuat. Default limit 50 booking terbaru.
-  Future<List<BookingModel>> getUserBookings(String userId, {int limit = 50}) async {
+  Future<List<BookingModel>> getUserBookings(String userId,
+      {int limit = 50}) async {
     final snap = await _db
         .collection('bookings')
         .where('userId', isEqualTo: userId)
@@ -533,8 +540,9 @@ class BookingService {
         .toList();
   }
 
-  /// [Customer] Stream booking milik user tertentu secara real-time.
-  Stream<List<BookingModel>> streamUserBookings(String userId, {int limit = 50}) {
+  /// Customer: Stream booking milik user tertentu secara real-time.
+  Stream<List<BookingModel>> streamUserBookings(String userId,
+      {int limit = 50}) {
     return _db
         .collection('bookings')
         .where('userId', isEqualTo: userId)
@@ -547,7 +555,7 @@ class BookingService {
             .toList());
   }
 
-  /// [Customer] Membatalkan booking.
+  /// Customer: Membatalkan booking.
   /// Valid dari: menunggu_bayar
   Future<void> cancelBooking(String bookingId) async {
     await _updateStatus(
@@ -561,7 +569,7 @@ class BookingService {
     await _db.collection('bookings').doc(bookingId).delete();
   }
 
-  /// [Customer] Hapus booking dari riwayat (Soft Delete)
+  /// Customer: Hapus booking dari riwayat (Soft Delete)
   Future<void> hideBookingForCustomer(String bookingId) async {
     await _db.collection('bookings').doc(bookingId).update({
       'isHiddenByCustomer': true,
@@ -569,7 +577,7 @@ class BookingService {
     });
   }
 
-  /// [Mitra] Hapus booking dari riwayat (Soft Delete)
+  /// Mitra: Hapus booking dari riwayat (Soft Delete)
   Future<void> hideBookingForMitra(String bookingId) async {
     await _db.collection('bookings').doc(bookingId).update({
       'isHiddenByMitra': true,
@@ -577,13 +585,45 @@ class BookingService {
     });
   }
 
-  /// [Customer] Mengajukan perubahan jadwal (Reschedule)
-  Future<void> requestReschedule(String bookingId, DateTime newDate, List<String> newTimeSlots, String reason) async {
+  /// Customer: Mengajukan perubahan jadwal (Reschedule)
+  Future<void> requestReschedule(String bookingId, DateTime newDate,
+      List<String> newTimeSlots, String reason) async {
     final doc = await _db.collection('bookings').doc(bookingId).get();
     if (!doc.exists) throw Exception('Booking tidak ditemukan');
-    
+
     final booking = BookingModel.fromFirestore(doc);
-    
+    final expectedSlotCount = booking.timeSlots.isNotEmpty
+        ? booking.timeSlots.length
+        : booking.durasi > 0
+            ? booking.durasi
+            : 1;
+
+    if (newTimeSlots.isEmpty) {
+      throw Exception('Pilih jam reschedule terlebih dahulu.');
+    }
+
+    if (newTimeSlots.toSet().length != newTimeSlots.length) {
+      throw Exception('Jam reschedule tidak valid.');
+    }
+
+    if (newTimeSlots.length != expectedSlotCount) {
+      throw Exception(
+        'Durasi reschedule harus sama dengan pesanan awal ($expectedSlotCount jam).',
+      );
+    }
+
+    final isSameDate = newDate.year == booking.tanggal.year &&
+        newDate.month == booking.tanggal.month &&
+        newDate.day == booking.tanggal.day;
+    final overlapsOriginalSlots =
+        newTimeSlots.any((slot) => booking.timeSlots.contains(slot));
+
+    if (isSameDate && overlapsOriginalSlots) {
+      throw Exception(
+        'Jam reschedule tidak boleh menggunakan jadwal pesanan awal.',
+      );
+    }
+
     // Validasi 2 jam sebelum main
     if (booking.timeSlots.isNotEmpty) {
       final startTimeStr = booking.timeSlots.first.split(' - ')[0];
@@ -598,14 +638,15 @@ class BookingService {
           startHour,
           startMinute,
         );
-        
+
         final diff = startDateTime.difference(DateTime.now());
         if (diff.inHours < 2) {
-          throw Exception('Batas waktu pengajuan reschedule (Maksimal 2 jam sebelum jadwal bermain) telah terlewati.');
+          throw Exception(
+              'Batas waktu pengajuan reschedule (Maksimal 2 jam sebelum jadwal bermain) telah terlewati.');
         }
       }
     }
-    
+
     final batch = _db.batch();
 
     batch.update(_db.collection('bookings').doc(bookingId), {
@@ -625,7 +666,8 @@ class BookingService {
       'mitraId': booking.mitraId,
       'isRead': false,
       'title': 'Pengajuan Reschedule',
-      'message': '${booking.userName} mengajukan perubahan jadwal ke $dateFormatted ($slotsFormatted)',
+      'message':
+          '${booking.userName} mengajukan perubahan jadwal ke $dateFormatted ($slotsFormatted)',
       'type': 'reschedule',
       'createdAt': FieldValue.serverTimestamp(),
       'data': {
@@ -645,7 +687,7 @@ class BookingService {
   // MITRA ACTIONS
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// [Mitra] Stream semua booking yang terkait Mitra berdasarkan mitraId.
+  /// Mitra: Stream semua booking yang terkait Mitra berdasarkan mitraId.
   ///
   /// Lebih efisien daripada query whereIn fieldIds karena langsung
   /// menggunakan single field `mitraId` di Firestore.
@@ -659,9 +701,8 @@ class BookingService {
     debugPrint('   statusFilter: $statusFilter');
     debugPrint('=========================================');
 
-    Query query = _db
-        .collection('bookings')
-        .where('mitraId', isEqualTo: mitraId);
+    Query query =
+        _db.collection('bookings').where('mitraId', isEqualTo: mitraId);
 
     if (statusFilter != null) {
       query = query.where('status', isEqualTo: statusFilter);
@@ -670,8 +711,8 @@ class BookingService {
     query = query.limit(150);
 
     return query.snapshots().map((snap) {
-      final bookings =
-          snap.docs.map((d) => BookingModel.fromFirestore(d))
+      final bookings = snap.docs
+          .map((d) => BookingModel.fromFirestore(d))
           .where((booking) => !booking.isHiddenByMitra)
           .toList();
       bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -679,7 +720,7 @@ class BookingService {
     });
   }
 
-  /// [Mitra] Stream booking berdasarkan list fieldId (fallback/backward-compat).
+  /// Mitra: Stream booking berdasarkan list fieldId (fallback/backward-compat).
   Stream<List<BookingModel>> streamMitraBookings(
     List<String> fieldIds, {
     String? statusFilter,
@@ -687,9 +728,7 @@ class BookingService {
     if (fieldIds.isEmpty) return Stream.value([]);
 
     final ids = fieldIds.take(AppConstants.firestoreWhereInLimit).toList();
-    Query query = _db
-        .collection('bookings')
-        .where('fieldId', whereIn: ids);
+    Query query = _db.collection('bookings').where('fieldId', whereIn: ids);
 
     if (statusFilter != null) {
       query = query.where('status', isEqualTo: statusFilter);
@@ -705,7 +744,7 @@ class BookingService {
     });
   }
 
-  /// [Mitra] Konfirmasi/setujui booking.
+  /// Mitra: Konfirmasi/setujui booking.
   /// Transisi: dikonfirmasi → selesai (or manual override)
   Future<void> confirmBooking(String bookingId) async {
     await _updateStatus(
@@ -714,7 +753,7 @@ class BookingService {
     );
   }
 
-  /// [Mitra] Tolak booking dengan alasan opsional.
+  /// Mitra: Tolak booking dengan alasan opsional.
   /// Transisi: menunggu_konfirmasi → ditolak
   Future<void> rejectBooking(String bookingId, {String? reason}) async {
     await _updateStatus(
@@ -726,7 +765,7 @@ class BookingService {
     );
   }
 
-  /// [Mitra/System] Tandai booking sebagai selesai.
+  /// Mitra/System: Tandai booking sebagai selesai.
   /// Transisi: dikonfirmasi → selesai
   Future<void> completeBooking(String bookingId) async {
     await _updateStatus(
@@ -735,7 +774,7 @@ class BookingService {
     );
   }
 
-  /// [Mitra] Validasi E-Ticket dari QR Code dan selesaikan booking.
+  /// Mitra: Validasi E-Ticket dari QR Code dan selesaikan booking.
   ///
   /// Validasi meliputi:
   /// 1. Apakah tiket ada di database
@@ -772,7 +811,8 @@ class BookingService {
 
     // Cek apakah e-ticket sudah hangus (melewati batas waktu main)
     if (booking.isTicketExpired) {
-      throw Exception('Tiket ini sudah hangus (melewati waktu selesai bermain).');
+      throw Exception(
+          'Tiket ini sudah hangus (melewati waktu selesai bermain).');
     }
 
     // Semua validasi lulus — ubah status jadi selesai
@@ -782,34 +822,55 @@ class BookingService {
     return booking.copyWith(status: BookingStatusHelper.selesai);
   }
 
-  /// [Mitra] Menyetujui pengajuan reschedule
+  /// Mitra: Menyetujui pengajuan reschedule
   Future<void> approveReschedule(String bookingId) async {
     final doc = await _db.collection('bookings').doc(bookingId).get();
     if (!doc.exists) throw Exception('Booking tidak ditemukan');
-    
+
     final booking = BookingModel.fromFirestore(doc);
-    if (!booking.isRescheduleRequested || booking.rescheduleStatus != 'pending') {
+    if (!booking.isRescheduleRequested ||
+        booking.rescheduleStatus != 'pending') {
       throw Exception('Tidak ada pengajuan reschedule yang valid.');
     }
-    
+
+    final newTimeSlots = booking.rescheduleTimeSlots;
+    final expectedSlotCount = booking.timeSlots.isNotEmpty
+        ? booking.timeSlots.length
+        : booking.durasi > 0
+            ? booking.durasi
+            : 1;
+
+    if (booking.rescheduleDate == null ||
+        newTimeSlots == null ||
+        newTimeSlots.isEmpty) {
+      throw Exception('Data reschedule tidak lengkap.');
+    }
+
+    if (newTimeSlots.length != expectedSlotCount) {
+      throw Exception(
+        'Pengajuan reschedule tidak valid karena durasinya berbeda dari pesanan awal. Tolak pengajuan ini dan minta customer mengajukan ulang.',
+      );
+    }
+
     final batch = _db.batch();
-    
+
     batch.update(_db.collection('bookings').doc(bookingId), {
       'tanggal': Timestamp.fromDate(booking.rescheduleDate!),
-      'timeSlots': booking.rescheduleTimeSlots,
-      'durasi': booking.rescheduleTimeSlots!.length,
+      'timeSlots': newTimeSlots,
+      'durasi': expectedSlotCount,
       'isRescheduleRequested': false,
       'rescheduleStatus': 'approved',
       'updatedAt': Timestamp.fromDate(DateTime.now()),
     });
-    
+
     // Kirim Notifikasi ke Customer
     final notifRef = _db.collection('notifikasi').doc();
     batch.set(notifRef, {
       'customer_id': booking.userId,
       'isRead': false,
       'title': 'Reschedule Disetujui',
-      'message': 'Pengajuan reschedule Anda untuk lapangan ${booking.fieldName} telah disetujui.',
+      'message':
+          'Pengajuan reschedule Anda untuk lapangan ${booking.fieldName} telah disetujui.',
       'type': 'reschedule',
       'createdAt': FieldValue.serverTimestamp(),
       'data': {
@@ -817,31 +878,32 @@ class BookingService {
         'bookingDocId': bookingId,
       },
     });
-    
+
     await batch.commit();
   }
 
-  /// [Mitra] Menolak pengajuan reschedule
+  /// Mitra: Menolak pengajuan reschedule
   Future<void> rejectReschedule(String bookingId) async {
     final doc = await _db.collection('bookings').doc(bookingId).get();
     if (!doc.exists) throw Exception('Booking tidak ditemukan');
     final booking = BookingModel.fromFirestore(doc);
-    
+
     final batch = _db.batch();
-    
+
     batch.update(_db.collection('bookings').doc(bookingId), {
       'isRescheduleRequested': false,
       'rescheduleStatus': 'rejected',
       'updatedAt': Timestamp.fromDate(DateTime.now()),
     });
-    
+
     // Kirim Notifikasi ke Customer
     final notifRef = _db.collection('notifikasi').doc();
     batch.set(notifRef, {
       'customer_id': booking.userId,
       'isRead': false,
       'title': 'Reschedule Ditolak',
-      'message': 'Maaf, pengajuan reschedule Anda untuk lapangan ${booking.fieldName} tidak dapat disetujui.',
+      'message':
+          'Maaf, pengajuan reschedule Anda untuk lapangan ${booking.fieldName} tidak dapat disetujui.',
       'type': 'reschedule',
       'createdAt': FieldValue.serverTimestamp(),
       'data': {
@@ -849,11 +911,11 @@ class BookingService {
         'bookingDocId': bookingId,
       },
     });
-    
+
     await batch.commit();
   }
 
-  /// [Mitra] Buat booking offline/manual untuk memblokir slot.
+  /// Mitra: Buat booking offline/manual untuk memblokir slot.
   ///
   /// Digunakan ketika ada penyewa yang memesan langsung (via telepon/WA/datang).
   /// Status langsung `dikonfirmasi` agar slot otomatis terblokir.
@@ -917,7 +979,7 @@ class BookingService {
   // ADMIN ACTIONS
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// [Admin] Stream seluruh booking secara real-time (diurutkan createdAt descending).
+  /// Admin: Stream seluruh booking secara real-time (diurutkan createdAt descending).
   /// Digunakan untuk dashboard Admin yang memonitor semua transaksi.
   Stream<List<BookingModel>> streamAllBookings({String? statusFilter}) {
     Query query = _db.collection('bookings');
@@ -925,7 +987,7 @@ class BookingService {
     if (statusFilter != null) {
       query = query.where('status', isEqualTo: statusFilter);
     }
-    
+
     // Gunakan limit agar tidak fetch ribuan dokumen ke HP admin
     query = query.limit(150);
 

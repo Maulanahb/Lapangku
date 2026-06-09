@@ -27,7 +27,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
     'Mini Soccer',
     'Bulu Tangkis',
     'Basket',
-    'Voli'
+    'Tenis'
   ];
 
   @override
@@ -307,15 +307,19 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
     final double fadeEnd = expandedHeight - collapsedHeight - 10.0;
     double opacity = 1.0 - (shrinkOffset / fadeEnd);
     opacity = opacity.clamp(0.0, 1.0);
-    
+
     // Default location string based on the user's city or a fallback
-    final locationText = (user?.city != null && user!.city!.isNotEmpty) 
-        ? user!.city! 
+    final locationText = (user?.city != null && user!.city!.isNotEmpty)
+        ? user!.city!
         : 'Malang, Jawa Timur';
-        
+
+    final rawName = user?.nama.trim() ?? '';
+    final greetingName =
+        rawName.isNotEmpty ? rawName.split(RegExp(r'\s+')).first : 'Sobat';
+
     // Initial for avatar
-    final initial = (user?.nama != null && user!.nama.isNotEmpty) 
-        ? user!.nama.substring(0, 1).toUpperCase() 
+    final initial = greetingName.isNotEmpty
+        ? greetingName.substring(0, 1).toUpperCase()
         : 'S';
 
     return Container(
@@ -338,7 +342,7 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Halo, ${user?.nama ?? 'Budi'} 👋',
+                          'Halo, $greetingName',
                           style: const TextStyle(
                               color: AppColors.textDark,
                               fontSize: 20,
@@ -349,7 +353,8 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(Icons.location_on_outlined, color: AppColors.primary, size: 14),
+                            const Icon(Icons.location_on_outlined,
+                                color: AppColors.primary, size: 14),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
@@ -397,7 +402,10 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
                               ? null
                               : Text(
                                   initial,
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
                                 ),
                         ),
                       ),
@@ -433,7 +441,9 @@ class _HeaderDelegate extends SliverPersistentHeaderDelegate {
                           child: Text(
                             'Cari lapangan, lokasi, atau olahraga...',
                             style: TextStyle(
-                                color: const Color(0xFF8C98A8), fontSize: 14, fontWeight: FontWeight.w500),
+                                color: const Color(0xFF8C98A8),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),

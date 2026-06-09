@@ -3,7 +3,7 @@ import 'package:lapangku/models/field/base_field_model.dart';
 
 class MitraFieldModel extends BaseFieldModel {
   final String id; // alias dari fieldId untuk backward-compat
-  final String jenisLapangan; // futsal, badminton, basket, tenis, voli
+  final String jenisLapangan; // futsal, badminton, basket, tenis
   final String tipeLapangan; // Indoor / Outdoor
   final String deskripsi;
   final String alamat;
@@ -18,7 +18,6 @@ class MitraFieldModel extends BaseFieldModel {
   final DateTime? createdAt;
   final double avgRating;
   final int totalReviews;
-
 
   const MitraFieldModel({
     required this.id,
@@ -42,7 +41,6 @@ class MitraFieldModel extends BaseFieldModel {
     this.avgRating = 0.0,
     this.totalReviews = 0,
   }) : super(
-
           fieldId: id,
         );
 
@@ -99,7 +97,6 @@ class MitraFieldModel extends BaseFieldModel {
     );
   }
 
-
   Map<String, dynamic> toMap() {
     return {
       'mitraId': mitraId,
@@ -134,13 +131,17 @@ class MitraFieldModel extends BaseFieldModel {
     };
   }
 
-
   factory MitraFieldModel.fromMap(Map<String, dynamic> map, String id) {
     return MitraFieldModel(
       id: id,
-      mitraId: map['mitraId'] ?? map['MitraId'] ?? map['id_pemilik'] ?? map['uid'] ?? '',
+      mitraId: map['mitraId'] ??
+          map['MitraId'] ??
+          map['id_pemilik'] ??
+          map['uid'] ??
+          '',
       namaVenue: map['nama_venue'] ?? map['namaVenue'] ?? '',
-      namaLapangan: map['nama_lapangan'] ?? map['namaLapangan'] ??
+      namaLapangan: map['nama_lapangan'] ??
+          map['namaLapangan'] ??
           map['businessName'] ??
           map['namaBisnis'] ??
           map['name'] ??
@@ -152,32 +153,36 @@ class MitraFieldModel extends BaseFieldModel {
       alamat: map['alamat'] ?? map['alamat_lengkap'] ?? '',
       latitude: _extractLat(map),
       longitude: _extractLng(map),
-      photoUrls: (map['photoUrls'] as List?)?.map((e) => e.toString()).toList() ??
-          (map['photos'] as List?)?.map((e) => e.toString()).toList() ??
-          (map['images'] as List?)?.map((e) => e.toString()).toList() ??
-          [],
-      fasilitas: (map['fasilitas'] as List?)?.map((e) => e.toString()).toList() ??
-          (map['facilities'] as List?)?.map((e) => e.toString()).toList() ??
-          [],
+      photoUrls:
+          (map['photoUrls'] as List?)?.map((e) => e.toString()).toList() ??
+              (map['photos'] as List?)?.map((e) => e.toString()).toList() ??
+              (map['images'] as List?)?.map((e) => e.toString()).toList() ??
+              [],
+      fasilitas:
+          (map['fasilitas'] as List?)?.map((e) => e.toString()).toList() ??
+              (map['facilities'] as List?)?.map((e) => e.toString()).toList() ??
+              [],
       hargaWeekend: map['hargaWeekend'] as int?,
       jamBuka: map['jamBuka'] ?? '08:00',
       jamTutup: map['jamTutup'] ?? '22:00',
       isActive: map['is_aktif'] ?? map['isActive'] ?? true,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
-      avgRating: ((map['avg_rating'] ?? map['ratingAvg'] ?? 0.0) as num).toDouble().clamp(0.0, 5.0),
+      avgRating: ((map['avg_rating'] ?? map['ratingAvg'] ?? 0.0) as num)
+          .toDouble()
+          .clamp(0.0, 5.0),
       totalReviews: (map['total_ulasan'] ?? map['totalUlasan'] ?? 0) as int,
     );
   }
 
-
-
   static double _extractLat(Map<String, dynamic> map) {
-    if (map['location'] is GeoPoint) return (map['location'] as GeoPoint).latitude;
+    if (map['location'] is GeoPoint)
+      return (map['location'] as GeoPoint).latitude;
     return (map['latitude'] ?? 0.0).toDouble();
   }
 
   static double _extractLng(Map<String, dynamic> map) {
-    if (map['location'] is GeoPoint) return (map['location'] as GeoPoint).longitude;
+    if (map['location'] is GeoPoint)
+      return (map['location'] as GeoPoint).longitude;
     return (map['longitude'] ?? 0.0).toDouble();
   }
 }

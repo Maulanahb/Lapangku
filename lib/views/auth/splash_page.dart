@@ -45,14 +45,14 @@ class _SplashPageState extends ConsumerState<SplashPage> {
             Container(
               width: 100,
               height: 100,
-              decoration: const BoxDecoration(
-                color: Color(0xFF1B6B3A),
-                shape: BoxShape.circle,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B6B3A),
+                borderRadius: BorderRadius.circular(24),
               ),
-              child: const Icon(
-                Icons.stadium_outlined,
-                color: Colors.white,
-                size: 50,
+              clipBehavior: Clip.antiAlias,
+              child: Image.asset(
+                'assets/icon/app_icon.png',
+                fit: BoxFit.cover,
               ),
             ),
             const SizedBox(height: 20),

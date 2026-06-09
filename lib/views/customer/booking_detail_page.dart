@@ -15,7 +15,6 @@ import 'package:lapangku/controllers/field/field_controller.dart';
 import 'package:lapangku/models/field/field_model.dart';
 import 'package:lapangku/core/services/firestore_service.dart';
 
-
 class BookingDetailPage extends ConsumerWidget {
   final String bookingId;
   const BookingDetailPage({super.key, required this.bookingId});
@@ -28,44 +27,58 @@ class BookingDetailPage extends ConsumerWidget {
       backgroundColor: AppColors.backgroundPage,
       appBar: AppBar(
         title: const Text('Booking Detail',
-            style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18)),
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+                fontSize: 18)),
         backgroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primary),
-        actions: [IconButton(icon: const Icon(Icons.share_outlined), onPressed: () {
-          final bookingAsync = ref.read(activeBookingStreamProvider(bookingId));
-          final booking = bookingAsync.valueOrNull;
-          if (booking == null) return;
-          final dateStr = DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
-          final timeStr = booking.timeSlots.length > 1
-              ? '${booking.timeSlots.first.split(' - ')[0]} - ${booking.timeSlots.last.split(' - ')[1]} WIB'
-              : '${booking.timeSlots.first} WIB';
-          final status = BookingStatusParsing.fromString(booking.status);
-          Share.share(
-            '🏟️ *Booking Lapangku Berhasil!* 🏟️\n\n'
-            '🎫 *ID Pesanan:* #${booking.bookingId}\n'
-            '⚽ *Lapangan:* ${booking.fieldName}\n'
-            '📍 *Alamat:* ${booking.fieldAddress}\n'
-            '📅 *Hari/Tanggal:* $dateStr\n'
-            '🕐 *Waktu:* $timeStr\n'
-            '💳 *Total Bayar:* ${CurrencyFormatter.format(booking.totalBayar)}\n'
-            '📌 *Status:* ${status.label}\n\n'
-            'Tunjukkan tiket Anda di aplikasi atau buka tautan ini:\n'
-            '🔗 lapangku://booking-detail?id=${booking.id}',
-          );
-        })],
+        actions: [
+          IconButton(
+              icon: const Icon(Icons.share_outlined),
+              onPressed: () {
+                final bookingAsync =
+                    ref.read(activeBookingStreamProvider(bookingId));
+                final booking = bookingAsync.valueOrNull;
+                if (booking == null) return;
+                final dateStr = DateFormat('EEEE, dd MMM yyyy', 'id_ID')
+                    .format(booking.tanggal);
+                final timeStr = booking.timeSlots.length > 1
+                    ? '${booking.timeSlots.first.split(' - ')[0]} - ${booking.timeSlots.last.split(' - ')[1]} WIB'
+                    : '${booking.timeSlots.first} WIB';
+                final status = BookingStatusParsing.fromString(booking.status);
+                Share.share(
+                  '🏟️ *Booking Lapangku Berhasil!* 🏟️\n\n'
+                  '🎫 *ID Pesanan:* #${booking.bookingId}\n'
+                  '⚽ *Lapangan:* ${booking.fieldName}\n'
+                  '📍 *Alamat:* ${booking.fieldAddress}\n'
+                  '📅 *Hari/Tanggal:* $dateStr\n'
+                  '🕐 *Waktu:* $timeStr\n'
+                  '💳 *Total Bayar:* ${CurrencyFormatter.format(booking.totalBayar)}\n'
+                  '📌 *Status:* ${status.label}\n\n'
+                  'Tunjukkan tiket Anda di aplikasi atau buka tautan ini:\n'
+                  '🔗 lapangku://booking-detail?id=${booking.id}',
+                );
+              })
+        ],
       ),
       body: bookingStream.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: AppColors.error))),
+        loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primary)),
+        error: (e, _) => Center(
+            child: Text('Error: $e',
+                style: const TextStyle(color: AppColors.error))),
         data: (booking) {
-          if (booking == null) return const Center(child: Text('Booking tidak ditemukan'));
+          if (booking == null)
+            return const Center(child: Text('Booking tidak ditemukan'));
           return SingleChildScrollView(
             child: Column(
               children: [
                 _buildHeader(booking),
-                if (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending')
+                if (booking.isRescheduleRequested &&
+                    booking.rescheduleStatus == 'pending')
                   _buildRescheduleBanner(booking),
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -100,9 +113,13 @@ class BookingDetailPage extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(status.headerTitle,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+            style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18)),
         const SizedBox(height: 4),
-        Text('#${booking.bookingId}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+        Text('#${booking.bookingId}',
+            style: const TextStyle(color: Colors.white70, fontSize: 12)),
         if (status == BookingStatus.menungguBayar)
           _PaymentCountdownText(batasWaktuBayar: booking.batasWaktuBayar),
       ]),
@@ -122,8 +139,13 @@ class BookingDetailPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Pengajuan Reschedule Menunggu', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade900)),
-                Text('Menunggu persetujuan Mitra lapangan.', style: TextStyle(fontSize: 12, color: Colors.orange.shade800)),
+                Text('Pengajuan Reschedule Menunggu',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade900)),
+                Text('Menunggu persetujuan Mitra lapangan.',
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.orange.shade800)),
               ],
             ),
           ),
@@ -133,7 +155,8 @@ class BookingDetailPage extends ConsumerWidget {
   }
 
   Widget _buildFieldInfoCard(BookingModel booking) {
-    final dateStr = DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
+    final dateStr =
+        DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
     final timeStr = booking.timeSlots.length > 1
         ? '${booking.timeSlots.first.split(' - ')[0]} - ${booking.timeSlots.last.split(' - ')[1]}'
         : booking.timeSlots.first;
@@ -142,38 +165,60 @@ class BookingDetailPage extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 10,
+              offset: const Offset(0, 4))
+        ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
           child: booking.fieldImageUrl.isNotEmpty
-              ? Image.network(booking.fieldImageUrl, height: 140, width: double.infinity, fit: BoxFit.cover,
+              ? Image.network(booking.fieldImageUrl,
+                  height: 140,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => _placeholderImage())
               : _placeholderImage(),
         ),
         Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(booking.fieldName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(booking.fieldName,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 4),
             Row(children: [
-              const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
+              const Icon(Icons.location_on_outlined,
+                  size: 14, color: AppColors.textSecondary),
               const SizedBox(width: 4),
-              Expanded(child: Text(booking.fieldAddress,
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary))),
+              Expanded(
+                  child: Text(booking.fieldAddress,
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary))),
             ]),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(color: AppColors.backgroundPage, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                  color: AppColors.backgroundPage,
+                  borderRadius: BorderRadius.circular(12)),
               child: Row(children: [
-                const Icon(Icons.calendar_today, color: AppColors.primary, size: 20),
+                const Icon(Icons.calendar_today,
+                    color: AppColors.primary, size: 20),
                 const SizedBox(width: 12),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('Jadwal Main', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                  const Text('Jadwal Main',
+                      style: TextStyle(
+                          fontSize: 11, color: AppColors.textSecondary)),
                   Text('$dateStr • $timeStr',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark)),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: AppColors.textDark)),
                 ]),
               ]),
             ),
@@ -186,27 +231,40 @@ class BookingDetailPage extends ConsumerWidget {
   Widget _placeholderImage() => Container(
       height: 140,
       color: AppColors.primaryLight,
-      child: const Center(child: Icon(Icons.stadium_outlined, size: 48, color: AppColors.primary)));
+      child: const Center(
+          child: Icon(Icons.stadium_outlined,
+              size: 48, color: AppColors.primary)));
 
   Widget _buildStatusTimeline(BookingModel booking) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+          color: Colors.white, borderRadius: BorderRadius.circular(16)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Status Pesanan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const Text('Status Pesanan',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 20),
         _buildTimelineItem('Pesanan Dibuat', booking, 'menunggu_bayar', true),
         _buildTimelineItem('Pembayaran Dikonfirmasi', booking, 'dikonfirmasi',
             booking.status != 'menunggu_bayar'),
-        _buildTimelineItem('Pesanan Aktif', booking, 'aktif',
-            booking.status == 'dikonfirmasi' || booking.status == 'aktif' || booking.status == 'selesai',
-            isLast: false, badge: 'AKTIF'),
-        _buildTimelineItem('Selesai', booking, 'selesai', booking.status == 'selesai', isLast: true),
+        _buildTimelineItem(
+            'Pesanan Aktif',
+            booking,
+            'aktif',
+            booking.status == 'dikonfirmasi' ||
+                booking.status == 'aktif' ||
+                booking.status == 'selesai',
+            isLast: false,
+            badge: 'AKTIF'),
+        _buildTimelineItem(
+            'Selesai', booking, 'selesai', booking.status == 'selesai',
+            isLast: true),
       ]),
     );
   }
 
-  Widget _buildTimelineItem(String title, BookingModel booking, String targetStatus, bool isCompleted,
+  Widget _buildTimelineItem(
+      String title, BookingModel booking, String targetStatus, bool isCompleted,
       {bool isLast = false, String? badge}) {
     String timeStr = '';
     if (isCompleted) {
@@ -221,42 +279,66 @@ class BookingDetailPage extends ConsumerWidget {
         }
       } catch (_) {}
     }
-    if (badge == 'AKTIF' && booking.status == 'dikonfirmasi') timeStr = 'Sekarang';
+    if (badge == 'AKTIF' && booking.status == 'dikonfirmasi')
+      timeStr = 'Sekarang';
     final isActiveBadge = badge != null && booking.status == 'dikonfirmasi';
 
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Column(children: [
         Container(
-          width: 20, height: 20,
+          width: 20,
+          height: 20,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: isCompleted ? AppColors.primary : AppColors.divider,
           ),
-          child: isCompleted ? const Icon(Icons.check, size: 12, color: Colors.white) : null,
+          child: isCompleted
+              ? const Icon(Icons.check, size: 12, color: Colors.white)
+              : null,
         ),
-        if (!isLast) Container(width: 2, height: 30, color: isCompleted ? AppColors.primary : AppColors.divider),
+        if (!isLast)
+          Container(
+              width: 2,
+              height: 30,
+              color: isCompleted ? AppColors.primary : AppColors.divider),
       ]),
       const SizedBox(width: 16),
       Expanded(
         child: Padding(
           padding: const EdgeInsets.only(top: 2),
-          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          child:
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Row(children: [
               Text(title,
                   style: TextStyle(
-                      fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
-                      color: isCompleted ? AppColors.textDark : AppColors.textSecondary)),
+                      fontWeight:
+                          isCompleted ? FontWeight.bold : FontWeight.normal,
+                      color: isCompleted
+                          ? AppColors.textDark
+                          : AppColors.textSecondary)),
               if (isActiveBadge) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: AppColors.statusPendingBg, borderRadius: BorderRadius.circular(4)),
-                  child: Text(badge, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.orange.shade800)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                      color: AppColors.statusPendingBg,
+                      borderRadius: BorderRadius.circular(4)),
+                  child: Text(badge,
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade800)),
                 ),
               ],
             ]),
             if (timeStr.isNotEmpty)
-              Text(timeStr, style: TextStyle(fontSize: 12, color: isActiveBadge ? AppColors.primary : AppColors.textSecondary)),
+              Text(timeStr,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: isActiveBadge
+                          ? AppColors.primary
+                          : AppColors.textSecondary)),
           ]),
         ),
       ),
@@ -266,26 +348,34 @@ class BookingDetailPage extends ConsumerWidget {
   Widget _buildPaymentInfo(BuildContext context, BookingModel booking) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+          color: Colors.white, borderRadius: BorderRadius.circular(16)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Info Pembayaran', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const Text('Info Pembayaran',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 16),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          const Text('Metode', style: TextStyle(color: AppColors.textSecondary)),
-          Text(booking.metodePembayaran.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
+          const Text('Metode',
+              style: TextStyle(color: AppColors.textSecondary)),
+          Text(booking.metodePembayaran.toUpperCase(),
+              style: const TextStyle(fontWeight: FontWeight.bold)),
         ]),
         const SizedBox(height: 12),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           const Text('Total', style: TextStyle(color: AppColors.textSecondary)),
           Text(CurrencyFormatter.format(booking.totalBayar),
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary)),
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: AppColors.primary)),
         ]),
       ]),
     );
   }
 
   Widget _buildETicketCard(BookingModel booking) {
-    final dateStr = DateFormat('EEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
+    final dateStr =
+        DateFormat('EEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
     final timeStr = booking.timeSlots.length > 1
         ? '${booking.timeSlots.first.split(' - ')[0]} - ${booking.timeSlots.last.split(' - ')[1]}'
         : booking.timeSlots.first;
@@ -295,7 +385,10 @@ class BookingDetailPage extends ConsumerWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: AppColors.primary.withValues(alpha: 0.12), blurRadius: 20, offset: const Offset(0, 8)),
+          BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
@@ -316,7 +409,8 @@ class BookingDetailPage extends ConsumerWidget {
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.confirmation_number, color: Colors.white, size: 22),
+                  child: const Icon(Icons.confirmation_number,
+                      color: Colors.white, size: 22),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
@@ -324,14 +418,19 @@ class BookingDetailPage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('E-Ticket Anda',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 18)),
                       Text('Tunjukkan ke petugas lapangan',
-                          style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          style:
+                              TextStyle(color: Colors.white70, fontSize: 12)),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: const Color(0xFFD1FAE5),
                     borderRadius: BorderRadius.circular(8),
@@ -339,11 +438,14 @@ class BookingDetailPage extends ConsumerWidget {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check_circle, color: Color(0xFF0F5A3C), size: 14),
+                      Icon(Icons.check_circle,
+                          color: Color(0xFF0F5A3C), size: 14),
                       SizedBox(width: 4),
                       Text('LUNAS',
                           style: TextStyle(
-                              color: Color(0xFF0F5A3C), fontWeight: FontWeight.w900, fontSize: 11)),
+                              color: Color(0xFF0F5A3C),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11)),
                     ],
                   ),
                 ),
@@ -382,7 +484,8 @@ class BookingDetailPage extends ConsumerWidget {
                     border: Border.all(color: Colors.grey.shade200, width: 1.5),
                   ),
                   child: QrImageView(
-                    data: booking.id, // Doc ID — HARUS sama dengan yang di-scan oleh validateAndCompleteBooking
+                    data: booking
+                        .id, // Doc ID — HARUS sama dengan yang di-scan oleh validateAndCompleteBooking
                     version: QrVersions.auto,
                     size: 200,
                     eyeStyle: const QrEyeStyle(
@@ -400,7 +503,8 @@ class BookingDetailPage extends ConsumerWidget {
 
                 // Booking ID
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: AppColors.backgroundPage,
                     borderRadius: BorderRadius.circular(8),
@@ -429,20 +533,26 @@ class BookingDetailPage extends ConsumerWidget {
                   child: Column(
                     children: [
                       Row(children: [
-                        const Icon(Icons.stadium_outlined, size: 16, color: AppColors.primary),
+                        const Icon(Icons.stadium_outlined,
+                            size: 16, color: AppColors.primary),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(booking.fieldName,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 13)),
                         ),
                       ]),
                       const SizedBox(height: 8),
                       Row(children: [
-                        const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primary),
+                        const Icon(Icons.calendar_today_outlined,
+                            size: 16, color: AppColors.primary),
                         const SizedBox(width: 8),
                         Text(dateStr, style: const TextStyle(fontSize: 13)),
-                        const Text('  •  ', style: TextStyle(color: Colors.grey)),
-                        Text(timeStr, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                        const Text('  •  ',
+                            style: TextStyle(color: Colors.grey)),
+                        Text(timeStr,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 13)),
                       ]),
                     ],
                   ),
@@ -452,12 +562,16 @@ class BookingDetailPage extends ConsumerWidget {
                 // Instruksi
                 Row(
                   children: [
-                    Icon(Icons.info_outline, size: 16, color: Colors.grey.shade500),
+                    Icon(Icons.info_outline,
+                        size: 16, color: Colors.grey.shade500),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Tunjukkan QR Code ini kepada petugas/Mitra lapangan saat Anda tiba.',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.3),
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                            height: 1.3),
                       ),
                     ),
                   ],
@@ -470,7 +584,8 @@ class BookingDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, WidgetRef ref, BookingModel booking) {
+  Widget _buildActionButtons(
+      BuildContext context, WidgetRef ref, BookingModel booking) {
     final status = BookingStatusParsing.fromString(booking.status);
     return Column(children: [
       if (status == BookingStatus.menungguBayar) ...[
@@ -489,7 +604,8 @@ class BookingDetailPage extends ConsumerWidget {
             elevation: 0,
             padding: const EdgeInsets.symmetric(vertical: 16),
             minimumSize: const Size(double.infinity, 0),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             disabledBackgroundColor: Colors.grey.shade300,
           ),
           child: const Text('Bayar Sekarang',
@@ -497,44 +613,59 @@ class BookingDetailPage extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
       ],
-      if (status == BookingStatus.dikonfirmasi || status == BookingStatus.aktif) ...[
+      if (status == BookingStatus.dikonfirmasi ||
+          status == BookingStatus.aktif) ...[
         if (booking.isTicketExpired)
           ElevatedButton.icon(
             onPressed: null,
             icon: const Icon(Icons.warning_amber_rounded, size: 20),
-            label: const Text('E-Ticket Hangus', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            label: const Text('E-Ticket Hangus',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey.shade400, foregroundColor: Colors.white, elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 16), minimumSize: const Size(double.infinity, 0),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              backgroundColor: Colors.grey.shade400,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              minimumSize: const Size(double.infinity, 0),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
               disabledBackgroundColor: Colors.grey.shade300,
               disabledForegroundColor: Colors.grey.shade600,
             ),
           )
         else
           ElevatedButton.icon(
-          onPressed: () => _showETicketSheet(context, booking),
-          icon: const Icon(Icons.qr_code_2, size: 20),
-          label: const Text('Lihat E-Ticket', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary, foregroundColor: Colors.white, elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 16), minimumSize: const Size(double.infinity, 0),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            onPressed: () => _showETicketSheet(context, booking),
+            icon: const Icon(Icons.qr_code_2, size: 20),
+            label: const Text('Lihat E-Ticket',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              minimumSize: const Size(double.infinity, 0),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+            ),
           ),
-        ),
         const SizedBox(height: 12),
       ],
       OutlinedButton.icon(
         onPressed: () async {
           if (booking.mitraId.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ID Mitra tidak ditemukan.')));
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('ID Mitra tidak ditemukan.')));
             return;
           }
           try {
             // Coba ambil dari koleksi 'mitra' yang merupakan data profil terbaru mitra
-            final doc = await FirestoreService.instance.collection('mitra').doc(booking.mitraId).get();
+            final doc = await FirestoreService.instance
+                .collection('mitra')
+                .doc(booking.mitraId)
+                .get();
             String phone = '';
-            
+
             if (doc.exists) {
               final data = doc.data();
               if (data != null) {
@@ -544,7 +675,10 @@ class BookingDetailPage extends ConsumerWidget {
 
             // Fallback: Jika tidak ada di 'mitra', coba cari di 'users' (saat daftar)
             if (phone.isEmpty) {
-              final userDoc = await FirestoreService.instance.collection('users').doc(booking.mitraId).get();
+              final userDoc = await FirestoreService.instance
+                  .collection('users')
+                  .doc(booking.mitraId)
+                  .get();
               if (userDoc.exists) {
                 final userData = userDoc.data();
                 if (userData != null) {
@@ -559,30 +693,41 @@ class BookingDetailPage extends ConsumerWidget {
               if (phone.startsWith('0')) {
                 phone = '62${phone.substring(1)}';
               }
-              final message = 'Halo, saya ${booking.userName} dengan ID Pesanan #${booking.bookingId} terkait lapangan ${booking.fieldName}.';
-              final uri = Uri.parse('https://wa.me/$phone?text=${Uri.encodeComponent(message)}');
+              final message =
+                  'Halo, saya ${booking.userName} dengan ID Pesanan #${booking.bookingId} terkait lapangan ${booking.fieldName}.';
+              final uri = Uri.parse(
+                  'https://wa.me/$phone?text=${Uri.encodeComponent(message)}');
               if (await canLaunchUrl(uri)) {
                 await launchUrl(uri, mode: LaunchMode.externalApplication);
               } else {
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tidak dapat membuka WhatsApp.')));
+                if (context.mounted)
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Tidak dapat membuka WhatsApp.')));
               }
             } else {
-              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nomor telepon mitra tidak tersedia.')));
+              if (context.mounted)
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Nomor telepon mitra tidak tersedia.')));
             }
           } catch (e) {
-            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal mengambil kontak: $e')));
+            if (context.mounted)
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Gagal mengambil kontak: $e')));
           }
         },
         icon: const Icon(Icons.phone_outlined),
         label: const Text('Hubungi Pemilik Lapangan'),
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary, side: const BorderSide(color: AppColors.primary),
-          padding: const EdgeInsets.symmetric(vertical: 14), minimumSize: const Size(double.infinity, 0),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          foregroundColor: AppColors.primary,
+          side: const BorderSide(color: AppColors.primary),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          minimumSize: const Size(double.infinity, 0),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
       ),
-      if (status == BookingStatus.dikonfirmasi && 
-          booking.rescheduleStatus == null && 
+      if (status == BookingStatus.dikonfirmasi &&
+          booking.rescheduleStatus == null &&
           _isEligibleForReschedule(booking)) ...[
         const SizedBox(height: 12),
         OutlinedButton.icon(
@@ -590,9 +735,12 @@ class BookingDetailPage extends ConsumerWidget {
           icon: const Icon(Icons.edit_calendar),
           label: const Text('Ajukan Reschedule'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.orange.shade700, side: BorderSide(color: Colors.orange.shade700),
-            padding: const EdgeInsets.symmetric(vertical: 14), minimumSize: const Size(double.infinity, 0),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            foregroundColor: Colors.orange.shade700,
+            side: BorderSide(color: Colors.orange.shade700),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            minimumSize: const Size(double.infinity, 0),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
         ),
       ],
@@ -600,7 +748,9 @@ class BookingDetailPage extends ConsumerWidget {
         const SizedBox(height: 24),
         TextButton(
           onPressed: () => _cancelBooking(context, ref, booking.id),
-          child: Text('Batalkan Pesanan', style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold)),
+          child: Text('Batalkan Pesanan',
+              style: TextStyle(
+                  color: Colors.red.shade700, fontWeight: FontWeight.bold)),
         ),
       ],
     ]);
@@ -626,7 +776,8 @@ class BookingDetailPage extends ConsumerWidget {
   }
 
   void _showETicketSheet(BuildContext context, BookingModel booking) {
-    final dateStr = DateFormat('EEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
+    final dateStr =
+        DateFormat('EEE, dd MMM yyyy', 'id_ID').format(booking.tanggal);
     final timeStr = booking.timeSlots.length > 1
         ? '${booking.timeSlots.first.split(' - ')[0]} - ${booking.timeSlots.last.split(' - ')[1]} WIB'
         : '${booking.timeSlots.first} WIB';
@@ -640,14 +791,18 @@ class BookingDetailPage extends ConsumerWidget {
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 24),
+        padding: EdgeInsets.fromLTRB(
+            24, 16, 24, MediaQuery.of(context).padding.bottom + 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Handle bar
             Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2)),
             ),
             const SizedBox(height: 20),
 
@@ -660,20 +815,25 @@ class BookingDetailPage extends ConsumerWidget {
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.confirmation_number, color: AppColors.primary, size: 24),
+                  child: const Icon(Icons.confirmation_number,
+                      color: AppColors.primary, size: 24),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('E-Ticket', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
-                      Text('Tunjukkan ke petugas lapangan', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                      Text('E-Ticket',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w900, fontSize: 20)),
+                      Text('Tunjukkan ke petugas lapangan',
+                          style: TextStyle(color: Colors.grey, fontSize: 13)),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: const Color(0xFFD1FAE5),
                     borderRadius: BorderRadius.circular(8),
@@ -681,9 +841,14 @@ class BookingDetailPage extends ConsumerWidget {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check_circle, color: Color(0xFF0F5A3C), size: 14),
+                      Icon(Icons.check_circle,
+                          color: Color(0xFF0F5A3C), size: 14),
                       SizedBox(width: 4),
-                      Text('LUNAS', style: TextStyle(color: Color(0xFF0F5A3C), fontWeight: FontWeight.w900, fontSize: 11)),
+                      Text('LUNAS',
+                          style: TextStyle(
+                              color: Color(0xFF0F5A3C),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11)),
                     ],
                   ),
                 ),
@@ -723,7 +888,11 @@ class BookingDetailPage extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(booking.bookingId,
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 1.5, color: AppColors.textDark)),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                      letterSpacing: 1.5,
+                      color: AppColors.textDark)),
             ),
             const SizedBox(height: 20),
 
@@ -738,21 +907,29 @@ class BookingDetailPage extends ConsumerWidget {
               ),
               child: Column(children: [
                 Row(children: [
-                  const Icon(Icons.stadium_outlined, size: 16, color: AppColors.primary),
+                  const Icon(Icons.stadium_outlined,
+                      size: 16, color: AppColors.primary),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(booking.fieldName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
+                  Expanded(
+                      child: Text(booking.fieldName,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 14))),
                 ]),
                 const SizedBox(height: 8),
                 Row(children: [
-                  const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primary),
+                  const Icon(Icons.calendar_today_outlined,
+                      size: 16, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Text(dateStr, style: const TextStyle(fontSize: 13)),
                 ]),
                 const SizedBox(height: 8),
                 Row(children: [
-                  const Icon(Icons.access_time, size: 16, color: AppColors.primary),
+                  const Icon(Icons.access_time,
+                      size: 16, color: AppColors.primary),
                   const SizedBox(width: 8),
-                  Text(timeStr, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  Text(timeStr,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 13)),
                 ]),
               ]),
             ),
@@ -763,8 +940,10 @@ class BookingDetailPage extends ConsumerWidget {
               Icon(Icons.info_outline, size: 16, color: Colors.grey.shade500),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Tunjukkan QR Code ini kepada petugas/Mitra lapangan saat Anda tiba.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                child: Text(
+                    'Tunjukkan QR Code ini kepada petugas/Mitra lapangan saat Anda tiba.',
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade600)),
               ),
             ]),
           ],
@@ -773,7 +952,8 @@ class BookingDetailPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _cancelBooking(BuildContext context, WidgetRef ref, String bookingId) async {
+  Future<void> _cancelBooking(
+      BuildContext context, WidgetRef ref, String bookingId) async {
     final confirm = await ConfirmationDialog.show(
       context: context,
       title: 'Batalkan Pesanan?',
@@ -785,18 +965,20 @@ class BookingDetailPage extends ConsumerWidget {
     try {
       await ref.read(bookingServiceProvider).cancelBooking(bookingId);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Pesanan dibatalkan'), backgroundColor: AppColors.primary));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Pesanan dibatalkan'),
+            backgroundColor: AppColors.primary));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal: $e'), backgroundColor: AppColors.error));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Gagal: $e'), backgroundColor: AppColors.error));
       }
     }
   }
 
-  void _showRescheduleSheet(BuildContext context, WidgetRef ref, BookingModel booking) {
+  void _showRescheduleSheet(
+      BuildContext context, WidgetRef ref, BookingModel booking) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -811,7 +993,8 @@ class RescheduleBottomSheet extends ConsumerStatefulWidget {
   const RescheduleBottomSheet({super.key, required this.booking});
 
   @override
-  ConsumerState<RescheduleBottomSheet> createState() => _RescheduleBottomSheetState();
+  ConsumerState<RescheduleBottomSheet> createState() =>
+      _RescheduleBottomSheetState();
 }
 
 class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
@@ -819,6 +1002,13 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
   final List<String> _selectedSlots = [];
   final TextEditingController _reasonCtrl = TextEditingController();
   final List<Map<String, dynamic>> _quickDates = [];
+
+  int get _requiredSlotCount {
+    if (widget.booking.timeSlots.isNotEmpty) {
+      return widget.booking.timeSlots.length;
+    }
+    return widget.booking.durasi > 0 ? widget.booking.durasi : 1;
+  }
 
   @override
   void initState() {
@@ -868,17 +1058,41 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
     return List.generate(totalSlots, (i) {
       final h = startHour + i;
       final nextH = h + 1;
-      
+
       final hStr = (h % 24).toString().padLeft(2, '0');
       final nextHStr = (nextH % 24).toString().padLeft(2, '0');
-      
+
       return '$hStr:00 - $nextHStr:00';
+    });
+  }
+
+  void _toggleSlot(String slot) {
+    if (_selectedSlots.contains(slot)) {
+      setState(() => _selectedSlots.remove(slot));
+      return;
+    }
+
+    if (_selectedSlots.length >= _requiredSlotCount) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Reschedule harus $_requiredSlotCount jam sesuai durasi pesanan awal.',
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _selectedSlots.add(slot);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final fieldDetailAsync = ref.watch(fieldDetailProvider(widget.booking.fieldId));
+    final fieldDetailAsync =
+        ref.watch(fieldDetailProvider(widget.booking.fieldId));
     final isoDateStr = DateFormat('yyyy-MM-dd').format(_selectedDate!);
     final bookedSlotsKey = '${widget.booking.fieldId}|$isoDateStr';
     final bookedSlotsAsync = ref.watch(bookedSlotsProvider(bookedSlotsKey));
@@ -888,7 +1102,8 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      padding: EdgeInsets.fromLTRB(
+          24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -896,16 +1111,22 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2)),
               ),
             ),
             const SizedBox(height: 20),
             Row(
               children: [
-                Icon(Icons.edit_calendar, color: Colors.orange.shade800, size: 24),
+                Icon(Icons.edit_calendar,
+                    color: Colors.orange.shade800, size: 24),
                 const SizedBox(width: 8),
-                const Text('Ajukan Reschedule', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+                const Text('Ajukan Reschedule',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
               ],
             ),
             const SizedBox(height: 8),
@@ -916,45 +1137,69 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
             const SizedBox(height: 16),
             _buildCurrentBookingCard(),
             const SizedBox(height: 20),
-            const Text('Pilih Tanggal Baru', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const Text('Pilih Tanggal Baru',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 8),
             _buildDatePickerRow(),
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Pilih Jam Baru', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const Text('Pilih Jam Baru',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.orange.shade50,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.orange.shade200),
                   ),
                   child: Text(
-                    _selectedSlots.isEmpty ? 'Pilih Jam' : '${_selectedSlots.length} Jam Terpilih',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.orange.shade800),
+                    _selectedSlots.isEmpty
+                        ? 'Pilih $_requiredSlotCount Jam'
+                        : '${_selectedSlots.length}/$_requiredSlotCount Jam',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade800),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             fieldDetailAsync.when(
-              loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary))),
-              error: (e, _) => Center(child: Text('Gagal memuat detail lapangan: $e', style: const TextStyle(color: Colors.red))),
+              loading: () => const Center(
+                  child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child:
+                          CircularProgressIndicator(color: AppColors.primary))),
+              error: (e, _) => Center(
+                  child: Text('Gagal memuat detail lapangan: $e',
+                      style: const TextStyle(color: Colors.red))),
               data: (field) {
                 final allSlots = _generateSlots(field);
 
                 return bookedSlotsAsync.when(
-                  loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary))),
-                  error: (e, _) => Center(child: Text('Gagal memuat slot terbooking: $e', style: const TextStyle(color: Colors.red))),
+                  loading: () => const Center(
+                      child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: CircularProgressIndicator(
+                              color: AppColors.primary))),
+                  error: (e, _) => Center(
+                      child: Text('Gagal memuat slot terbooking: $e',
+                          style: const TextStyle(color: Colors.red))),
                   data: (bookedSlots) {
-                    final isSameDay = _selectedDate!.year == widget.booking.tanggal.year &&
+                    final isSameDay = _selectedDate!.year ==
+                            widget.booking.tanggal.year &&
                         _selectedDate!.month == widget.booking.tanggal.month &&
                         _selectedDate!.day == widget.booking.tanggal.day;
 
                     final displayBookedSlots = isSameDay
-                        ? bookedSlots.where((s) => !widget.booking.timeSlots.contains(s)).toList()
+                        ? bookedSlots
+                            .where((s) => !widget.booking.timeSlots.contains(s))
+                            .toList()
                         : bookedSlots;
 
                     return Column(
@@ -966,13 +1211,15 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
                           children: List.generate(allSlots.length, (i) {
                             final slot = allSlots[i];
                             final isBooked = displayBookedSlots.contains(slot);
-                            
+                            final isOriginalSlot = isSameDay &&
+                                widget.booking.timeSlots.contains(slot);
+
                             bool isPassed = false;
                             final today = DateTime.now();
                             final isToday = _selectedDate!.year == today.year &&
                                 _selectedDate!.month == today.month &&
                                 _selectedDate!.day == today.day;
-                                
+
                             if (isToday) {
                               final startTimeStr = slot.split(' - ')[0];
                               final parts = startTimeStr.split(':');
@@ -992,12 +1239,18 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
                               }
                             }
 
-                            final isUnavailable = isBooked || isPassed;
+                            final isUnavailable =
+                                isBooked || isPassed || isOriginalSlot;
                             final isSel = _selectedSlots.contains(slot);
 
                             Color bg, border, txt;
                             String sub = '';
-                            if (isBooked) {
+                            if (isOriginalSlot) {
+                              bg = AppColors.backgroundPage;
+                              border = Colors.grey.shade200;
+                              txt = Colors.grey.shade400;
+                              sub = 'JADWAL AWAL';
+                            } else if (isBooked) {
                               bg = AppColors.backgroundPage;
                               border = Colors.grey.shade200;
                               txt = Colors.grey.shade400;
@@ -1021,19 +1274,14 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
                             return GestureDetector(
                               onTap: isUnavailable
                                   ? null
-                                  : () {
-                                      setState(() {
-                                        if (isSel) {
-                                          _selectedSlots.remove(slot);
-                                        } else {
-                                          _selectedSlots.add(slot);
-                                        }
-                                      });
-                                    },
+                                  : () => _toggleSlot(slot),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
-                                width: (MediaQuery.of(context).size.width - 58) / 2,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                width:
+                                    (MediaQuery.of(context).size.width - 58) /
+                                        2,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                                 decoration: BoxDecoration(
                                   color: bg,
                                   borderRadius: BorderRadius.circular(12),
@@ -1041,7 +1289,11 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
                                 ),
                                 child: Column(
                                   children: [
-                                    Text(slot, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: txt)),
+                                    Text(slot,
+                                        style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: txt)),
                                     if (sub.isNotEmpty)
                                       Padding(
                                         padding: const EdgeInsets.only(top: 2),
@@ -1050,7 +1302,9 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
                                           style: TextStyle(
                                             fontSize: 8,
                                             fontWeight: FontWeight.bold,
-                                            color: isSel ? Colors.white70 : txt.withOpacity(0.7),
+                                            color: isSel
+                                                ? Colors.white70
+                                                : txt.withOpacity(0.7),
                                           ),
                                         ),
                                       ),
@@ -1062,11 +1316,13 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Total Jam Terpilih: ${_selectedSlots.length} Jam',
+                          'Total Jam Terpilih: ${_selectedSlots.length}/$_requiredSlotCount Jam',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: _selectedSlots.isNotEmpty ? Colors.green.shade800 : Colors.orange.shade800,
+                            color: _selectedSlots.length == _requiredSlotCount
+                                ? Colors.green.shade800
+                                : Colors.orange.shade800,
                           ),
                         ),
                       ],
@@ -1076,16 +1332,23 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
               },
             ),
             const SizedBox(height: 20),
-            const Text('Alasan Reschedule', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const Text('Alasan Reschedule',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 8),
             TextField(
               controller: _reasonCtrl,
               maxLines: 3,
               decoration: InputDecoration(
                 hintText: 'Tuliskan alasan Anda...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.orange.shade700)),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300)),
+                enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300)),
+                focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.orange.shade700)),
               ),
             ),
             const SizedBox(height: 24),
@@ -1097,7 +1360,8 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
   }
 
   Widget _buildCurrentBookingCard() {
-    final originalDateStr = DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(widget.booking.tanggal);
+    final originalDateStr =
+        DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(widget.booking.tanggal);
     final originalTimeStr = widget.booking.timeSlots.length > 1
         ? '${widget.booking.timeSlots.first.split(' - ')[0]} - ${widget.booking.timeSlots.last.split(' - ')[1]}'
         : widget.booking.timeSlots.first;
@@ -1113,16 +1377,24 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Jadwal Saat Ini:', style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+          const Text('Jadwal Saat Ini:',
+              style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Row(
             children: [
-              const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
+              const Icon(Icons.calendar_today_outlined,
+                  size: 14, color: AppColors.textSecondary),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   '$originalDateStr • $originalTimeStr',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: AppColors.textDark),
                 ),
               ),
             ],
@@ -1134,7 +1406,10 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
 
   Widget _buildDatePickerRow() {
     final isCustomDateSelected = _selectedDate != null &&
-        !_quickDates.any((d) => d['dateTime'] == DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day));
+        !_quickDates.any((d) =>
+            d['dateTime'] ==
+            DateTime(
+                _selectedDate!.year, _selectedDate!.month, _selectedDate!.day));
 
     return SizedBox(
       height: 72,
@@ -1162,8 +1437,18 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
                 decoration: BoxDecoration(
                   color: isSel ? Colors.orange.shade700 : Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: isSel ? Colors.orange.shade700 : Colors.grey.shade300),
-                  boxShadow: isSel ? [BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : null,
+                  border: Border.all(
+                      color: isSel
+                          ? Colors.orange.shade700
+                          : Colors.grey.shade300),
+                  boxShadow: isSel
+                      ? [
+                          BoxShadow(
+                              color: Colors.orange.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4))
+                        ]
+                      : null,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1190,7 +1475,6 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
               ),
             );
           }),
-
           if (isCustomDateSelected)
             GestureDetector(
               onTap: () => _pickCustomDate(),
@@ -1202,7 +1486,12 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
                   color: Colors.orange.shade700,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.orange.shade700),
-                  boxShadow: [BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.orange.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4))
+                  ],
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1228,7 +1517,6 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
                 ),
               ),
             ),
-
           GestureDetector(
             onTap: () => _pickCustomDate(),
             child: Container(
@@ -1241,7 +1529,8 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
               child: const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.calendar_month, color: AppColors.textSecondary, size: 24),
+                  Icon(Icons.calendar_month,
+                      color: AppColors.textSecondary, size: 24),
                   SizedBox(height: 4),
                   Text(
                     'Lainnya',
@@ -1277,7 +1566,7 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
 
   Widget _buildSubmitButton(BuildContext context) {
     final isValid = _selectedDate != null &&
-        _selectedSlots.isNotEmpty &&
+        _selectedSlots.length == _requiredSlotCount &&
         _reasonCtrl.text.trim().isNotEmpty;
 
     return SizedBox(
@@ -1285,16 +1574,16 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
       child: ElevatedButton(
         onPressed: isValid
             ? () async {
-                final orderedSlots = List<String>.from(_selectedSlots)..sort((a, b) => a.compareTo(b));
-                
+                final orderedSlots = List<String>.from(_selectedSlots)
+                  ..sort((a, b) => a.compareTo(b));
+
                 Navigator.pop(context);
                 try {
                   await ref.read(bookingServiceProvider).requestReschedule(
-                    widget.booking.id, 
-                    _selectedDate!, 
-                    orderedSlots, 
-                    _reasonCtrl.text.trim()
-                  );
+                      widget.booking.id,
+                      _selectedDate!,
+                      orderedSlots,
+                      _reasonCtrl.text.trim());
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -1320,11 +1609,13 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           disabledBackgroundColor: Colors.grey.shade300,
           disabledForegroundColor: Colors.grey.shade500,
         ),
-        child: const Text('Kirim Pengajuan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        child: const Text('Kirim Pengajuan',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
       ),
     );
   }
@@ -1332,7 +1623,8 @@ class _RescheduleBottomSheetState extends ConsumerState<RescheduleBottomSheet> {
 
 class _PaymentCountdownText extends StatefulWidget {
   final DateTime batasWaktuBayar;
-  const _PaymentCountdownText({Key? key, required this.batasWaktuBayar}) : super(key: key);
+  const _PaymentCountdownText({Key? key, required this.batasWaktuBayar})
+      : super(key: key);
 
   @override
   State<_PaymentCountdownText> createState() => _PaymentCountdownTextState();
@@ -1391,7 +1683,11 @@ class _PaymentCountdownTextState extends State<_PaymentCountdownText> {
         children: [
           const Icon(Icons.timer_outlined, color: Colors.white, size: 16),
           const SizedBox(width: 8),
-          Text("Sisa waktu: $hours:$minutes:$seconds", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+          Text("Sisa waktu: $hours:$minutes:$seconds",
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13)),
         ],
       ),
     );

@@ -125,7 +125,7 @@ class Step4FieldInfo extends StatelessWidget {
                   'Badminton',
                   'Basket',
                   'Mini Soccer',
-                  'Voli'
+                  'Tenis'
                 ].map((sport) {
                   bool isSelected = selectedSport == sport;
                   return GestureDetector(
@@ -157,12 +157,11 @@ class Step4FieldInfo extends StatelessWidget {
               // Tipe Lapangan
               _buildLabel('Tipe Lapangan'),
               Row(
-                children: [
-                  'Indoor',
-                  'Outdoor'
-                ].map((type) {
+                children: ['Indoor', 'Outdoor'].map((type) {
                   bool isSelected = selectedFieldType == type;
-                  IconData icon = type == 'Indoor' ? Icons.home_rounded : Icons.wb_sunny_rounded;
+                  IconData icon = type == 'Indoor'
+                      ? Icons.home_rounded
+                      : Icons.wb_sunny_rounded;
                   return GestureDetector(
                     onTap: () => onFieldTypeSelected(type),
                     child: Container(
@@ -177,7 +176,9 @@ class Step4FieldInfo extends StatelessWidget {
                         children: [
                           Icon(
                             icon,
-                            color: isSelected ? Colors.white : const Color(0xFF2D3748),
+                            color: isSelected
+                                ? Colors.white
+                                : const Color(0xFF2D3748),
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -188,8 +189,9 @@ class Step4FieldInfo extends StatelessWidget {
                                   ? Colors.white
                                   : const Color(0xFF2D3748),
                               fontSize: 14,
-                              fontWeight:
-                                  isSelected ? FontWeight.bold : FontWeight.w600,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
                             ),
                           ),
                         ],
