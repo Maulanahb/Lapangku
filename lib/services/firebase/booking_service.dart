@@ -173,7 +173,7 @@ class BookingService {
         }
       ],
       batasWaktuBayar:
-          now.add(const Duration(hours: AppConstants.paymentDeadlineHours)),
+          now.add(const Duration(minutes: AppConstants.paymentDeadlineMinutes)),
       createdAt: now,
       updatedAt: now,
     );

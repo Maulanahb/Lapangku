@@ -406,34 +406,34 @@ class MitraService {
 
     for (var b in validBookings) {
       if (b.status == 'selesai' || b.status == 'dikonfirmasi') {
-        totalRevenue += b.totalBayar; // Menggunakan total bayar yang riil
+        totalRevenue += b.hargaLapangan; // Menggunakan harga asli lapangan
 
         // Cek jika transaksi hari ini (berdasarkan kapan dibuat)
         if (b.createdAt.year == today.year &&
             b.createdAt.month == today.month &&
             b.createdAt.day == today.day) {
-          todayRevenue += b.totalBayar;
+          todayRevenue += b.hargaLapangan;
         }
 
         final tx = MitraTransactionModel(
           id: b.id,
           customerName: b.userName,
           fieldName: b.fieldName,
-          amount: b.totalBayar,
+          amount: b.hargaLapangan,
           date: b.createdAt, // Tampilkan berdasarkan kapan dibuat
         );
 
         // Filter for current period
         if (b.createdAt.isAfter(startDate.subtract(const Duration(seconds: 1))) &&
             b.createdAt.isBefore(endDate.add(const Duration(seconds: 1)))) {
-          periodRevenue += b.totalBayar;
+          periodRevenue += b.hargaLapangan;
           transactions.add(tx);
-          currentPeriodRevenue += b.totalBayar;
+          currentPeriodRevenue += b.hargaLapangan;
         }
         // Filter for previous period (for growth)
         else if (b.createdAt.isAfter(previousPeriodStart.subtract(const Duration(seconds: 1))) &&
                  b.createdAt.isBefore(previousPeriodEnd.add(const Duration(seconds: 1)))) {
-          previousPeriodRevenue += b.totalBayar;
+          previousPeriodRevenue += b.hargaLapangan;
         }
       }
       if (b.status == 'dikonfirmasi') {

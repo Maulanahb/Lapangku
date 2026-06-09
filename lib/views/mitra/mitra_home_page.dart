@@ -544,7 +544,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    _currencyFormat.format(booking.totalBayar),
+                    _currencyFormat.format(booking.hargaLapangan),
                     style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
                   ),
                   const SizedBox(height: 4),

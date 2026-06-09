@@ -55,7 +55,7 @@ final mitraTodayStatsProvider =
 
       int revenue = 0;
       for (var b in finishedToday) {
-        revenue += b.totalBayar;
+        revenue += b.hargaLapangan;
       }
 
       final confirmedToday = todayBookings
@@ -110,7 +110,7 @@ final mitraMonthlyStatsProvider =
 
       int revenue = 0;
       for (var b in finishedMonth) {
-        revenue += b.totalBayar;
+        revenue += b.hargaLapangan;
       }
 
       final confirmedMonth = monthBookings
@@ -420,7 +420,7 @@ final mitraRevenueWeeklyProvider =
 
         int dayRevenue = 0;
         for (var b in dayBookings) {
-          dayRevenue += b.totalBayar;
+          dayRevenue += b.hargaLapangan;
         }
 
         weeklyData.add({

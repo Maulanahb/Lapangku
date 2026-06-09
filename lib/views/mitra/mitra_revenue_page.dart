@@ -224,7 +224,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
                             pw.Text(
-                              currencyFormat.format(b.totalBayar),
+                              currencyFormat.format(b.hargaLapangan),
                               style: pw.TextStyle(
                                   fontWeight: pw.FontWeight.bold, fontSize: 8),
                             ),
@@ -401,7 +401,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
       excel.TextCellValue('Durasi (durasi)'),
       excel.TextCellValue('Harga Lapangan / Pendapatan Kotor (hargaLapangan)'),
       excel.TextCellValue('Biaya Layanan / Komisi Aplikasi (biayaLayanan)'),
-      excel.TextCellValue('Total Bayar (totalBayar)'),
+      excel.TextCellValue('Pendapatan Bersih (hargaLapangan)'),
       excel.TextCellValue('Metode Pembayaran (metodePembayaran)'),
       excel.TextCellValue('Status (status)'),
       excel.TextCellValue('Tanggal Pemesanan (createdAt)'),
@@ -445,7 +445,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
         excel.IntCellValue(b.durasi),
         excel.IntCellValue(b.hargaLapangan),
         excel.IntCellValue(b.biayaLayanan),
-        excel.IntCellValue(b.totalBayar),
+        excel.IntCellValue(b.hargaLapangan),
         excel.TextCellValue(b.metodePembayaran),
         excel.TextCellValue(BookingStatusHelper.getLabel(b.status)),
         excel.TextCellValue(DateFormat('yyyy-MM-dd HH:mm').format(b.createdAt)),
@@ -983,7 +983,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
 
           int dayRevenue = 0;
           for (var b in dayBookings) {
-            dayRevenue += b.totalBayar;
+            dayRevenue += b.hargaLapangan;
           }
 
           trendData.add(dayRevenue.toDouble());

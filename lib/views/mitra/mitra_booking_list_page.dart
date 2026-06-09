@@ -355,7 +355,7 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
             break;
           case 'Nilai Tertinggi':
             filteredBookings
-                .sort((a, b) => b.totalBayar.compareTo(a.totalBayar));
+                .sort((a, b) => b.hargaLapangan.compareTo(a.hargaLapangan));
             break;
         }
 
@@ -715,7 +715,7 @@ class _BookingCard extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  CurrencyFormatter.format(booking.totalBayar),
+                                  CurrencyFormatter.format(booking.hargaLapangan),
                                   style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF1E293B)),
                                 ),
                               ],
