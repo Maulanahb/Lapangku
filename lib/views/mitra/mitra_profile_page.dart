@@ -96,11 +96,16 @@ class MitraProfilePage extends ConsumerWidget {
             activeFieldsCount = fields.where((f) => f.isActive).length;
           }
 
-          // Hitung jumlah pesanan yang perlu konfirmasi secara real-time
-          int pendingOrdersCount = profile.totalOrders;
+          // Hitung jumlah pesanan masuk hari ini
+          int todayOrdersCount = profile.totalOrders;
           if (bookingsAsync is AsyncData) {
             final bookings = bookingsAsync.value!;
-            pendingOrdersCount = bookings.where((b) => b.status == 'menunggu_konfirmasi').length;
+            final now = DateTime.now();
+            final today = DateTime(now.year, now.month, now.day);
+            todayOrdersCount = bookings.where((b) {
+              final bDate = DateTime(b.createdAt.year, b.createdAt.month, b.createdAt.day);
+              return bDate.isAtSameMomentAs(today);
+            }).length;
           }
 
           return SingleChildScrollView(
@@ -128,9 +133,9 @@ class MitraProfilePage extends ConsumerWidget {
                       context,
                       icon: Icons.receipt_long_outlined,
                       title: "Pesanan Masuk",
-                      subtitle: "$pendingOrdersCount perlu konfirmasi",
+                      subtitle: "$todayOrdersCount pesanan hari ini",
                       subtitleColor: Colors.orange,
-                      badgeCount: pendingOrdersCount,
+                      badgeCount: todayOrdersCount,
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(

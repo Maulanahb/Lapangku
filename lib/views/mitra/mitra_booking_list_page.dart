@@ -37,7 +37,7 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
   void initState() {
     super.initState();
     _tabController = TabController(
-        length: 4, vsync: this, initialIndex: widget.initialIndex);
+        length: 5, vsync: this, initialIndex: widget.initialIndex);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
         setState(() => _currentPage = 1);
@@ -118,6 +118,7 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
             Tab(text: 'Menunggu'),
             Tab(text: 'Dikonfirmasi'),
             Tab(text: 'Selesai'),
+            Tab(text: 'Dibatalkan'),
           ],
         ),
       ),
@@ -132,6 +133,7 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
                 _buildBookingList('menunggu'),
                 _buildBookingList('dikonfirmasi'),
                 _buildBookingList('selesai'),
+                _buildBookingList('dibatalkan'),
               ],
             ),
           ),
@@ -338,6 +340,8 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
             return status == 'dikonfirmasi' && !(b.isRescheduleRequested && b.rescheduleStatus == 'pending');
           } else if (filterKey == 'selesai') {
             return status == 'selesai';
+          } else if (filterKey == 'dibatalkan') {
+            return status == 'dibatalkan' || status == 'ditolak' || status == 'expired';
           }
           return true; // 'semua'
         }).toList();
