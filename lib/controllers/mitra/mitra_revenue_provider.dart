@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/services/firebase/mitra_service.dart';
 import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 import 'package:lapangku/models/mitra/mitra_revenue_model.dart';
+import 'package:lapangku/models/mitra/mitra_payout_model.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
+import 'package:lapangku/controllers/mitra/mitra_stats_controller.dart';
 
 class DateRange {
   final DateTime start;
@@ -18,13 +20,35 @@ final revenueDateRangeProvider = StateProvider<DateRange>((ref) {
   ); // Today
 });
 
+final mitraPayoutsProvider = StreamProvider.family<List<MitraPayoutModel>, String>((ref, mitraId) {
+  final service = ref.watch(mitraServiceProvider);
+  return service.streamMitraPayouts(mitraId);
+});
+
 final mitraRevenueProvider =
     StateNotifierProvider<MitraRevenueNotifier, AsyncValue<MitraRevenueModel>>(
         (ref) {
   final service = ref.watch(mitraServiceProvider);
   final uid = ref.watch(currentUidProvider);
   
-  return MitraRevenueNotifier(service, ref, uid);
+  final notifier = MitraRevenueNotifier(service, ref, uid);
+  
+  // Memantau stream booking agar otomatis me-reload data
+  ref.listen(mitraBookingsProvider(uid), (previous, next) {
+    notifier.loadRevenue();
+  });
+  
+  // Memantau stream penarikan
+  ref.listen(mitraPayoutsProvider(uid), (previous, next) {
+    notifier.loadRevenue();
+  });
+  
+  // Memantau filter rentang tanggal
+  ref.listen(revenueDateRangeProvider, (previous, next) {
+    notifier.loadRevenue();
+  });
+  
+  return notifier;
 });
 
 class MitraRevenueNotifier

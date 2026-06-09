@@ -26,6 +26,7 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   String _selectedSort = 'Terbaru';
+  DateTime? _selectedDate = DateTime.now();
   final List<String> _sortOptions = ['Terbaru', 'Terlama', 'Nilai Tertinggi'];
   
   // Pagination state
@@ -189,41 +190,119 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
           const SizedBox(height: 12),
           SizedBox(
             height: 36,
-            child: ListView.builder(
+            child: ListView(
               scrollDirection: Axis.horizontal,
-              itemCount: _sortOptions.length,
-              itemBuilder: (context, index) {
-                final sort = _sortOptions[index];
-                final isSelected = _selectedSort == sort;
-                return Padding(
+              children: [
+                // Date Picker Chip
+                Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: GestureDetector(
-                    onTap: () => setState(() {
-                      _selectedSort = sort;
-                      _currentPage = 1;
-                    }),
+                    onTap: () async {
+                      if (_selectedDate != null) {
+                        // Jika sudah ada tanggal, klik untuk menghapus filter
+                        setState(() {
+                          _selectedDate = null;
+                          _currentPage = 1;
+                        });
+                        return;
+                      }
+                      
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2030),
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.light(
+                                primary: AppColors.primary,
+                                onPrimary: Colors.white,
+                                onSurface: Colors.black,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          _selectedDate = picked;
+                          _currentPage = 1;
+                        });
+                      }
+                    },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary : Colors.white,
+                        color: _selectedDate != null ? const Color(0xFFFEF3C7) : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
+                          color: _selectedDate != null ? const Color(0xFFF59E0B) : const Color(0xFFE2E8F0),
                         ),
                       ),
-                      child: Text(
-                        sort,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : const Color(0xFF64748B),
-                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                          fontSize: 12,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.calendar_month_rounded,
+                            size: 14,
+                            color: _selectedDate != null ? const Color(0xFFD97706) : const Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _selectedDate != null
+                                ? DateFormat('d MMM yyyy', 'id').format(_selectedDate!)
+                                : 'Pilih Tanggal',
+                            style: TextStyle(
+                              color: _selectedDate != null ? const Color(0xFFD97706) : const Color(0xFF64748B),
+                              fontWeight: _selectedDate != null ? FontWeight.w800 : FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          ),
+                          if (_selectedDate != null) ...[
+                            const SizedBox(width: 4),
+                            const Icon(Icons.close_rounded, size: 14, color: Color(0xFFD97706)),
+                          ],
+                        ],
                       ),
                     ),
                   ),
-                );
-              },
+                ),
+                // Sort Options
+                ..._sortOptions.map((sort) {
+                  final isSelected = _selectedSort == sort;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => setState(() {
+                        _selectedSort = sort;
+                        _currentPage = 1;
+                      }),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.primary : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Text(
+                          sort,
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : const Color(0xFF64748B),
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
             ),
           ),
         ],
@@ -244,7 +323,14 @@ class _MitraBookingListPageState extends ConsumerState<MitraBookingListPage>
               b.bookingId.toLowerCase().contains(query);
           if (!matchesSearch) return false;
 
-          // 2. Tab Filter
+          // 2. Date Filter
+          if (_selectedDate != null) {
+            final bDate = DateTime(b.tanggal.year, b.tanggal.month, b.tanggal.day);
+            final filterDate = DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day);
+            if (!bDate.isAtSameMomentAs(filterDate)) return false;
+          }
+
+          // 3. Tab Filter
           final status = b.status.toLowerCase();
           if (filterKey == 'menunggu') {
             return status == 'menunggu_bayar';

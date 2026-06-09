@@ -405,37 +405,38 @@ class MitraService {
     int previousPeriodRevenue = 0;
 
     for (var b in validBookings) {
-      if (b.status == 'selesai') {
-        totalRevenue += b.hargaLapangan;
+      if (b.status == 'selesai' || b.status == 'dikonfirmasi') {
+        totalRevenue += b.totalBayar; // Menggunakan total bayar yang riil
 
-        // Cek jika transaksi hari ini
-        if (b.tanggal.year == today.year &&
-            b.tanggal.month == today.month &&
-            b.tanggal.day == today.day) {
-          todayRevenue += b.hargaLapangan;
+        // Cek jika transaksi hari ini (berdasarkan kapan dibuat)
+        if (b.createdAt.year == today.year &&
+            b.createdAt.month == today.month &&
+            b.createdAt.day == today.day) {
+          todayRevenue += b.totalBayar;
         }
 
         final tx = MitraTransactionModel(
           id: b.id,
           customerName: b.userName,
           fieldName: b.fieldName,
-          amount: b.hargaLapangan,
-          date: b.tanggal,
+          amount: b.totalBayar,
+          date: b.createdAt, // Tampilkan berdasarkan kapan dibuat
         );
 
         // Filter for current period
-        if (b.tanggal.isAfter(startDate.subtract(const Duration(seconds: 1))) &&
-            b.tanggal.isBefore(endDate.add(const Duration(seconds: 1)))) {
-          periodRevenue += b.hargaLapangan;
+        if (b.createdAt.isAfter(startDate.subtract(const Duration(seconds: 1))) &&
+            b.createdAt.isBefore(endDate.add(const Duration(seconds: 1)))) {
+          periodRevenue += b.totalBayar;
           transactions.add(tx);
-          currentPeriodRevenue += b.hargaLapangan;
+          currentPeriodRevenue += b.totalBayar;
         }
         // Filter for previous period (for growth)
-        else if (b.tanggal.isAfter(previousPeriodStart.subtract(const Duration(seconds: 1))) &&
-                 b.tanggal.isBefore(previousPeriodEnd.add(const Duration(seconds: 1)))) {
-          previousPeriodRevenue += b.hargaLapangan;
+        else if (b.createdAt.isAfter(previousPeriodStart.subtract(const Duration(seconds: 1))) &&
+                 b.createdAt.isBefore(previousPeriodEnd.add(const Duration(seconds: 1)))) {
+          previousPeriodRevenue += b.totalBayar;
         }
-      } else if (b.status == 'dikonfirmasi') {
+      }
+      if (b.status == 'dikonfirmasi') {
         activeBookings++;
       }
     }

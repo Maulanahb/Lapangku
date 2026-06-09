@@ -23,6 +23,7 @@ import 'statistik_booking_page.dart'; // FIX: Tambahkan import halaman statistik
 import 'jadwal_ketersediaan_page.dart';
 import 'mitra_security_page.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
+import 'package:lapangku/controllers/mitra/mitra_stats_controller.dart';
 
 class MitraProfilePage extends ConsumerWidget {
   const MitraProfilePage({super.key});
@@ -32,6 +33,8 @@ class MitraProfilePage extends ConsumerWidget {
     final profileAsync = ref.watch(mitraProfileProvider);
     final fieldAsync = ref.watch(
         mitraFieldListProvider); // Ambil data lapangan untuk hitung rating dinamis
+    final uid = ref.watch(currentUidProvider);
+    final bookingsAsync = ref.watch(mitraBookingsProvider(uid));
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPage,
@@ -86,6 +89,19 @@ class MitraProfilePage extends ConsumerWidget {
             }
           }
           final ratingStr = dynamicRating.toStringAsFixed(1);
+          
+          int activeFieldsCount = profile.totalFields;
+          if (fieldAsync is AsyncData) {
+            final fields = fieldAsync.value!;
+            activeFieldsCount = fields.where((f) => f.isActive).length;
+          }
+
+          // Hitung jumlah pesanan yang perlu konfirmasi secara real-time
+          int pendingOrdersCount = profile.totalOrders;
+          if (bookingsAsync is AsyncData) {
+            final bookings = bookingsAsync.value!;
+            pendingOrdersCount = bookings.where((b) => b.status == 'menunggu_konfirmasi').length;
+          }
 
           return SingleChildScrollView(
             child: Column(
@@ -100,7 +116,7 @@ class MitraProfilePage extends ConsumerWidget {
                       context,
                       icon: Icons.stadium_outlined,
                       title: "Lapangan Saya",
-                      subtitle: "${profile.totalFields} lapangan aktif",
+                      subtitle: "$activeFieldsCount lapangan aktif",
                       subtitleColor: Colors.green,
                       onTap: () => Navigator.push(
                         context,
@@ -110,18 +126,11 @@ class MitraProfilePage extends ConsumerWidget {
                     ),
                     _buildMenuItem(
                       context,
-                      icon: Icons.calendar_month_outlined,
-                      title: "Jadwal & Ketersediaan",
-                      subtitle: "Atur slot booking",
-                      onTap: () => _navigateToJadwalKetersediaan(context, ref),
-                    ),
-                    _buildMenuItem(
-                      context,
                       icon: Icons.receipt_long_outlined,
                       title: "Pesanan Masuk",
-                      subtitle: "${profile.totalOrders} perlu konfirmasi",
+                      subtitle: "$pendingOrdersCount perlu konfirmasi",
                       subtitleColor: Colors.orange,
-                      badgeCount: profile.totalOrders,
+                      badgeCount: pendingOrdersCount,
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -137,6 +146,7 @@ class MitraProfilePage extends ConsumerWidget {
                       context,
                       icon: Icons.trending_up,
                       title: "Pendapatan",
+                      subtitle: "Pantau pemasukan & pencairan",
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -159,6 +169,7 @@ class MitraProfilePage extends ConsumerWidget {
                       context,
                       icon: Icons.bar_chart,
                       title: "Statistik Booking",
+                      subtitle: "Ringkasan performa booking",
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -476,138 +487,7 @@ class MitraProfilePage extends ConsumerWidget {
     );
   }
 
-  // --- Logika Aplikasi ---
 
-  void _navigateToJadwalKetersediaan(BuildContext context, WidgetRef ref) {
-    final fieldsState = ref.read(mitraFieldProvider);
-    fieldsState.fields.when(
-      data: (fields) {
-        if (fields.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Anda belum memiliki lapangan. Silakan tambahkan lapangan terlebih dahulu.'),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          return;
-        }
-
-        if (fields.length == 1) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => JadwalKetersediaanPage(lapangan: fields.first),
-            ),
-          );
-        } else {
-          showModalBottomSheet(
-            context: context,
-            backgroundColor: Colors.white,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            builder: (context) {
-              return SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Pilih Lapangan',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textHeading,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Pilih lapangan yang ingin dikelola jadwal & ketersediaannya.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Flexible(
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: fields.length,
-                          itemBuilder: (context, index) {
-                            final field = fields[index];
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border:
-                                    Border.all(color: AppColors.borderLight),
-                              ),
-                              child: ListTile(
-                                leading: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.primaryLight,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.stadium_outlined,
-                                      color: AppColors.primary),
-                                ),
-                                title: Text(
-                                  field.namaLapangan,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textHeading,
-                                  ),
-                                ),
-                                subtitle: Text(field.tipeLapangan),
-                                trailing: const Icon(Icons.chevron_right,
-                                    color: AppColors.textSecondary),
-                                onTap: () {
-                                  Navigator.pop(context); // Tutup bottom sheet
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => JadwalKetersediaanPage(
-                                          lapangan: field),
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        }
-      },
-      loading: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Sedang memuat data lapangan...'),
-              behavior: SnackBarBehavior.floating),
-        );
-      },
-      error: (err, _) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memuat lapangan: $err'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      },
-    );
-  }
 
   String _getInitials(String name) {
     if (name.isEmpty) return 'MT';

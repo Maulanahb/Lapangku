@@ -1143,6 +1143,7 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
                 final sel = i == _selectedDateIndex;
                 return GestureDetector(
                   onTap: () {
+                    if (_selectedDateIndex == i) return; // FIX: Jangan clear jika tap hari yang sama
                     setState(() {
                       _selectedDateIndex = i;
                       _selectedTimeIndices.clear();
@@ -1216,20 +1217,20 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
                 // Tambahkan validasi untuk mendisable waktu yang sudah lewat (khusus hari ini)
                 bool isPassed = false;
                 if (_selectedDateIndex == 0) {
-                  final startTimeStr = slot.split(' - ')[0]; // misal "06:00"
-                  final parts = startTimeStr.split(':');
+                  final endTimeStr = slot.split(' - ')[1]; // Menggunakan waktu selesai (misal "09:00")
+                  final parts = endTimeStr.split(':');
                   if (parts.length >= 2) {
                     final hour = int.tryParse(parts[0]) ?? 0;
                     final minute = int.tryParse(parts[1]) ?? 0;
                     final now = DateTime.now();
-                    final startDateTime = DateTime(
+                    final endDateTime = DateTime(
                       _selectedDate.year,
                       _selectedDate.month,
                       _selectedDate.day,
                       hour,
                       minute,
                     );
-                    if (now.isAfter(startDateTime)) {
+                    if (now.isAfter(endDateTime)) {
                       isPassed = true;
                     }
                   }
@@ -1237,6 +1238,18 @@ class _State extends ConsumerState<CustomerFieldDetailPage>
 
                 final isUnavailable = isBooked || isPassed || isClosedByMitra;
                 final isSel = _selectedTimeIndices.contains(i);
+
+                // FIX: Jika slot menjadi tidak tersedia (misal baru saja dipesan),
+                // tapi masih ada di daftar pilihan, hapus otomatis agar harga tidak dobel.
+                if (isUnavailable && isSel) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && _selectedTimeIndices.contains(i)) {
+                      setState(() {
+                        _selectedTimeIndices.remove(i);
+                      });
+                    }
+                  });
+                }
 
                 Color bg, border, txt;
                 String sub = '';
