@@ -4,8 +4,8 @@ class AppConstants {
   AppConstants._(); // Prevent instantiation
 
   // --- Booking ---
-  /// Batas waktu bayar setelah booking dibuat (dalam jam)
-  static const int paymentDeadlineHours = 4;
+  /// Batas waktu bayar setelah booking dibuat (dalam menit)
+  static const int paymentDeadlineMinutes = 15;
 
   /// Biaya layanan platform per transaksi (dalam Rupiah)
   static const int serviceFee = 5000;

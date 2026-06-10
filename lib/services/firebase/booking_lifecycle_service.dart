@@ -134,7 +134,7 @@ class BookingLifecycleService {
         {'status': BookingStatusHelper.menungguBayar, 'waktu': Timestamp.fromDate(now)}
       ],
       batasWaktuBayar:
-          now.add(const Duration(hours: AppConstants.paymentDeadlineHours)),
+          now.add(const Duration(minutes: AppConstants.paymentDeadlineMinutes)),
       createdAt: now,
       updatedAt: now,
     );

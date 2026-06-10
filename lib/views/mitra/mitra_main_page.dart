@@ -67,11 +67,11 @@ class _MitraMainPageState extends State<MitraMainPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(Icons.grid_view_rounded, 'DASHBOARD', 0),
-            _buildNavItem(Icons.stadium_rounded, 'FIELDS', 1),
+            _buildNavItem(Icons.grid_view_rounded, 'BERANDA', 0),
+            _buildNavItem(Icons.stadium_outlined, 'LAPANGAN', 1),
             _buildScanButton(),
-            _buildNavItem(Icons.assignment_outlined, 'ORDERS', 2),
-            _buildNavItem(Icons.person_outline_rounded, 'PROFILE', 3),
+            _buildNavItem(Icons.assignment_outlined, 'PESANAN', 2),
+            _buildNavItem(Icons.person_outline_rounded, 'PROFIL', 3),
           ],
         ),
       ),

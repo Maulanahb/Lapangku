@@ -24,7 +24,7 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
   String _selectedCategory = 'Semua';
   String _selectedTipe = 'Semua'; // Semua / Indoor / Outdoor
   String _sortBy = 'Terdekat';
-  
+
   // Advanced Filter & Sorting state
   Timer? _debounce;
   final List<String> _selectedFacilities = [];
@@ -32,22 +32,17 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
   bool _isLoadingLocation = false;
 
   final List<String> _availableFacilities = [
-    'Parkir',
-    'Toilet',
-    'Wifi',
-    'CCTV',
-    'Mushola',
-    'Kantin',
-    'Ruang Ganti',
-    'Tribun'
+    'Shower', 'Toilet', 
+    'Area Parkir', 'Kantin', 'Mushola', 'Gratis Bola'
   ];
 
   final List<String> _categories = [
     'Semua',
     'Futsal',
     'Mini Soccer',
-    'Badminton',
-    'Basket'
+    'Bulu Tangkis',
+    'Basket',
+    'Voli'
   ];
 
   @override
@@ -147,142 +142,177 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                  const Text('Urutkan Berdasarkan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: ['Terdekat', 'Termurah', 'Harga Tertinggi', 'Rating Tertinggi'].map((sort) {
-                      final isSelected = _sortBy == sort;
-                      return ChoiceChip(
-                        label: Text(sort),
-                        selected: isSelected,
-                        // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
-                        selectedColor: AppColors.primary,
-                        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
-                        onSelected: (val) {
-                          if (sort == 'Terdekat') {
-                            if (_isLoadingLocation) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Sedang mendeteksi lokasi, mohon tunggu...')),
-                              );
-                              return;
+                    const Text('Urutkan Berdasarkan',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        'Terdekat',
+                        'Termurah',
+                        'Harga Tertinggi',
+                        'Rating Tertinggi'
+                      ].map((sort) {
+                        final isSelected = _sortBy == sort;
+                        return ChoiceChip(
+                          label: Text(sort),
+                          selected: isSelected,
+                          // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+                          selectedColor: AppColors.primary,
+                          labelStyle: TextStyle(
+                              color:
+                                  isSelected ? Colors.white : Colors.black87),
+                          onSelected: (val) {
+                            if (sort == 'Terdekat') {
+                              if (_isLoadingLocation) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          'Sedang mendeteksi lokasi, mohon tunggu...')),
+                                );
+                                return;
+                              }
+                              if (_currentPosition == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          'Akses GPS diperlukan untuk fitur ini.')),
+                                );
+                                _showLocationServiceDialog();
+                                return;
+                              }
                             }
-                            if (_currentPosition == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Akses GPS diperlukan untuk fitur ini.')),
-                              );
-                              _showLocationServiceDialog();
-                              return;
-                            }
-                          }
-                          setModalState(() => _sortBy = sort);
-                          setState(() => _sortBy = sort);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text('Kategori Lapangan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _categories.map((cat) {
-                      final isSelected = _selectedCategory == cat;
-                      return ChoiceChip(
-                        label: Text(cat),
-                        selected: isSelected,
-                        // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
-                        selectedColor: AppColors.primary,
-                        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
-                        onSelected: (val) {
-                          setModalState(() => _selectedCategory = cat);
-                          setState(() => _selectedCategory = cat);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text('Tipe Lapangan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: ['Semua', 'Indoor', 'Outdoor'].map((tipe) {
-                      final isSelected = _selectedTipe == tipe;
-                      return ChoiceChip(
-                        label: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (tipe != 'Semua') ...[
-                              Icon(
-                                tipe == 'Indoor' ? Icons.roofing : Icons.wb_sunny_outlined,
-                                size: 14,
-                                color: isSelected ? Colors.white : Colors.black87,
-                              ),
-                              const SizedBox(width: 4),
-                            ],
-                            Text(tipe),
-                          ],
-                        ),
-                        selected: isSelected,
-                        selectedColor: AppColors.primary,
-                        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
-                        onSelected: (val) {
-                          setModalState(() => _selectedTipe = tipe);
-                          setState(() => _selectedTipe = tipe);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text('Fasilitas', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _availableFacilities.map((facility) {
-                      final isSelected = _selectedFacilities.contains(facility);
-                      return FilterChip(
-                        label: Text(facility),
-                        selected: isSelected,
-                        selectedColor: AppColors.primary,
-                        checkmarkColor: Colors.white,
-                        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
-                        onSelected: (selected) {
-                          setModalState(() {
-                            if (selected) {
-                              _selectedFacilities.add(facility);
-                            } else {
-                              _selectedFacilities.remove(facility);
-                            }
-                          });
-                          setState(() {});
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Terapkan Filter', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                            setModalState(() => _sortBy = sort);
+                            setState(() => _sortBy = sort);
+                          },
+                        );
+                      }).toList(),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    const Text('Kategori Lapangan',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _categories.map((cat) {
+                        final isSelected = _selectedCategory == cat;
+                        return ChoiceChip(
+                          label: Text(cat),
+                          selected: isSelected,
+                          // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+                          selectedColor: AppColors.primary,
+                          labelStyle: TextStyle(
+                              color:
+                                  isSelected ? Colors.white : Colors.black87),
+                          onSelected: (val) {
+                            setModalState(() => _selectedCategory = cat);
+                            setState(() => _selectedCategory = cat);
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text('Tipe Lapangan',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: ['Semua', 'Indoor', 'Outdoor'].map((tipe) {
+                        final isSelected = _selectedTipe == tipe;
+                        return ChoiceChip(
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (tipe != 'Semua') ...[
+                                Icon(
+                                  tipe == 'Indoor'
+                                      ? Icons.roofing
+                                      : Icons.wb_sunny_outlined,
+                                  size: 14,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black87,
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              Text(tipe),
+                            ],
+                          ),
+                          selected: isSelected,
+                          selectedColor: AppColors.primary,
+                          labelStyle: TextStyle(
+                              color:
+                                  isSelected ? Colors.white : Colors.black87),
+                          onSelected: (val) {
+                            setModalState(() => _selectedTipe = tipe);
+                            setState(() => _selectedTipe = tipe);
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text('Fasilitas',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _availableFacilities.map((facility) {
+                        final isSelected =
+                            _selectedFacilities.contains(facility);
+                        return FilterChip(
+                          label: Text(facility),
+                          selected: isSelected,
+                          selectedColor: AppColors.primary,
+                          checkmarkColor: Colors.white,
+                          labelStyle: TextStyle(
+                              color:
+                                  isSelected ? Colors.white : Colors.black87),
+                          onSelected: (selected) {
+                            setModalState(() {
+                              if (selected) {
+                                _selectedFacilities.add(facility);
+                              } else {
+                                _selectedFacilities.remove(facility);
+                              }
+                            });
+                            setState(() {});
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Terapkan Filter',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      );
+            );
+          },
+        );
       },
     );
   }
@@ -347,10 +377,12 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                 decoration: InputDecoration(
                   hintText: 'Cari Lapangan...',
                   // REFAKTOR: sebelumnya Color(0xFF718096)
-                  prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
+                  prefixIcon: const Icon(Icons.search,
+                      color: AppColors.textSecondary, size: 20),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.close, color: AppColors.textSecondary, size: 18),
+                          icon: const Icon(Icons.close,
+                              color: AppColors.textSecondary, size: 18),
                           onPressed: () {
                             _searchController.clear();
                             setState(() {
@@ -363,7 +395,10 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 ),
                 // REFAKTOR: sebelumnya Color(0xFF2D3748)
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark),
               ),
             ),
           ),
@@ -375,7 +410,10 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
               children: [
                 // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
                 const Icon(Icons.tune, color: AppColors.primary),
-                if (_selectedCategory != 'Semua' || _selectedTipe != 'Semua' || _sortBy != 'Terdekat' || _selectedFacilities.isNotEmpty)
+                if (_selectedCategory != 'Semua' ||
+                    _selectedTipe != 'Semua' ||
+                    _sortBy != 'Terdekat' ||
+                    _selectedFacilities.isNotEmpty)
                   Positioned(
                     top: 0,
                     right: -2,
@@ -429,7 +467,8 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
           // REFAKTOR: sebelumnya Color(0xFF1B6B3A) dan Color(0xFF718096)
           color: isSelected ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300),
+          border: Border.all(
+              color: isSelected ? AppColors.primary : Colors.grey.shade300),
         ),
         child: Text(
           label,
@@ -452,7 +491,10 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
           // REFAKTOR: sebelumnya Color(0xFF2D3748)
           const Text(
             'Urutkan:',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textDark),
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textDark),
           ),
           const SizedBox(width: 12),
           _buildSortChip('Terdekat'),
@@ -472,13 +514,15 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
         if (label == 'Terdekat') {
           if (_isLoadingLocation) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Sedang mendeteksi lokasi, mohon tunggu...')),
+              const SnackBar(
+                  content: Text('Sedang mendeteksi lokasi, mohon tunggu...')),
             );
             return;
           }
           if (_currentPosition == null) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Akses GPS diperlukan untuk fitur ini.')),
+              const SnackBar(
+                  content: Text('Akses GPS diperlukan untuk fitur ini.')),
             );
             _showLocationServiceDialog();
             return;
@@ -494,7 +538,8 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
           // REFAKTOR: sebelumnya Color(0xFF1B6B3A) dan Color(0xFF718096)
           color: isSelected ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300),
+          border: Border.all(
+              color: isSelected ? AppColors.primary : Colors.grey.shade300),
         ),
         child: Text(
           label,
@@ -519,9 +564,15 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
       data: (fields) {
         final filtered = fields.where((f) {
           final matchQuery = _searchQuery.isEmpty ||
-              f.nama.toLowerCase().contains(_searchQuery.toLowerCase().trim()) ||
-              f.namaVenue.toLowerCase().contains(_searchQuery.toLowerCase().trim()) ||
-              f.alamat.toLowerCase().contains(_searchQuery.toLowerCase().trim());
+              f.nama
+                  .toLowerCase()
+                  .contains(_searchQuery.toLowerCase().trim()) ||
+              f.namaVenue
+                  .toLowerCase()
+                  .contains(_searchQuery.toLowerCase().trim()) ||
+              f.alamat
+                  .toLowerCase()
+                  .contains(_searchQuery.toLowerCase().trim());
 
           final matchCategory = _selectedCategory == 'Semua' ||
               f.kategori.toLowerCase() == _selectedCategory.toLowerCase();
@@ -530,8 +581,8 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
               f.tipeLapangan.toLowerCase() == _selectedTipe.toLowerCase();
 
           final matchFacilities = _selectedFacilities.isEmpty ||
-              _selectedFacilities.every((facility) => 
-                  f.fasilitas.any((fItem) => fItem.toLowerCase() == facility.toLowerCase()));
+              _selectedFacilities.every((facility) => f.fasilitas.any(
+                  (fItem) => fItem.toLowerCase() == facility.toLowerCase()));
 
           return matchQuery && matchCategory && matchTipe && matchFacilities;
         }).toList();
@@ -542,8 +593,10 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
         if (_currentPosition != null) {
           for (final f in filtered) {
             distances[f.id] = Geolocator.distanceBetween(
-              _currentPosition!.latitude, _currentPosition!.longitude,
-              f.latitude, f.longitude,
+              _currentPosition!.latitude,
+              _currentPosition!.longitude,
+              f.latitude,
+              f.longitude,
             );
           }
         }
@@ -555,8 +608,8 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
         } else if (_sortBy == 'Rating Tertinggi') {
           filtered.sort((a, b) => b.ratingAvg.compareTo(a.ratingAvg));
         } else if (_sortBy == 'Terdekat' && distances.isNotEmpty) {
-          filtered.sort((a, b) =>
-              (distances[a.id] ?? 0).compareTo(distances[b.id] ?? 0));
+          filtered.sort(
+              (a, b) => (distances[a.id] ?? 0).compareTo(distances[b.id] ?? 0));
         }
 
         if (filtered.isEmpty) {
@@ -573,12 +626,16 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
                 child: Text(
                   '${filtered.length} lapangan ditemukan',
                   // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
-                  style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13),
                 ),
               ),
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final field = filtered[index];
@@ -600,7 +657,8 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
     return EmptyStateWidget(
       icon: Icons.search_off_rounded,
       title: 'Lapangan tidak ditemukan',
-      subtitle: 'Coba ubah filter atau gunakan kata kunci\nlain untuk hasil yang lebih luas.',
+      subtitle:
+          'Coba ubah filter atau gunakan kata kunci\nlain untuk hasil yang lebih luas.',
       actionButton: SizedBox(
         width: 200,
         height: 45,
@@ -617,9 +675,12 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
           },
           style: OutlinedButton.styleFrom(
             side: const BorderSide(color: AppColors.primary, width: 1.5),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          child: const Text('Reset Filter', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+          child: const Text('Reset Filter',
+              style: TextStyle(
+                  color: AppColors.primary, fontWeight: FontWeight.bold)),
         ),
       ),
     );
@@ -693,7 +754,10 @@ class _HorizontalFieldCard extends StatelessWidget {
                             Text(
                               field.nama,
                               // REFAKTOR: sebelumnya Color(0xFF2D3748)
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textDark),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -704,7 +768,8 @@ class _HorizontalFieldCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               // REFAKTOR: sebelumnya Color(0xFFE8F5EC) dan Color(0xFF1B6B3A)
                               color: AppColors.primaryLight,
@@ -712,12 +777,16 @@ class _HorizontalFieldCard extends StatelessWidget {
                             ),
                             child: Text(
                               field.kategori.toUpperCase(),
-                              style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary),
                             ),
                           ),
                           const SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: field.tipeLapangan == 'Indoor'
                                   ? const Color(0xFFEEF2FF)
@@ -728,7 +797,9 @@ class _HorizontalFieldCard extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  field.tipeLapangan == 'Indoor' ? Icons.roofing : Icons.wb_sunny_outlined,
+                                  field.tipeLapangan == 'Indoor'
+                                      ? Icons.roofing
+                                      : Icons.wb_sunny_outlined,
                                   size: 8,
                                   color: field.tipeLapangan == 'Indoor'
                                       ? const Color(0xFF4338CA)
@@ -756,14 +827,16 @@ class _HorizontalFieldCard extends StatelessWidget {
                   Row(
                     children: [
                       // REFAKTOR: sebelumnya Color(0xFF718096)
-                      const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textSecondary),
+                      const Icon(Icons.location_on_outlined,
+                          size: 12, color: AppColors.textSecondary),
                       const SizedBox(width: 2),
                       Expanded(
                         child: Text(
                           distanceInMeters != null
                               ? '${field.alamat.split(',').first} • ${(distanceInMeters! / 1000).toStringAsFixed(1)} km'
                               : field.alamat.split(',').first,
-                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          style: const TextStyle(
+                              fontSize: 11, color: AppColors.textSecondary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -778,18 +851,27 @@ class _HorizontalFieldCard extends StatelessWidget {
                       Text(
                         field.ratingAvg.toStringAsFixed(1),
                         // REFAKTOR: sebelumnya Color(0xFF2D3748)
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                        style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textDark),
                       ),
                       Text(
                         ' (${field.totalUlasan} ulasan)',
                         // REFAKTOR: sebelumnya Color(0xFF718096)
-                        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                        style: const TextStyle(
+                            fontSize: 10, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
-                  const Text('TERSEDIA', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary, letterSpacing: 0.5)),
+                  const Text('TERSEDIA',
+                      style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                          letterSpacing: 0.5)),
                   const SizedBox(height: 2),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -800,30 +882,42 @@ class _HorizontalFieldCard extends StatelessWidget {
                           Text(
                             // REFAKTOR: sebelumnya _formatHarga() local method
                             CurrencyFormatter.format(field.hargaPerJam),
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.primary),
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.primary),
                           ),
                           // REFAKTOR: sebelumnya Color(0xFF718096)
                           const Text(
                             '/jam',
-                            style: TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           // REFAKTOR: sebelumnya Color(0xFF1B6B3A)
-                          border: Border.all(color: AppColors.primary, width: 1.2),
+                          border:
+                              Border.all(color: AppColors.primary, width: 1.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Row(
                           children: [
                             Text(
                               'Pesan',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary),
                             ),
                             SizedBox(width: 4),
-                            Icon(Icons.arrow_forward, size: 14, color: AppColors.primary),
+                            Icon(Icons.arrow_forward,
+                                size: 14, color: AppColors.primary),
                           ],
                         ),
                       ),

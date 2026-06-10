@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class AdminLoginPage extends ConsumerStatefulWidget {
   const AdminLoginPage({super.key});
 
@@ -100,7 +99,8 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
           if (_rememberMe) {
             await prefs.setBool('admin_remember_me', true);
             await prefs.setString('admin_email', _emailController.text.trim());
-            await prefs.setString('admin_password', _passwordController.text.trim());
+            await prefs.setString(
+                'admin_password', _passwordController.text.trim());
           } else {
             await prefs.remove('admin_remember_me');
             await prefs.remove('admin_email');
@@ -173,10 +173,10 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                         color: _primary,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
-                        Icons.stadium_outlined,
-                        color: Colors.white,
-                        size: 26,
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.asset(
+                        'assets/icon/app_icon.png',
+                        fit: BoxFit.cover,
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -218,17 +218,24 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   style: const TextStyle(fontSize: 14),
-                  onChanged: (_) => setState(() { _emailError = null; _loginError = null; }),
+                  onChanged: (_) => setState(() {
+                    _emailError = null;
+                    _loginError = null;
+                  }),
                   decoration: InputDecoration(
                     hintText: 'Masukkan email',
                     hintStyle: const TextStyle(color: Color(0xFFADB5BD)),
                     prefixIcon: Icon(
                       Icons.mail_outline_rounded,
-                      color: _emailError != null ? Colors.red : const Color(0xFF718096),
+                      color: _emailError != null
+                          ? Colors.red
+                          : const Color(0xFF718096),
                       size: 20,
                     ),
                     filled: true,
-                    fillColor: _emailError != null ? Colors.red.withOpacity(0.05) : _fieldBg,
+                    fillColor: _emailError != null
+                        ? Colors.red.withOpacity(0.05)
+                        : _fieldBg,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 16,
@@ -256,7 +263,8 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.error_outline, size: 13, color: Colors.red),
+                      const Icon(Icons.error_outline,
+                          size: 13, color: Colors.red),
                       const SizedBox(width: 4),
                       Text(
                         _emailError!,
@@ -281,13 +289,18 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   style: const TextStyle(fontSize: 14),
-                  onChanged: (_) => setState(() { _passwordError = null; _loginError = null; }),
+                  onChanged: (_) => setState(() {
+                    _passwordError = null;
+                    _loginError = null;
+                  }),
                   decoration: InputDecoration(
                     hintText: 'Masukkan password',
                     hintStyle: const TextStyle(color: Color(0xFFADB5BD)),
                     prefixIcon: Icon(
                       Icons.lock_outline_rounded,
-                      color: _passwordError != null ? Colors.red : const Color(0xFF718096),
+                      color: _passwordError != null
+                          ? Colors.red
+                          : const Color(0xFF718096),
                       size: 20,
                     ),
                     suffixIcon: IconButton(
@@ -302,7 +315,9 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
                     filled: true,
-                    fillColor: _passwordError != null ? Colors.red.withOpacity(0.05) : _fieldBg,
+                    fillColor: _passwordError != null
+                        ? Colors.red.withOpacity(0.05)
+                        : _fieldBg,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 16,
@@ -330,7 +345,8 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.error_outline, size: 13, color: Colors.red),
+                      const Icon(Icons.error_outline,
+                          size: 13, color: Colors.red),
                       const SizedBox(width: 4),
                       Text(
                         _passwordError!,
@@ -379,7 +395,8 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                 if (_loginError != null && _loginError!.isNotEmpty) ...[
                   const SizedBox(height: 20),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       color: Colors.red.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(12),
@@ -387,12 +404,14 @@ class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline, size: 16, color: Colors.red),
+                        const Icon(Icons.error_outline,
+                            size: 16, color: Colors.red),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _loginError!,
-                            style: const TextStyle(color: Colors.red, fontSize: 13),
+                            style: const TextStyle(
+                                color: Colors.red, fontSize: 13),
                           ),
                         ),
                       ],

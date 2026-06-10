@@ -34,12 +34,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     // Trigger login
     await ref.read(authProvider.notifier).login(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-    );
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        );
 
     if (!mounted) return;
-    
+
     final authState = ref.read(authProvider);
 
     // Handle error
@@ -57,9 +57,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   Future<void> _loginWithGoogle() async {
     await ref.read(authProvider.notifier).loginWithGoogle();
-    
+
     if (!mounted) return;
-    
+
     final authState = ref.read(authProvider);
 
     if (authState.errorMessage != null) {
@@ -87,26 +87,33 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2, offset: const Offset(0, 1))
-                ]
-              ),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1))
+                  ]),
               child: const Center(
-                child: Text('Masuk', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
+                child: Text('Masuk',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, color: Color(0xFF1B6B3A))),
               ),
             ),
           ),
           Expanded(
             child: GestureDetector(
               onTap: () {
-                 Navigator.pushReplacementNamed(context, '/register');
+                Navigator.pushReplacementNamed(context, '/register');
               },
               child: Container(
                 color: Colors.transparent,
                 child: const Center(
-                  child: Text('Daftar', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF718096))),
+                  child: Text('Daftar',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF718096))),
                 ),
               ),
             ),
@@ -121,7 +128,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFCFCFC), // Very faint off-white background
+      backgroundColor:
+          const Color(0xFFFCFCFC), // Very faint off-white background
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -142,10 +150,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         color: const Color(0xFF1B6B3A),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
-                        Icons.stadium_outlined,
-                        color: Colors.white,
-                        size: 20,
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.asset(
+                        'assets/icon/app_icon.png',
+                        fit: BoxFit.cover,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -229,12 +237,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         hintStyle: const TextStyle(color: Color(0xFFA0AEC0)),
                         filled: true,
                         fillColor: const Color(0xFFF1F4F8),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 18),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        suffixIcon: const Icon(Icons.email_outlined, color: Color(0xFFA0AEC0)),
+                        suffixIcon: const Icon(Icons.email_outlined,
+                            color: Color(0xFFA0AEC0)),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -253,7 +263,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => Navigator.pushNamed(context, '/forgot-password'),
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/forgot-password'),
                           child: const Text(
                             'Lupa Password?',
                             style: TextStyle(
@@ -270,23 +281,29 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
-                      style: const TextStyle(fontWeight: FontWeight.w500, letterSpacing: 2.0),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w500, letterSpacing: 2.0),
                       decoration: InputDecoration(
                         hintText: '••••••••',
-                        hintStyle: const TextStyle(color: Color(0xFFA0AEC0), letterSpacing: 2.0),
+                        hintStyle: const TextStyle(
+                            color: Color(0xFFA0AEC0), letterSpacing: 2.0),
                         filled: true,
                         fillColor: const Color(0xFFF1F4F8),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 18),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
                             color: const Color(0xFFA0AEC0),
                           ),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword),
                         ),
                       ),
                     ),
@@ -300,14 +317,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         onPressed: authState.isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF0F5A2F),
-                          shadowColor: const Color(0xFF0F5A2F).withValues(alpha: 0.5),
+                          shadowColor:
+                              const Color(0xFF0F5A2F).withValues(alpha: 0.5),
                           elevation: 8,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                         child: authState.isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
                             : const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -320,7 +339,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                     ),
                                   ),
                                   SizedBox(width: 8),
-                                  Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                                  Icon(Icons.arrow_forward,
+                                      color: Colors.white, size: 20),
                                 ],
                               ),
                       ),
@@ -330,7 +350,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     // Divider
                     Row(
                       children: [
-                        Expanded(child: Divider(color: Colors.grey.withOpacity(0.2))),
+                        Expanded(
+                            child:
+                                Divider(color: Colors.grey.withOpacity(0.2))),
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
@@ -343,58 +365,64 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             ),
                           ),
                         ),
-                        Expanded(child: Divider(color: Colors.grey.withValues(alpha: 0.2))),
+                        Expanded(
+                            child: Divider(
+                                color: Colors.grey.withValues(alpha: 0.2))),
                       ],
                     ),
                     const SizedBox(height: 32),
 
-                     // Google Button
-                     SizedBox(
-                       width: double.infinity,
-                       height: 56,
-                       child: OutlinedButton(
-                         onPressed: authState.isLoading ? null : _loginWithGoogle,
-                         style: OutlinedButton.styleFrom(
-                           backgroundColor: Colors.white,
-                           side: const BorderSide(color: Color(0xFFE2E8F0)),
-                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                           shape: RoundedRectangleBorder(
-                             borderRadius: BorderRadius.circular(16),
-                           ),
-                         ),
-                         child: FittedBox(
-                           fit: BoxFit.scaleDown,
-                           child: Row(
-                             mainAxisAlignment: MainAxisAlignment.center,
-                             children: [
-                               Container(
-                                 padding: const EdgeInsets.all(2),
-                                 decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                                 child: Image.network(
-                                   'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png',
-                                   height: 24,
-                                   width: 24,
-                                   errorBuilder: (context, error, stackTrace) => const Icon(
-                                     Icons.g_mobiledata,
-                                     size: 32,
-                                     color: Colors.blue,
-                                   ),
-                                 ),
-                               ),
-                               const SizedBox(width: 12),
-                               const Text(
-                                 'Lanjutkan dengan Google',
-                                 style: TextStyle(
-                                   color: Color(0xFF2D3748),
-                                   fontSize: 15,
-                                   fontWeight: FontWeight.bold,
-                                 ),
-                               ),
-                             ],
-                           ),
-                         ),
-                       ),
-                     ),
+                    // Google Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: OutlinedButton(
+                        onPressed:
+                            authState.isLoading ? null : _loginWithGoogle,
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle),
+                                child: Image.network(
+                                  'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png',
+                                  height: 24,
+                                  width: 24,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(
+                                    Icons.g_mobiledata,
+                                    size: 32,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Lanjutkan dengan Google',
+                                style: TextStyle(
+                                  color: Color(0xFF2D3748),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -409,7 +437,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     style: TextStyle(color: Color(0xFF718096)),
                   ),
                   GestureDetector(
-                    onTap: () => Navigator.pushReplacementNamed(context, '/register'),
+                    onTap: () =>
+                        Navigator.pushReplacementNamed(context, '/register'),
                     child: const Text(
                       'Daftar Sekarang',
                       style: TextStyle(

@@ -2,11 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lapangku/controllers/mitra/mitra_stats_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_booking_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_field_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 
 import 'package:lapangku/models/booking/booking_model.dart';
 import 'package:lapangku/views/mitra/mitra_booking_list_page.dart';
@@ -33,7 +33,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
     decimalDigits: 0,
   );
 
-  String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
+  String get _uid => ref.watch(currentUidProvider);
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +175,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
     final todayStats = ref.watch(mitraTodayStatsProvider(_uid));
     final monthlyStats = ref.watch(mitraMonthlyStatsProvider(_uid));
     final fieldsAsync = ref.watch(mitraFieldProvider).fields;
-    final waitingBookings = ref.watch(mitraWaitingBookingsProvider(_uid));
+    final recentBookings = ref.watch(mitraRecentBookingsProvider(_uid));
 
     int activeCount = 0;
     int totalCount = 0;
@@ -208,8 +208,8 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
               label: 'Pesanan Hari Ini',
               value: '${todayStats['count']}',
               footer: '${todayStats['confirmedCount'] ?? 0} dikonfirmasi',
-              badge: waitingBookings.isNotEmpty
-                  ? '${waitingBookings.length} menunggu'
+              badge: recentBookings.isNotEmpty
+                  ? 'Baru diperbarui'
                   : null,
               badgeColor: const Color(0xFFFEF3C7),
               badgeTextColor: const Color(0xFFD97706),
@@ -393,20 +393,20 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
   }
 
   Widget _buildWaitingListHeader() {
-    final waitingBookings = ref.watch(mitraWaitingBookingsProvider(_uid));
+    final recentBookings = ref.watch(mitraRecentBookingsProvider(_uid));
 
     return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
       Row(children: [
-        const Text('Pesanan Menunggu',
+        const Text('Pesanan Terbaru',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
         const SizedBox(width: 8),
-        if (waitingBookings.isNotEmpty)
+        if (recentBookings.isNotEmpty)
           Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                   color: const Color(0xFFFEE8E7),
                   borderRadius: BorderRadius.circular(12)),
-              child: Text('${waitingBookings.length}',
+              child: Text('${recentBookings.length}',
                   style: const TextStyle(
                       color: Color(0xFFE04443),
                       fontSize: 12,
@@ -417,7 +417,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => const MitraBookingListPage(initialIndex: 1),
+              builder: (_) => const MitraBookingListPage(initialIndex: 0),
             ),
           );
         },
@@ -434,9 +434,9 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
   }
 
   Widget _buildWaitingOrderCard() {
-    final waitingBookings = ref.watch(mitraWaitingBookingsProvider(_uid));
+    final recentBookings = ref.watch(mitraRecentBookingsProvider(_uid));
 
-    if (waitingBookings.isEmpty) {
+    if (recentBookings.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(32),
@@ -450,7 +450,7 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
             Icon(Icons.check_circle_outline, color: Colors.grey[400], size: 48),
             const SizedBox(height: 16),
             Text(
-              'Tidak ada pesanan menunggu',
+              'Belum ada pesanan',
               style: TextStyle(
                 color: Colors.grey[600],
                 fontWeight: FontWeight.w600,
@@ -461,185 +461,189 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
       );
     }
 
-    final booking = waitingBookings.first;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.black.withOpacity(0.02)),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 24,
-                spreadRadius: 0,
-                offset: const Offset(0, 8))
-          ]),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: _primaryGreen.withOpacity(0.1),
-            backgroundImage: booking.userAvatarUrl != null && booking.userAvatarUrl!.isNotEmpty 
-                ? NetworkImage(booking.userAvatarUrl!) 
-                : null,
-            child: booking.userAvatarUrl == null || booking.userAvatarUrl!.isEmpty
-                ? Text(
-                    booking.userName.isNotEmpty ? booking.userName[0].toUpperCase() : 'U',
-                    style: TextStyle(
-                        color: _primaryGreen,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18),
-                  )
-                : null,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(booking.userName,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w900, fontSize: 16)),
-                const SizedBox(height: 2),
-                Row(children: [
-                  const Icon(Icons.confirmation_number_outlined,
-                      size: 14, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text(booking.bookingId,
-                      style: TextStyle(color: Colors.grey[600], fontSize: 13))
-                ]),
-              ])),
-          Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
-                  borderRadius: BorderRadius.circular(12)),
-              child: Text(_getTimeAgo(booking.createdAt),
-                  style: const TextStyle(
-                      color: Color(0xFF6366F1),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold))),
-        ]),
-        const SizedBox(height: 16),
-        if (booking.isRescheduleRequested && booking.rescheduleStatus == 'pending') ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF7ED),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFFFEDD5)),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.edit_calendar_rounded, color: Color(0xFFEA580C), size: 14),
-                SizedBox(width: 6),
-                Text('PENGAJUAN RESCHEDULE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFF9A3412))),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-        Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-                color: const Color(0xFFF1F5FE),
-                borderRadius: BorderRadius.circular(12)),
-            child: Column(children: [
-              Row(children: [
-                Icon(Icons.location_on_outlined,
-                    size: 16, color: _primaryGreen),
-                const SizedBox(width: 8),
-                Text(booking.fieldName,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14)),
-                const Text('  •  ', style: TextStyle(color: Colors.grey)),
-                Text(DateFormat('EEE, d MMM', 'id').format(booking.tanggal),
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w500))
-              ]),
-              const SizedBox(height: 8),
-              Row(children: [
-                Icon(Icons.access_time, size: 16, color: _primaryGreen),
-                const SizedBox(width: 8),
-                Text(booking.timeSlots.join(', '),
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w500))
-              ]),
-            ])),
-        const SizedBox(height: 16),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Total Pembayaran',
-                style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-            const SizedBox(height: 2),
-            Text(_currencyFormat.format(booking.totalBayar),
-                style:
-                    const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-            Text(booking.metodePembayaran,
-                style: TextStyle(color: Colors.grey[500], fontSize: 11)),
-          ]),
-        ]),
-        const SizedBox(height: 20),
-        _buildActionButtons(booking),
-      ]),
+    return SizedBox(
+      height: 135,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: recentBookings.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          return SizedBox(
+            width: 280, // Fixed width for horizontal scrolling cards
+            child: _buildSingleOrderCard(recentBookings[index]),
+          );
+        },
+      ),
     );
   }
 
-  // Baris yang sebelumnya error sekarang sudah aman jika BookingModel di-import dengan benar
-  Widget _buildActionButtons(BookingModel booking) {
+  Widget _buildSingleOrderCard(BookingModel booking) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Avatar
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: _primaryGreen.withOpacity(0.1),
+                backgroundImage: booking.userAvatarUrl != null && booking.userAvatarUrl!.isNotEmpty 
+                    ? NetworkImage(booking.userAvatarUrl!) 
+                    : null,
+                child: booking.userAvatarUrl == null || booking.userAvatarUrl!.isEmpty
+                    ? Text(
+                        booking.userName.isNotEmpty ? booking.userName[0].toUpperCase() : 'U',
+                        style: TextStyle(
+                            color: _primaryGreen,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              
+              // Nama & Waktu
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      booking.userName,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${booking.fieldName} • ${DateFormat('d MMM', 'id').format(booking.tanggal)}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12, fontWeight: FontWeight.w500),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Harga & Status
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _currencyFormat.format(booking.hargaLapangan),
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      _getTimeAgo(booking.createdAt),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 9, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          
+      // Bagian Action & Status (Hanya jika perlu)
+      const Spacer(),
+      _buildCompactActionButtons(booking),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactActionButtons(BookingModel booking) {
     final bookingId = booking.id;
     final isMutating =
         ref.watch(MitraBookingActionsProvider).contains(bookingId);
     
     final isReschedule = booking.isRescheduleRequested && booking.rescheduleStatus == 'pending';
 
-    return Row(children: [
-      Expanded(
-        child: ElevatedButton(
-          onPressed: isMutating ? null : () => isReschedule ? _handleRejectReschedule(bookingId) : _handleReject(bookingId),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _bgLightRed,
-            foregroundColor: _textRed,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+    if (!isReschedule) {
+      // Jika pesanan biasa, tampilkan status sangat compact
+      Color statusColor = const Color(0xFF64748B);
+      String statusText = booking.status.toUpperCase();
+      
+      if (booking.status == 'dikonfirmasi' || booking.status == 'selesai') {
+        statusColor = const Color(0xFF059669);
+      } else if (booking.status == 'menunggu_bayar') {
+        statusColor = const Color(0xFFD97706);
+        statusText = 'MENUNGGU PEMBAYARAN';
+      }
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
             ),
-            minimumSize: const Size(double.infinity, 50),
-          ),
-          child: Text(isReschedule ? 'Tolak' : 'Tolak',
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
-        ),
-      ),
-      const SizedBox(width: 12),
-      Expanded(
-        child: ElevatedButton(
-          onPressed: isMutating ? null : () => isReschedule ? _handleApproveReschedule(bookingId) : _handleConfirm(bookingId),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _primaryGreen,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+            const SizedBox(width: 6),
+            Text(
+              statusText,
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor),
             ),
-            minimumSize: const Size(double.infinity, 50),
-          ),
-          child: isMutating
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : Text(isReschedule ? 'Konfirmasi' : 'Konfirmasi',
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+          ],
         ),
-      ),
-    ]);
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(children: [
+        Expanded(
+          child: ElevatedButton(
+            onPressed: isMutating ? null : () => _handleRejectReschedule(bookingId),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFEE2E2),
+              foregroundColor: const Color(0xFFEF4444),
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              minimumSize: const Size(double.infinity, 36),
+            ),
+            child: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: isMutating ? null : () => _handleApproveReschedule(bookingId),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0F4C36),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              minimumSize: const Size(double.infinity, 36),
+            ),
+            child: isMutating
+                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Text('Terima', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+          ),
+        ),
+      ]),
+    );
   }
 
   Future<void> _handleConfirm(String id) async {
@@ -721,8 +725,12 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
     final weeklyData = ref.watch(mitraRevenueWeeklyProvider(_uid));
 
     int totalWeekly = 0;
+    int todayRevenue = 0;
     for (var data in weeklyData) {
       totalWeekly += data['revenue'] as int;
+      if (data['isToday'] == true) {
+        todayRevenue = data['revenue'] as int;
+      }
     }
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -736,20 +744,59 @@ class _MitraHomePageState extends ConsumerState<MitraHomePage> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.grey[100]!)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Pendapatan 7 Hari Terakhir',
-              style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500)),
-          const SizedBox(height: 4),
-          Text(
-              totalWeekly >= 1000000
-                  ? 'Rp ${(totalWeekly / 1000000).toStringAsFixed(1)} Juta'
-                  : _currencyFormat.format(totalWeekly),
-              style: TextStyle(
-                  color: _primaryGreen,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('7 Hari Terakhir',
+                        style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 4),
+                    Text(
+                        totalWeekly >= 1000000
+                            ? 'Rp ${(totalWeekly / 1000000).toStringAsFixed(1)} Jt'
+                            : _currencyFormat.format(totalWeekly),
+                        style: TextStyle(
+                            color: _primaryGreen,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900)),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text('HARI INI',
+                        style: TextStyle(
+                            color: Color(0xFF166534),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5)),
+                    const SizedBox(height: 2),
+                    Text(
+                        todayRevenue >= 1000000
+                            ? 'Rp ${(todayRevenue / 1000000).toStringAsFixed(1)} Jt'
+                            : _currencyFormat.format(todayRevenue),
+                        style: const TextStyle(
+                            color: Color(0xFF166534),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900)),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 40),
           StatefulBuilder(
             builder: (context, setBarState) {

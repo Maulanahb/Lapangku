@@ -55,3 +55,6 @@ functions/lib/
 
 # Claude / Agent Skills
 .claude/
+
+# Firestore Security Rules Unit Tests
+firestore-tests/

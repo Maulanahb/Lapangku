@@ -224,13 +224,14 @@ class _MitraReviewsPageState extends ConsumerState<MitraReviewsPage> {
               : reviews.map((e) => e.rating).reduce((a, b) => a + b) / reviews.length;
           final satisfiedCount = reviews.where((r) => r.rating >= 4).length;
           final satisfiedRate = reviews.isEmpty ? 0 : (satisfiedCount / reviews.length * 100).round();
+          final repliedCount = reviews.where((r) => r.isReplied).length;
           
           // Tidak perlu RefreshIndicator karena data sudah realtime via Stream
           return ListView(
             padding: const EdgeInsets.only(bottom: 30),
             children: [
               _buildDescription(),
-              _buildHeroCard(avgRating, reviews.length, satisfiedRate),
+              _buildHeroCard(avgRating, reviews.length, satisfiedRate, repliedCount),
               _buildFilterChips(),
               if (filteredReviews.isEmpty)
                 const Padding(
@@ -274,7 +275,7 @@ class _MitraReviewsPageState extends ConsumerState<MitraReviewsPage> {
     );
   }
 
-  Widget _buildHeroCard(double avgRating, int totalReviews, int satisfiedRate) {
+  Widget _buildHeroCard(double avgRating, int totalReviews, int satisfiedRate, int repliedCount) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.all(24),
@@ -345,10 +346,10 @@ class _MitraReviewsPageState extends ConsumerState<MitraReviewsPage> {
                 AppColors.textDark,
               ),
               _buildSmallStat(
-                avgRating.toStringAsFixed(1),
-                'Kebersihan',
-                Icons.cleaning_services,
-                Colors.green,
+                repliedCount.toString(),
+                'Total Dibalas',
+                Icons.forum_outlined,
+                Colors.blue,
               ),
             ],
           ),

@@ -18,9 +18,11 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
   static const _primary = AppColors.primary;
   static const _textDark = AppColors.textHeading;
   static const _textGrey = AppColors.textSecondary;
+  static const _pageSize = 10;
 
   String _filterStatus = 'menunggu';
   String _searchQuery = '';
+  int _currentPage = 0;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -59,6 +61,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
         0;
 
     return Container(
+      width: double.infinity,
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
       child: Column(
@@ -85,7 +88,8 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                         ),
                         const SizedBox(width: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFEF3C7),
                             borderRadius: BorderRadius.circular(20),
@@ -104,7 +108,10 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                     const SizedBox(height: 4),
                     const Text(
                       'Tinjau dan setujui pengajuan mitra baru untuk aktif di platform.',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -112,14 +119,22 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
               TextButton.icon(
                 onPressed: () => ref.read(adminFieldsProvider.notifier).load(),
                 icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Refresh', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                label: const Text('Refresh',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                 style: ButtonStyle(
-                  padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+                  padding: WidgetStateProperty.all(
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
                   backgroundColor: WidgetStateProperty.resolveWith((states) =>
-                      states.contains(WidgetState.hovered) ? AppColors.primary : Colors.grey.shade100),
+                      states.contains(WidgetState.hovered)
+                          ? AppColors.primary
+                          : Colors.grey.shade100),
                   foregroundColor: WidgetStateProperty.resolveWith((states) =>
-                      states.contains(WidgetState.hovered) ? Colors.white : AppColors.primary),
-                  shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+                      states.contains(WidgetState.hovered)
+                          ? Colors.white
+                          : AppColors.primary),
+                  shape: WidgetStateProperty.all(RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20))),
                   overlayColor: WidgetStateProperty.all(Colors.transparent),
                 ),
               ),
@@ -135,13 +150,17 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
             ),
             child: TextField(
               controller: _searchController,
-              onChanged: (val) => setState(() => _searchQuery = val),
+              onChanged: (val) => setState(() {
+                _searchQuery = val;
+                _currentPage = 0;
+              }),
               decoration: const InputDecoration(
                 hintText: 'Cari mitra...',
                 hintStyle: TextStyle(color: AppColors.hint, fontSize: 13),
                 prefixIcon: Icon(Icons.search, color: AppColors.hint, size: 20),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                contentPadding:
+                    EdgeInsets.symmetric(vertical: 14, horizontal: 16),
               ),
             ),
           ),
@@ -166,12 +185,13 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
     );
   }
 
-
-
   Widget _tabPill(String label, String status) {
     final isSelected = _filterStatus == status;
     return GestureDetector(
-      onTap: () => setState(() => _filterStatus = status),
+      onTap: () => setState(() {
+        _filterStatus = status;
+        _currentPage = 0;
+      }),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
@@ -196,12 +216,24 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
   Widget _buildContent(List<AdminFieldModel> mitras) {
     final filtered = mitras.where((m) {
       bool statusMatch = _filterStatus == 'semua' ||
-          m.statusVerifikasi.toLowerCase().trim() == _filterStatus.toLowerCase().trim();
+          m.statusVerifikasi.toLowerCase().trim() ==
+              _filterStatus.toLowerCase().trim();
       bool searchMatch = _searchQuery.isEmpty ||
           m.namaLapangan.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           m.namaMitra.toLowerCase().contains(_searchQuery.toLowerCase());
       return statusMatch && searchMatch;
     }).toList();
+
+    final totalPages = filtered.isEmpty
+        ? 1
+        : ((filtered.length - 1) ~/ _pageSize) + 1;
+    final currentPage =
+        _currentPage >= totalPages ? totalPages - 1 : _currentPage;
+    final startIndex = currentPage * _pageSize;
+    final endIndex = startIndex + _pageSize > filtered.length
+        ? filtered.length
+        : startIndex + _pageSize;
+    final pageItems = filtered.sublist(startIndex, endIndex);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -209,13 +241,94 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
           ? const Center(
               child: Text('Tidak ada pengajuan',
                   style: TextStyle(color: _textGrey)))
-          : ListView.separated(
-              itemCount: filtered.length,
-              separatorBuilder: (context, index) =>
-                  const SizedBox(height: 16),
-              itemBuilder: (context, index) =>
-                  _buildMitraCard(filtered[index]),
+          : Column(
+              children: [
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: pageItems.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 16),
+                    itemBuilder: (context, index) =>
+                        _buildMitraCard(pageItems[index]),
+                  ),
+                ),
+                if (filtered.length > _pageSize)
+                  _buildPaginationFooter(
+                    currentPage: currentPage,
+                    totalPages: totalPages,
+                    totalItems: filtered.length,
+                    startItem: startIndex + 1,
+                    endItem: endIndex,
+                    onPrevious: currentPage == 0
+                        ? null
+                        : () => setState(() => _currentPage = currentPage - 1),
+                    onNext: currentPage >= totalPages - 1
+                        ? null
+                        : () => setState(() => _currentPage = currentPage + 1),
+                  ),
+              ],
             ),
+    );
+  }
+
+  Widget _buildPaginationFooter({
+    required int currentPage,
+    required int totalPages,
+    required int totalItems,
+    required int startItem,
+    required int endItem,
+    required VoidCallback? onPrevious,
+    required VoidCallback? onNext,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Menampilkan $startItem-$endItem dari $totalItems pengajuan',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          OutlinedButton(
+            onPressed: onPrevious,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _primary,
+              disabledForegroundColor: Colors.grey.shade400,
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+            child: const Text('Sebelumnya'),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '${currentPage + 1} / $totalPages',
+            style: const TextStyle(
+              color: AppColors.textHeading,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 10),
+          OutlinedButton(
+            onPressed: onNext,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _primary,
+              disabledForegroundColor: Colors.grey.shade400,
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+            child: const Text('Berikutnya'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -240,6 +353,13 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
           .toList();
     }
 
+    final isPending = statusVerifikasi == 'menunggu';
+    final statusColor =
+        isPending ? const Color(0xFFF59E0B) : const Color(0xFF10B981);
+    final statusBg =
+        isPending ? const Color(0xFFFFF7E6) : const Color(0xFFE8F7F0);
+    final statusLabel = isPending ? 'Menunggu Verifikasi' : 'Terverifikasi';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -257,69 +377,82 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Image & Status Badge
+          // 1. Image
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: SizedBox(
-              width: 140,
-              height: 100,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  imageUrl.isNotEmpty
-                      ? WebSafeNetworkImage(
-                          url: imageUrl,
-                          fit: BoxFit.cover,
-                          width: 140,
-                          height: 100,
-                        )
-                      : Container(
-                          color: Colors.grey.shade200,
-                          child: const Icon(Icons.image, color: Colors.grey)),
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: statusVerifikasi == 'menunggu'
-                            ? const Color(0xFFF59E0B)
-                            : const Color(0xFF10B981),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        statusVerifikasi == 'menunggu'
-                            ? 'MENUNGGU'
-                            : 'TERVERIFIKASI',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold),
-                      ),
+              width: 156,
+              height: 112,
+              child: imageUrl.isNotEmpty
+                  ? WebSafeNetworkImage(
+                      url: imageUrl,
+                      fit: BoxFit.cover,
+                      width: 156,
+                      height: 112,
+                    )
+                  : Container(
+                      color: const Color(0xFFF1F5F9),
+                      child: const Icon(Icons.domain_rounded,
+                          color: AppColors.textSecondary, size: 34),
                     ),
-                  ),
-                ],
-              ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 18),
 
           // 2. Info Section
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  mitra.namaLapangan,
-                  style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: _textDark),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        mitra.namaLapangan,
+                        style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: _textDark),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: statusBg,
+                        borderRadius: BorderRadius.circular(999),
+                        border:
+                            Border.all(color: statusColor.withOpacity(0.18)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isPending
+                                ? Icons.pending_actions_rounded
+                                : Icons.verified_rounded,
+                            color: statusColor,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            statusLabel,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   '${mitra.namaMitra} • ${mitra.emailPemilik}',
                   style: const TextStyle(fontSize: 13, color: _textGrey),
@@ -381,63 +514,71 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
           const SizedBox(width: 16),
 
           // 3. Actions Section
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (statusVerifikasi == 'menunggu') ...[
+          SizedBox(
+            width: 150,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (isPending) ...[
+                  SizedBox(
+                    height: 40,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _updateStatus(mitra, 'aktif'),
+                      icon: const Icon(Icons.check_rounded, size: 18),
+                      label: const Text('Verifikasi'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1B6B3A),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        elevation: 0,
+                        textStyle: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 SizedBox(
-                  width: 120,
-                  height: 32,
-                  child: ElevatedButton(
-                    onPressed: () => _updateStatus(mitra, 'aktif'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1B6B3A),
-                      foregroundColor: Colors.white,
+                  height: 40,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showMitraDetails(mitra),
+                    icon: const Icon(Icons.visibility_outlined, size: 17),
+                    label: const Text('Detail'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _textDark,
+                      side: BorderSide(color: Colors.grey.shade300),
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6)),
-                      elevation: 0,
+                          borderRadius: BorderRadius.circular(8)),
+                      textStyle: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w700),
                     ),
-                    child: const Text('Verifikasi',
-                        style: TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
                 ),
-                const SizedBox(height: 8),
+                if (isPending) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 40,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _updateStatus(mitra, 'ditolak'),
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                      label: const Text('Tolak'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFDC2626),
+                        side: const BorderSide(color: Color(0xFFFCA5A5)),
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        textStyle: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
               ],
-              SizedBox(
-                width: 120,
-                height: 32,
-                child: OutlinedButton(
-                  onPressed: () => _showMitraDetails(mitra),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _textDark,
-                    side: BorderSide(color: Colors.grey.shade300),
-                    padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6)),
-                  ),
-                  child: const Text('Lihat Detail',
-                      style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w600)),
-                ),
-              ),
-              if (statusVerifikasi == 'menunggu') ...[
-                const SizedBox(height: 8),
-                InkWell(
-                  onTap: () => _updateStatus(mitra, 'ditolak'),
-                  child: const Padding(
-                    padding:
-                        EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                    child: Text('Tolak',
-                        style: TextStyle(
-                            color: Color(0xFFDC2626),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600)),
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
         ],
       ),
@@ -447,33 +588,73 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
   Future<void> _updateStatus(AdminFieldModel mitra, String status) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(status == 'aktif' ? 'Verifikasi Mitra' : 'Tolak Mitra'),
-        content: Text(
-          status == 'aktif'
-              ? 'Anda yakin ingin memverifikasi pemilik bisnis "${mitra.namaLapangan}"?'
-              : 'Anda yakin ingin menolak pemilik bisnis "${mitra.namaLapangan}"?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+      builder: (ctx) {
+        final isApprove = status == 'aktif';
+        final actionColor =
+            isApprove ? const Color(0xFF1B6B3A) : const Color(0xFFDC2626);
+
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+          contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          title: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: actionColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  isApprove ? Icons.verified_rounded : Icons.block_rounded,
+                  color: actionColor,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  isApprove ? 'Verifikasi Mitra' : 'Tolak Mitra',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: status == 'aktif'
-                  ? const Color(0xFF10B981)
-                  : const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+          content: Text(
+            isApprove
+                ? 'Setujui pengajuan "${mitra.namaLapangan}" agar mitra dapat mengelola lapangannya.'
+                : 'Tolak pengajuan "${mitra.namaLapangan}"? Status mitra akan berubah menjadi ditolak.',
+            style: const TextStyle(color: _textGrey, fontSize: 14, height: 1.5),
+          ),
+          actions: [
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _textDark,
+                side: BorderSide(color: Colors.grey.shade300),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Batal'),
             ),
-            child: Text(status == 'aktif' ? 'Verifikasi' : 'Tolak'),
-          ),
-        ],
-      ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: actionColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              child: Text(isApprove ? 'Verifikasi' : 'Tolak'),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirm == true && mounted) {
@@ -513,7 +694,8 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
       builder: (context) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 680),
             child: Container(
@@ -707,7 +889,8 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                               children: [
                                 _infoRow(Icons.sports_rounded, 'Jenis Olahraga',
                                     mitra.jenis.isEmpty ? '-' : mitra.jenis),
-                                _infoRow(Icons.category_outlined,
+                                _infoRow(
+                                    Icons.category_outlined,
                                     'Tipe Lapangan',
                                     mitra.tipeLapangan.isEmpty
                                         ? '-'
@@ -747,8 +930,8 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                                                         horizontal: 8,
                                                         vertical: 4),
                                                     decoration: BoxDecoration(
-                                                      color:
-                                                          const Color(0xFFF0FDF4),
+                                                      color: const Color(
+                                                          0xFFF0FDF4),
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               6),
@@ -851,8 +1034,7 @@ class _AdminFieldsPageState extends ConsumerState<AdminFieldsPage> {
                                             text: mitra.photoUrls![index]));
                                       },
                                       child: ClipRRect(
-                                        borderRadius:
-                                            BorderRadius.circular(10),
+                                        borderRadius: BorderRadius.circular(10),
                                         child: WebSafeNetworkImage(
                                           url: mitra.photoUrls![index],
                                           width: 180,

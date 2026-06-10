@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/mitra/mitra_review_model.dart';
 import 'package:lapangku/controllers/mitra/mitra_controller.dart';
 import 'package:lapangku/services/firebase/mitra_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 
 /// StreamProvider — auto-listen ke perubahan review secara realtime.
 ///
@@ -12,7 +12,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 final mitraReviewStreamProvider =
     StreamProvider<List<MitraReviewModel>>((ref) {
   final service = ref.watch(mitraServiceProvider);
-  final mitraId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  final mitraId = ref.watch(currentUidProvider);
   return service.streamReviews(mitraId);
 });
 

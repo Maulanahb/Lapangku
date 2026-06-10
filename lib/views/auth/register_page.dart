@@ -180,10 +180,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           color: const Color(0xFF1B6B3A),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
-                          Icons.stadium_outlined,
-                          color: Colors.white,
-                          size: 20,
+                        clipBehavior: Clip.antiAlias,
+                        child: Image.asset(
+                          'assets/icon/app_icon.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
                       const SizedBox(width: 8),

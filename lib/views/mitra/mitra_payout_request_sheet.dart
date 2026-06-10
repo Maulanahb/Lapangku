@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/models/mitra/mitra_payout_model.dart';
 import 'package:lapangku/models/mitra/mitra_profile_model.dart';
+import 'package:lapangku/controllers/mitra/mitra_controller.dart';
+import 'package:lapangku/controllers/mitra/mitra_revenue_provider.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
 import 'package:lapangku/utils/snackbar_helper.dart';
-import 'package:lapangku/services/firebase/mitra_service.dart';
 
 class MitraPayoutRequestSheet extends ConsumerStatefulWidget {
   final int availableBalance;
@@ -18,10 +19,12 @@ class MitraPayoutRequestSheet extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<MitraPayoutRequestSheet> createState() => _MitraPayoutRequestSheetState();
+  ConsumerState<MitraPayoutRequestSheet> createState() =>
+      _MitraPayoutRequestSheetState();
 }
 
-class _MitraPayoutRequestSheetState extends ConsumerState<MitraPayoutRequestSheet> {
+class _MitraPayoutRequestSheetState
+    extends ConsumerState<MitraPayoutRequestSheet> {
   final _amountController = TextEditingController();
   bool _isLoading = false;
 
@@ -46,7 +49,8 @@ class _MitraPayoutRequestSheetState extends ConsumerState<MitraPayoutRequestShee
     }
 
     if (widget.profile.bankName.isEmpty || widget.profile.bankAccount.isEmpty) {
-      SnackbarHelper.showError(context, 'Silakan lengkapi data rekening di menu Profil terlebih dahulu');
+      SnackbarHelper.showError(context,
+          'Silakan lengkapi data rekening di menu Profil terlebih dahulu');
       return;
     }
 
@@ -64,11 +68,14 @@ class _MitraPayoutRequestSheetState extends ConsumerState<MitraPayoutRequestShee
         requestedAt: DateTime.now(),
       );
 
-      final service = MitraService(); // ideally from provider, but keeping it simple
+      final service = ref.read(mitraServiceProvider);
       await service.requestPayout(payout);
+      ref.invalidate(mitraPayoutsProvider(widget.profile.id));
+      await ref.read(mitraRevenueProvider.notifier).loadRevenue();
 
       if (mounted) {
-        SnackbarHelper.showSuccess(context, 'Permintaan pencairan dana berhasil dikirim');
+        SnackbarHelper.showSuccess(
+            context, 'Permintaan pencairan dana berhasil dikirim');
         Navigator.pop(context, true);
       }
     } catch (e) {
@@ -82,7 +89,8 @@ class _MitraPayoutRequestSheetState extends ConsumerState<MitraPayoutRequestShee
 
   @override
   Widget build(BuildContext context) {
-    final bool hasBankInfo = widget.profile.bankName.isNotEmpty && widget.profile.bankAccount.isNotEmpty;
+    final bool hasBankInfo = widget.profile.bankName.isNotEmpty &&
+        widget.profile.bankAccount.isNotEmpty;
 
     return Container(
       padding: EdgeInsets.only(
@@ -133,10 +141,13 @@ class _MitraPayoutRequestSheetState extends ConsumerState<MitraPayoutRequestShee
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: hasBankInfo ? AppColors.primaryLight : Colors.red.shade50,
+                color:
+                    hasBankInfo ? AppColors.primaryLight : Colors.red.shade50,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: hasBankInfo ? AppColors.primary.withOpacity(0.3) : Colors.red.shade200,
+                  color: hasBankInfo
+                      ? AppColors.primary.withOpacity(0.3)
+                      : Colors.red.shade200,
                 ),
               ),
               child: Row(
@@ -148,7 +159,9 @@ class _MitraPayoutRequestSheetState extends ConsumerState<MitraPayoutRequestShee
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      hasBankInfo ? Icons.account_balance : Icons.warning_amber_rounded,
+                      hasBankInfo
+                          ? Icons.account_balance
+                          : Icons.warning_amber_rounded,
                       color: hasBankInfo ? AppColors.primary : Colors.red,
                     ),
                   ),
@@ -158,22 +171,28 @@ class _MitraPayoutRequestSheetState extends ConsumerState<MitraPayoutRequestShee
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          hasBankInfo ? widget.profile.bankName : 'Rekening belum diatur',
+                          hasBankInfo
+                              ? widget.profile.bankName
+                              : 'Rekening belum diatur',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: hasBankInfo ? AppColors.textHeading : Colors.red.shade700,
+                            color: hasBankInfo
+                                ? AppColors.textHeading
+                                : Colors.red.shade700,
                           ),
                         ),
                         if (hasBankInfo) ...[
                           const SizedBox(height: 4),
                           Text(
                             widget.profile.bankAccount,
-                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            style: const TextStyle(
+                                fontSize: 13, color: AppColors.textSecondary),
                           ),
                           Text(
                             'a.n ${widget.profile.bankAccountName.isNotEmpty ? widget.profile.bankAccountName : widget.profile.MitraName}',
-                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            style: const TextStyle(
+                                fontSize: 12, color: AppColors.textSecondary),
                           ),
                         ],
                       ],
@@ -233,7 +252,8 @@ class _MitraPayoutRequestSheetState extends ConsumerState<MitraPayoutRequestShee
                   },
                   child: const Text(
                     'Tarik Semua',
-                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: AppColors.primary, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -255,7 +275,8 @@ class _MitraPayoutRequestSheetState extends ConsumerState<MitraPayoutRequestShee
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
                       )
                     : const Text(
                         'Konfirmasi Penarikan',

@@ -15,6 +15,14 @@
         { "fieldPath": "customer_id", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "notifikasi",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "mitraId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

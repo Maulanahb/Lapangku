@@ -390,36 +390,65 @@ class MitraService {
     int totalRevenue = 0;
     int todayRevenue = 0;
     int activeBookings = 0;
+    int periodRevenue = 0;
     List<MitraTransactionModel> transactions = [];
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    for (var b in validBookings) {
-      if (b.status == 'selesai') {
-        // Mitra's revenue is hargaLapangan (totalBayar - biayaLayanan)
-        totalRevenue += b.hargaLapangan;
+    // Calculate previous period for growth
+    final duration = endDate.difference(startDate);
+    final previousPeriodStart = startDate.subtract(duration);
+    final previousPeriodEnd = startDate;
 
-        // Cek jika transaksi hari ini
-        if (b.tanggal.year == today.year &&
-            b.tanggal.month == today.month &&
-            b.tanggal.day == today.day) {
+    int currentPeriodRevenue = 0;
+    int previousPeriodRevenue = 0;
+
+    for (var b in validBookings) {
+      if (b.status == 'selesai' || b.status == 'dikonfirmasi') {
+        totalRevenue += b.hargaLapangan; // Menggunakan harga asli lapangan
+
+        // Cek jika transaksi hari ini (berdasarkan kapan dibuat)
+        if (b.createdAt.year == today.year &&
+            b.createdAt.month == today.month &&
+            b.createdAt.day == today.day) {
           todayRevenue += b.hargaLapangan;
         }
 
-        transactions.add(MitraTransactionModel(
+        final tx = MitraTransactionModel(
           id: b.id,
           customerName: b.userName,
           fieldName: b.fieldName,
           amount: b.hargaLapangan,
-          date: b.tanggal,
-        ));
-      } else if (b.status == 'dikonfirmasi') {
+          date: b.createdAt, // Tampilkan berdasarkan kapan dibuat
+        );
+
+        // Filter for current period
+        if (b.createdAt.isAfter(startDate.subtract(const Duration(seconds: 1))) &&
+            b.createdAt.isBefore(endDate.add(const Duration(seconds: 1)))) {
+          periodRevenue += b.hargaLapangan;
+          transactions.add(tx);
+          currentPeriodRevenue += b.hargaLapangan;
+        }
+        // Filter for previous period (for growth)
+        else if (b.createdAt.isAfter(previousPeriodStart.subtract(const Duration(seconds: 1))) &&
+                 b.createdAt.isBefore(previousPeriodEnd.add(const Duration(seconds: 1)))) {
+          previousPeriodRevenue += b.hargaLapangan;
+        }
+      }
+      if (b.status == 'dikonfirmasi') {
         activeBookings++;
       }
     }
 
     transactions.sort((a, b) => b.date.compareTo(a.date));
+
+    double revenueGrowth = 0.0;
+    if (previousPeriodRevenue > 0) {
+      revenueGrowth = ((currentPeriodRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100;
+    } else if (currentPeriodRevenue > 0) {
+      revenueGrowth = 100.0;
+    }
 
     // Fetch Payouts untuk menghitung balance sesungguhnya
     int pendingPayout = 0;
@@ -457,6 +486,8 @@ class MitraService {
                   .where((d) => d.data()['status'] == 'completed')
                   .length /
               payoutsSnap.docs.length),
+      revenueGrowth: revenueGrowth,
+      periodRevenue: periodRevenue,
     );
   }
 

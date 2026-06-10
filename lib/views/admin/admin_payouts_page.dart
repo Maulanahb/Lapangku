@@ -15,8 +15,10 @@ class AdminPayoutsPage extends ConsumerStatefulWidget {
 }
 
 class _AdminPayoutsPageState extends ConsumerState<AdminPayoutsPage> {
+  static const _pageSize = 10;
   String _searchQuery = '';
   String _selectedStatus = 'all'; // all, pending, processing, completed, rejected
+  int _currentPage = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +55,18 @@ class _AdminPayoutsPageState extends ConsumerState<AdminPayoutsPage> {
                     return matchSearch && matchStatus;
                   }).toList();
 
+                  final totalPages = filtered.isEmpty
+                      ? 1
+                      : ((filtered.length - 1) ~/ _pageSize) + 1;
+                  final currentPage = _currentPage >= totalPages
+                      ? totalPages - 1
+                      : _currentPage;
+                  final startIndex = currentPage * _pageSize;
+                  final endIndex = startIndex + _pageSize > filtered.length
+                      ? filtered.length
+                      : startIndex + _pageSize;
+                  final pageItems = filtered.sublist(startIndex, endIndex);
+
                   if (filtered.isEmpty) {
                     return ListView(
                       children: const [
@@ -66,14 +80,37 @@ class _AdminPayoutsPageState extends ConsumerState<AdminPayoutsPage> {
                     );
                   }
 
-                  return ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final data = filtered[index];
-                      return _buildPayoutCard(data);
-                    },
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: pageItems.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final data = pageItems[index];
+                            return _buildPayoutCard(data);
+                          },
+                        ),
+                      ),
+                      if (filtered.length > _pageSize)
+                        _buildPaginationFooter(
+                          currentPage: currentPage,
+                          totalPages: totalPages,
+                          totalItems: filtered.length,
+                          startItem: startIndex + 1,
+                          endItem: endIndex,
+                          onPrevious: currentPage == 0
+                              ? null
+                              : () => setState(
+                                  () => _currentPage = currentPage - 1),
+                          onNext: currentPage >= totalPages - 1
+                              ? null
+                              : () => setState(
+                                  () => _currentPage = currentPage + 1),
+                        ),
+                    ],
                   );
                 },
               ),
@@ -86,6 +123,7 @@ class _AdminPayoutsPageState extends ConsumerState<AdminPayoutsPage> {
 
   Widget _buildHeader() {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
       color: Colors.white,
       child: Row(
@@ -147,7 +185,10 @@ class _AdminPayoutsPageState extends ConsumerState<AdminPayoutsPage> {
       child: Column(
         children: [
           TextField(
-            onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+            onChanged: (v) => setState(() {
+              _searchQuery = v.toLowerCase();
+              _currentPage = 0;
+            }),
             decoration: InputDecoration(
               hintText: 'Cari nama, bank, atau ID...',
               hintStyle: const TextStyle(color: AppColors.hint, fontSize: 13),
@@ -172,7 +213,10 @@ class _AdminPayoutsPageState extends ConsumerState<AdminPayoutsPage> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: GestureDetector(
-                    onTap: () => setState(() => _selectedStatus = f['value']!),
+                    onTap: () => setState(() {
+                      _selectedStatus = f['value']!;
+                      _currentPage = 0;
+                    }),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 8),
@@ -198,6 +242,67 @@ class _AdminPayoutsPageState extends ConsumerState<AdminPayoutsPage> {
                 );
               }).toList(),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaginationFooter({
+    required int currentPage,
+    required int totalPages,
+    required int totalItems,
+    required int startItem,
+    required int endItem,
+    required VoidCallback? onPrevious,
+    required VoidCallback? onNext,
+  }) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Menampilkan $startItem-$endItem dari $totalItems pencairan',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          OutlinedButton(
+            onPressed: onPrevious,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              disabledForegroundColor: Colors.grey.shade400,
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+            child: const Text('Sebelumnya'),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '${currentPage + 1} / $totalPages',
+            style: const TextStyle(
+              color: AppColors.textHeading,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 10),
+          OutlinedButton(
+            onPressed: onNext,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              disabledForegroundColor: Colors.grey.shade400,
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+            child: const Text('Berikutnya'),
           ),
         ],
       ),

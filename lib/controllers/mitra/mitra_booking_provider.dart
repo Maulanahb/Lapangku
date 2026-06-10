@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
@@ -28,8 +27,9 @@ final MitraBookingStreamProvider =
 // --- Aksi-aksi State Booking ---
 class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
   final BookingService _service;
+  final String _mitraId;
 
-  MitraBookingActionsNotifier(this._service) : super({});
+  MitraBookingActionsNotifier(this._service, this._mitraId) : super({});
 
   // Konfirmasi booking yang masuk dari pelanggan
   Future<void> confirmBooking(String bookingId) async {
@@ -78,9 +78,8 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
   Future<BookingModel> validateTicket(String bookingId) async {
     state = {...state, bookingId};
     try {
-      final mitraId = FirebaseAuth.instance.currentUser?.uid ?? '';
-      if (mitraId.isEmpty) throw Exception('Anda belum login.');
-      return await _service.validateAndCompleteBooking(bookingId, mitraId);
+      if (_mitraId.isEmpty) throw Exception('Anda belum login.');
+      return await _service.validateAndCompleteBooking(bookingId, _mitraId);
     } finally {
       state = state.difference({bookingId});
     }
@@ -127,6 +126,7 @@ class MitraBookingActionsNotifier extends StateNotifier<Set<String>> {
 final MitraBookingActionsProvider =
     StateNotifierProvider<MitraBookingActionsNotifier, Set<String>>((ref) {
   final service = ref.watch(_bookingSvcProvider);
-  return MitraBookingActionsNotifier(service);
+  final uid = ref.watch(currentUidProvider);
+  return MitraBookingActionsNotifier(service, uid);
 });
 

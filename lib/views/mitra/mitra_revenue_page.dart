@@ -11,10 +11,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:lapangku/controllers/mitra/mitra_revenue_provider.dart';
 import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
+import 'package:lapangku/controllers/mitra/mitra_stats_controller.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/models/mitra/mitra_revenue_model.dart';
 import 'package:lapangku/models/mitra/mitra_payout_model.dart';
 import 'package:lapangku/models/booking/booking_model.dart';
-import 'package:lapangku/services/firebase/mitra_service.dart';
 import 'package:lapangku/views/mitra/mitra_payout_request_sheet.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/utils/currency_formatter.dart';
@@ -29,53 +30,30 @@ class MitraRevenuePage extends ConsumerStatefulWidget {
 }
 
 class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
-  String _selectedFilter = 'Bulan Ini';
+  String _selectedFilter = 'Hari Ini';
   bool _isExporting = false;
-
-  Future<void> _pickDateRange() async {
-    final currentRange = ref.read(revenueDateRangeProvider);
-    final range = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      initialDateRange: DateTimeRange(start: currentRange.start, end: currentRange.end),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (range != null) {
-      setState(() {
-        _selectedFilter = 'Kustom';
-      });
-      ref.read(revenueDateRangeProvider.notifier).state = DateRange(range.start, range.end);
-    }
-  }
+  int _transactionPage = 1;
+  final int _transactionsPerPage = 5;
+  int _payoutPage = 1;
+  final int _payoutsPerPage = 3;
 
   Future<List<BookingModel>> _fetchMitraBookings(String mitraId) async {
     final dateRange = ref.read(revenueDateRangeProvider);
-    
+
     final snap = await FirestoreService.instance
         .collection('bookings')
         .where('mitraId', isEqualTo: mitraId)
         .get();
-        
-    final allBookings = snap.docs.map((d) => BookingModel.fromFirestore(d)).toList();
-    
+
+    final allBookings =
+        snap.docs.map((d) => BookingModel.fromFirestore(d)).toList();
+
     final filteredBookings = allBookings.where((b) {
       final date = b.tanggal;
       return date.isAfter(dateRange.start.subtract(const Duration(days: 1))) &&
-             date.isBefore(dateRange.end.add(const Duration(days: 1)));
+          date.isBefore(dateRange.end.add(const Duration(days: 1)));
     }).toList();
-    
+
     filteredBookings.sort((a, b) => b.tanggal.compareTo(a.tanggal));
     return filteredBookings;
   }
@@ -85,26 +63,33 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Ekspor Laporan', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('Pilih format laporan yang ingin diunduh untuk Mitra LapangKu:'),
+        title: const Text('Ekspor Laporan',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text(
+            'Pilih format laporan yang ingin diunduh untuk Mitra LapangKu:'),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               _exportReport(mitraId, isPdf: true);
             },
-            child: const Text('PDF', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text('PDF',
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () {
               Navigator.pop(ctx);
               _exportReport(mitraId, isPdf: false);
             },
-            child: const Text('Excel', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text('Excel',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -118,7 +103,9 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
       if (bookings.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Tidak ada data transaksi untuk diekspor pada periode ini.')),
+            const SnackBar(
+                content: Text(
+                    'Tidak ada data transaksi untuk diekspor pada periode ini.')),
           );
         }
         return;
@@ -130,7 +117,8 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal mengekspor: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Gagal mengekspor: $e')));
       }
     } finally {
       if (mounted) setState(() => _isExporting = false);
@@ -140,7 +128,8 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
   Future<void> _exportToPdf(List<BookingModel> bookings) async {
     final pdf = pw.Document();
     final dateRange = ref.read(revenueDateRangeProvider);
-    final rangeStr = '${DateFormat('dd MMM yyyy').format(dateRange.start)} - ${DateFormat('dd MMM yyyy').format(dateRange.end)}';
+    final rangeStr =
+        '${DateFormat('dd MMM yyyy').format(dateRange.start)} - ${DateFormat('dd MMM yyyy').format(dateRange.end)}';
 
     int totalKotor = 0;
     int totalPotongan = 0;
@@ -150,7 +139,9 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
 
     for (var b in bookings) {
       final isSukses = b.status == 'selesai';
-      final isGagal = b.status == 'dibatalkan' || b.status == 'expired' || b.status == 'ditolak';
+      final isGagal = b.status == 'dibatalkan' ||
+          b.status == 'expired' ||
+          b.status == 'ditolak';
 
       if (isSukses) {
         totalKotor += b.hargaLapangan;
@@ -162,7 +153,8 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
     }
     totalBersih = totalKotor - totalPotongan;
 
-    final currencyFormat = NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
+    final currencyFormat =
+        NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
 
     pdf.addPage(
       pw.MultiPage(
@@ -176,15 +168,20 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text('LAPORAN FINANSIAL & OPERASIONAL MITRA LAPANGKU', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('LAPORAN FINANSIAL & OPERASIONAL MITRA LAPANGKU',
+                        style: pw.TextStyle(
+                            fontSize: 16, fontWeight: pw.FontWeight.bold)),
                     pw.SizedBox(height: 4),
-                    pw.Text('Periode Laporan: $rangeStr', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('Periode Laporan: $rangeStr',
+                        style: const pw.TextStyle(fontSize: 11)),
                   ],
                 ),
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
-                    pw.Text('Tanggal Cetak: ${DateFormat('dd MMM yyyy HH:mm').format(DateTime.now())}', style: const pw.TextStyle(fontSize: 9)),
+                    pw.Text(
+                        'Tanggal Cetak: ${DateFormat('dd MMM yyyy HH:mm').format(DateTime.now())}',
+                        style: const pw.TextStyle(fontSize: 9)),
                   ],
                 ),
               ],
@@ -217,7 +214,8 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
                   return pw.TableRow(
                     children: [
                       _buildTableCell('${index + 1}\n${b.bookingId}'),
-                      _buildTableCell('${DateFormat('dd MMM yyyy').format(b.tanggal)} / ${b.timeSlots.join(", ")}'),
+                      _buildTableCell(
+                          '${DateFormat('dd MMM yyyy').format(b.tanggal)} / ${b.timeSlots.join(", ")}'),
                       _buildTableCell(b.userName),
                       _buildTableCell('${b.fieldName} - ${b.fieldCategory}'),
                       pw.Padding(
@@ -226,12 +224,14 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
                             pw.Text(
-                              currencyFormat.format(b.totalBayar),
-                              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
+                              currencyFormat.format(b.hargaLapangan),
+                              style: pw.TextStyle(
+                                  fontWeight: pw.FontWeight.bold, fontSize: 8),
                             ),
                             pw.Text(
                               b.metodePembayaran,
-                              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
+                              style: const pw.TextStyle(
+                                  fontSize: 7, color: PdfColors.grey600),
                             ),
                           ],
                         ),
@@ -255,43 +255,65 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('RINGKASAN EKSEKUTIF / FOOTER SUMMARY', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
+                  pw.Text('RINGKASAN EKSEKUTIF / FOOTER SUMMARY',
+                      style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold, fontSize: 11)),
                   pw.SizedBox(height: 8),
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Text('Total Pendapatan Kotor keseluruhan:', style: const pw.TextStyle(fontSize: 10)),
-                      pw.Text(currencyFormat.format(totalKotor), style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                      pw.Text('Total Pendapatan Kotor keseluruhan:',
+                          style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text(currencyFormat.format(totalKotor),
+                          style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold, fontSize: 10)),
                     ],
                   ),
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Text('Total Potongan Aplikasi:', style: const pw.TextStyle(fontSize: 10)),
-                      pw.Text(currencyFormat.format(totalPotongan), style: pw.TextStyle(color: PdfColors.red, fontSize: 10)),
+                      pw.Text('Total Potongan Aplikasi:',
+                          style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text(currencyFormat.format(totalPotongan),
+                          style:
+                              pw.TextStyle(color: PdfColors.red, fontSize: 10)),
                     ],
                   ),
                   pw.Divider(color: PdfColors.grey),
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Text('Total Pendapatan Bersih Mitra:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-                      pw.Text(currencyFormat.format(totalBersih), style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.green, fontSize: 10)),
+                      pw.Text('Total Pendapatan Bersih Mitra:',
+                          style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                      pw.Text(currencyFormat.format(totalBersih),
+                          style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.green,
+                              fontSize: 10)),
                     ],
                   ),
                   pw.SizedBox(height: 6),
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Text('Jumlah Transaksi Sukses:', style: const pw.TextStyle(fontSize: 10)),
-                      pw.Text('$suksesCount Sukses', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                      pw.Text('Jumlah Transaksi Sukses:',
+                          style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text('$suksesCount Sukses',
+                          style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold, fontSize: 10)),
                     ],
                   ),
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Text('Jumlah Transaksi Batal/Gagal:', style: const pw.TextStyle(fontSize: 10)),
-                      pw.Text('$gagalCount Gagal', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.red)),
+                      pw.Text('Jumlah Transaksi Batal/Gagal:',
+                          style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text('$gagalCount Gagal',
+                          style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold,
+                              fontSize: 10,
+                              color: PdfColors.red)),
                     ],
                   ),
                 ],
@@ -358,7 +380,8 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
       ),
       child: pw.Text(
         BookingStatusHelper.getLabel(status).toUpperCase(),
-        style: pw.TextStyle(color: textColor, fontSize: 7, fontWeight: pw.FontWeight.bold),
+        style: pw.TextStyle(
+            color: textColor, fontSize: 7, fontWeight: pw.FontWeight.bold),
       ),
     );
   }
@@ -378,7 +401,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
       excel.TextCellValue('Durasi (durasi)'),
       excel.TextCellValue('Harga Lapangan / Pendapatan Kotor (hargaLapangan)'),
       excel.TextCellValue('Biaya Layanan / Komisi Aplikasi (biayaLayanan)'),
-      excel.TextCellValue('Total Bayar (totalBayar)'),
+      excel.TextCellValue('Pendapatan Bersih (hargaLapangan)'),
       excel.TextCellValue('Metode Pembayaran (metodePembayaran)'),
       excel.TextCellValue('Status (status)'),
       excel.TextCellValue('Tanggal Pemesanan (createdAt)'),
@@ -393,7 +416,9 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
 
     for (var b in bookings) {
       final isSukses = b.status == 'selesai';
-      final isGagal = b.status == 'dibatalkan' || b.status == 'expired' || b.status == 'ditolak';
+      final isGagal = b.status == 'dibatalkan' ||
+          b.status == 'expired' ||
+          b.status == 'ditolak';
 
       if (isSukses) {
         totalKotor += b.hargaLapangan;
@@ -420,7 +445,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
         excel.IntCellValue(b.durasi),
         excel.IntCellValue(b.hargaLapangan),
         excel.IntCellValue(b.biayaLayanan),
-        excel.IntCellValue(b.totalBayar),
+        excel.IntCellValue(b.hargaLapangan),
         excel.TextCellValue(b.metodePembayaran),
         excel.TextCellValue(BookingStatusHelper.getLabel(b.status)),
         excel.TextCellValue(DateFormat('yyyy-MM-dd HH:mm').format(b.createdAt)),
@@ -432,11 +457,26 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
 
     sheet.appendRow([]);
     sheet.appendRow([excel.TextCellValue('RINGKASAN EKSEKUTIF')]);
-    sheet.appendRow([excel.TextCellValue('Total Pendapatan Kotor keseluruhan'), excel.IntCellValue(totalKotor)]);
-    sheet.appendRow([excel.TextCellValue('Total Potongan Aplikasi'), excel.IntCellValue(totalPotongan)]);
-    sheet.appendRow([excel.TextCellValue('Total Pendapatan Bersih Mitra'), excel.IntCellValue(totalBersih)]);
-    sheet.appendRow([excel.TextCellValue('Jumlah Transaksi Sukses'), excel.IntCellValue(suksesCount)]);
-    sheet.appendRow([excel.TextCellValue('Jumlah Transaksi Batal/Gagal'), excel.IntCellValue(gagalCount)]);
+    sheet.appendRow([
+      excel.TextCellValue('Total Pendapatan Kotor keseluruhan'),
+      excel.IntCellValue(totalKotor)
+    ]);
+    sheet.appendRow([
+      excel.TextCellValue('Total Potongan Aplikasi'),
+      excel.IntCellValue(totalPotongan)
+    ]);
+    sheet.appendRow([
+      excel.TextCellValue('Total Pendapatan Bersih Mitra'),
+      excel.IntCellValue(totalBersih)
+    ]);
+    sheet.appendRow([
+      excel.TextCellValue('Jumlah Transaksi Sukses'),
+      excel.IntCellValue(suksesCount)
+    ]);
+    sheet.appendRow([
+      excel.TextCellValue('Jumlah Transaksi Batal/Gagal'),
+      excel.IntCellValue(gagalCount)
+    ]);
 
     final bytes = excelDoc.encode()!;
     await _saveAndDownloadFile(
@@ -446,7 +486,8 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
     );
   }
 
-  Future<void> _saveAndDownloadFile(List<int> bytes, String filename, String mimeType) async {
+  Future<void> _saveAndDownloadFile(
+      List<int> bytes, String filename, String mimeType) async {
     if (kIsWeb) {
       final blob = html.Blob([bytes], mimeType);
       final url = html.Url.createObjectUrlFromBlob(blob);
@@ -460,12 +501,18 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
       await file.writeAsBytes(bytes);
     }
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Berhasil mengekspor $filename')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Berhasil mengekspor $filename')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Listen to date range changes to trigger loadRevenue smoothly
+    ref.listen<DateRange>(revenueDateRangeProvider, (previous, next) {
+      ref.read(mitraRevenueProvider.notifier).loadRevenue(next);
+    });
+
     final revenueAsync = ref.watch(mitraRevenueProvider);
 
     return Scaffold(
@@ -488,15 +535,12 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_today_outlined, color: Colors.white),
-            onPressed: _pickDateRange,
-          ),
-          IconButton(
             icon: _isExporting
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(Icons.download_rounded, color: Colors.white),
             onPressed: _isExporting
@@ -507,67 +551,79 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
                       _showExportDialog(profileAsync.value!.id);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Gagal mengambil profil mitra.')),
+                        const SnackBar(
+                            content: Text('Gagal mengambil profil mitra.')),
                       );
                     }
                   },
           ),
         ],
       ),
-      body: revenueAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
-        error: (err, stack) => EmptyStateWidget(
-          icon: Icons.error_outline,
-          title: 'Gagal memuat data',
-          subtitle: err.toString(),
-        ),
-        data: (revenue) => RefreshIndicator(
-          onRefresh: () => ref.read(mitraRevenueProvider.notifier).loadRevenue(),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildDescriptionText(),
-                _buildHeroCard(revenue),
-                _buildFilterChips(),
-                _buildSectionTitle("Ringkasan"),
-                _buildSummaryGrid(revenue),
-                _buildSectionTitle("Tren Pendapatan"),
-                _buildTrendCard(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Transaksi Terbaru",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textHeading,
-                        ),
+      body: revenueAsync.hasValue
+          ? RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () async {
+                await ref.read(mitraRevenueProvider.notifier).loadRevenue();
+                final profile = ref.read(mitraProfileProvider).valueOrNull;
+                if (profile != null) {
+                  ref.invalidate(mitraPayoutsProvider(profile.id));
+                }
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDescriptionText(),
+                    _buildHeroCard(revenueAsync.value!),
+                    _buildFilterChips(),
+                    _buildSectionTitle("Ringkasan"),
+                    _buildSummaryGrid(revenueAsync.value!),
+                    _buildSectionTitle("Tren Pendapatan"),
+                    _buildTrendCard(ref, ref.read(currentUidProvider)),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Transaksi Terbaru",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textHeading,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {},
+                            child: const Text(
+                              "Lihat Semua",
+                              style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
                       ),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text(
-                          "Lihat Semua",
-                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    _buildTransactionList(revenueAsync.value!.transactions),
+                    _buildPayoutStatus(),
+                    const SizedBox(height: 32),
+                  ],
                 ),
-                _buildTransactionList(revenue.transactions),
-                _buildPayoutStatus(),
-                const SizedBox(height: 32),
-              ],
+              ),
+            )
+          : revenueAsync.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+              error: (err, stack) => EmptyStateWidget(
+                icon: Icons.error_outline,
+                title: 'Gagal memuat data',
+                subtitle: err.toString(),
+              ),
+              data: (_) => const SizedBox.shrink(),
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -590,7 +646,8 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
         color: AppColors.primary,
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
-          BoxShadow(color: AppColors.shadow, blurRadius: 15, offset: Offset(0, 8)),
+          BoxShadow(
+              color: AppColors.shadow, blurRadius: 15, offset: Offset(0, 8)),
         ],
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -617,18 +674,31 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.trending_up, color: Colors.white, size: 14),
-                    SizedBox(width: 4),
-                    Text("18%", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Icon(
+                      revenue.revenueGrowth >= 0
+                          ? Icons.trending_up
+                          : Icons.trending_down,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      "${revenue.revenueGrowth >= 0 ? '+' : ''}${revenue.revenueGrowth.toStringAsFixed(0)}%",
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          FittedBox( // FIX: Gunakan FittedBox agar nominal tidak overflow
+          FittedBox(
+            // FIX: Gunakan FittedBox agar nominal tidak overflow
             fit: BoxFit.scaleDown,
             child: Text(
               CurrencyFormatter.format(revenue.availableBalance),
@@ -667,7 +737,8 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Tarik Dana', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text('Tarik Dana',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),
           const SizedBox(height: 24),
@@ -676,14 +747,19 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildMiniStat("${revenue.totalOrders}", "BOOKING"), // FIX: Menggunakan totalOrders dinamis
+              _buildMiniStat("${revenue.totalOrders}",
+                  "BOOKING"), // FIX: Menggunakan totalOrders dinamis
               _buildMiniStat(
-                CurrencyFormatter.formatShort( // FIX: Menggunakan formatShort untuk rata-rata
-                  revenue.totalOrders > 0 ? (revenue.totalRevenue ~/ revenue.totalOrders) : 0,
+                CurrencyFormatter.formatShort(
+                  // FIX: Menggunakan formatShort untuk rata-rata
+                  revenue.totalOrders > 0
+                      ? (revenue.periodRevenue ~/ revenue.totalOrders)
+                      : 0,
                 ).toUpperCase(),
                 "RATA-RATA",
               ),
-              _buildMiniStat("${(revenue.payoutSuccessRate * 100).toInt()}%", "PAYOUT BERHASIL"),
+              _buildMiniStat("${(revenue.payoutSuccessRate * 100).toInt()}%",
+                  "PAYOUT BERHASIL"),
             ],
           ),
         ],
@@ -697,12 +773,14 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
       children: [
         Text(
           value,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(color: Colors.white60, fontSize: 10, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+              color: Colors.white60, fontSize: 10, fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -710,46 +788,57 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
 
   Widget _buildFilterChips() {
     final filters = ['Hari Ini', 'Minggu Ini', 'Bulan Ini', 'Tahun Ini'];
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-      child: Wrap( // FIX: Ganti SingleChildScrollView + Row menjadi Wrap agar tidak kepotong
-        spacing: 12,
-        runSpacing: 12,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
         children: filters.map((filter) {
           final isSelected = _selectedFilter == filter;
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedFilter = filter;
-              });
-              final now = DateTime.now();
-              DateRange range;
-              if (filter == 'Hari Ini') {
-                range = DateRange(DateTime(now.year, now.month, now.day), DateTime(now.year, now.month, now.day, 23, 59, 59));
-              } else if (filter == 'Minggu Ini') {
-                final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-                range = DateRange(DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day), DateTime(now.year, now.month, now.day, 23, 59, 59));
-              } else if (filter == 'Bulan Ini') {
-                range = DateRange(DateTime(now.year, now.month, 1), DateTime(now.year, now.month + 1, 0, 23, 59, 59));
-              } else { // Tahun Ini
-                range = DateRange(DateTime(now.year, 1, 1), DateTime(now.year, 12, 31, 23, 59, 59));
-              }
-              ref.read(revenueDateRangeProvider.notifier).state = range;
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade200),
-                boxShadow: isSelected ? null : [const BoxShadow(color: AppColors.shadow, blurRadius: 4)],
-              ),
-              child: Text(
-                filter,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedFilter = filter;
+                });
+                final now = DateTime.now();
+                DateRange range;
+                if (filter == 'Hari Ini') {
+                  range = DateRange(DateTime(now.year, now.month, now.day), DateTime(now.year, now.month, now.day, 23, 59, 59));
+                } else if (filter == 'Minggu Ini') {
+                  final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+                  range = DateRange(DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day), DateTime(now.year, now.month, now.day, 23, 59, 59));
+                } else if (filter == 'Bulan Ini') {
+                  range = DateRange(DateTime(now.year, now.month, 1), DateTime(now.year, now.month + 1, 0, 23, 59, 59));
+                } else { // Tahun Ini
+                  range = DateRange(DateTime(now.year, 1, 1), DateTime(now.year, 12, 31, 23, 59, 59));
+                }
+                ref.read(revenueDateRangeProvider.notifier).state = range;
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.borderLight,
+                  ),
+                  boxShadow: [
+                    if (isSelected)
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                  ],
+                ),
+                child: Text(
+                  filter,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ),
@@ -782,7 +871,8 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
         crossAxisCount: 2,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
-        childAspectRatio: 1.1, // FIX: Kecilkan ratio (1.4 -> 1.1) agar card lebih tinggi untuk menampung teks
+        childAspectRatio:
+            1.1, // FIX: Kecilkan ratio (1.4 -> 1.1) agar card lebih tinggi untuk menampung teks
         children: [
           _buildDetailCard(
             "Total Pendapatan",
@@ -808,7 +898,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
           _buildDetailCard(
             "Booking Aktif",
             "${revenue.activeBookings} Booking",
-            "Hari ini",
+            "Mendatang",
             Icons.calendar_today,
             Colors.indigo,
           ),
@@ -817,81 +907,150 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
     );
   }
 
-  Widget _buildDetailCard(String title, String value, String subtitle, IconData icon, Color color) {
+  Widget _buildDetailCard(
+      String title, String value, String subtitle, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 8, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(
+              color: AppColors.shadow, blurRadius: 8, offset: Offset(0, 4))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+            decoration: BoxDecoration(
+                color: color.withOpacity(0.1), shape: BoxShape.circle),
             child: Icon(icon, color: color, size: 16),
           ),
           const Spacer(),
-          Text(
-            title, 
-            maxLines: 1, // FIX: Batasi baris agar tidak overflow
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w500)
-          ),
+          Text(title,
+              maxLines: 1, // FIX: Batasi baris agar tidak overflow
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500)),
           const SizedBox(height: 4),
-          FittedBox( // FIX: Gunakan FittedBox agar nominal besar tidak overflow ke samping
+          FittedBox(
+            // FIX: Gunakan FittedBox agar nominal besar tidak overflow ke samping
             fit: BoxFit.scaleDown,
-            child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textHeading)),
+            child: Text(value,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: AppColors.textHeading)),
           ),
           const SizedBox(height: 2),
-          Text(
-            subtitle, 
-            maxLines: 1, // FIX: Batasi baris subtitle
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)
-          ),
+          Text(subtitle,
+              maxLines: 1, // FIX: Batasi baris subtitle
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  color: color, fontSize: 10, fontWeight: FontWeight.w600)),
         ],
       ),
     );
   }
 
-  Widget _buildTrendCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 8)],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text("Tren Pendapatan", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              Text("7 Hari Terakhir", style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
+  Widget _buildTrendCard(WidgetRef ref, String uid) {
+    // Kita panggil provider mingguan yang sudah real-time
+    // Ini sama dengan yang dipakai di halaman Dashboard
+    final weeklyDataAsync = ref.watch(mitraBookingsProvider(uid));
+
+    return weeklyDataAsync.when(
+      data: (bookings) {
+        final now = DateTime.now();
+        List<double> trendData = [];
+        double maxRevenue = 0;
+        String highestDay = "-";
+        int highestRevenueInt = 0;
+
+        for (int i = 6; i >= 0; i--) {
+          final date = now.subtract(Duration(days: i));
+          final dayDate = DateTime(date.year, date.month, date.day);
+
+          final dayBookings = bookings.where((b) {
+            final bDate =
+                DateTime(b.createdAt.year, b.createdAt.month, b.createdAt.day);
+            return bDate.isAtSameMomentAs(dayDate) &&
+                (b.status == 'selesai' || b.status == 'dikonfirmasi');
+          });
+
+          int dayRevenue = 0;
+          for (var b in dayBookings) {
+            dayRevenue += b.hargaLapangan;
+          }
+
+          trendData.add(dayRevenue.toDouble());
+          if (dayRevenue > maxRevenue) {
+            maxRevenue = dayRevenue.toDouble();
+            highestDay = DateFormat('EEEE', 'id').format(dayDate);
+            highestRevenueInt = dayRevenue;
+          }
+        }
+
+        // Jika semua nol, kita buat sedikit gelombang statis agar tidak kosong melompong
+        final isAllZero = maxRevenue == 0;
+        if (isAllZero) {
+          trendData = [0, 0, 0, 0, 0, 0, 0];
+        }
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(color: AppColors.shadow, blurRadius: 8)
             ],
           ),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 120,
-            width: double.infinity,
-            child: CustomPaint(
-              painter: SimpleChartPainter(),
-            ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Tren Pendapatan",
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text("7 Hari Terakhir",
+                      style:
+                          TextStyle(color: Colors.grey.shade400, fontSize: 11)),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                height: 120,
+                width: double.infinity,
+                child: CustomPaint(
+                  painter: SimpleChartPainter(
+                    data: trendData,
+                    maxData:
+                        isAllZero ? 1 : maxRevenue, // Hindari divide by zero
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              Text(
+                isAllZero
+                    ? "Belum ada pendapatan dalam 7 hari terakhir."
+                    : "Pendapatan tertinggi terjadi pada $highestDay - ${CurrencyFormatter.formatShort(highestRevenueInt)}",
+                style: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: 11),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 8),
-          const Text(
-            "Pendapatan tertinggi terjadi pada Sabtu - Rp 1.8 juta",
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
-          ),
-        ],
-      ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const SizedBox(),
     );
   }
 
@@ -902,52 +1061,218 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
         child: Center(child: Text("Belum ada transaksi")),
       );
     }
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: transactions.length > 5 ? 5 : transactions.length,
-      itemBuilder: (context, index) {
-        final tx = transactions[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 4)],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), shape: BoxShape.circle),
-                child: const Icon(Icons.check, color: Colors.green, size: 20),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(tx.fieldName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    Text(tx.customerName, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                    Text(
-                      DateFormat('dd MMM yyyy - HH:mm').format(tx.date),
-                      style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    "+${CurrencyFormatter.format(tx.amount)}",
-                    style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  const Text("Selesai", style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
+
+    // Hitung total halaman
+    final int totalPages = (transactions.length / _transactionsPerPage).ceil();
+    // Pastikan page tidak melebihi batas (misal karena filter berubah)
+    if (_transactionPage > totalPages) {
+      _transactionPage = totalPages;
+    }
+    if (_transactionPage < 1) {
+      _transactionPage = 1;
+    }
+
+    // Ambil data untuk halaman saat ini
+    final int startIndex = (_transactionPage - 1) * _transactionsPerPage;
+    final int endIndex = startIndex + _transactionsPerPage;
+    final paginatedTransactions = transactions.sublist(
+      startIndex,
+      endIndex > transactions.length ? transactions.length : endIndex,
+    );
+
+    return Column(
+      children: [
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: paginatedTransactions.length,
+          itemBuilder: (context, index) {
+            final tx = paginatedTransactions[index];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(color: AppColors.shadow, blurRadius: 4)
                 ],
               ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        shape: BoxShape.circle),
+                    child:
+                        const Icon(Icons.check, color: Colors.green, size: 20),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(tx.fieldName,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text(tx.customerName,
+                            style: const TextStyle(
+                                color: AppColors.textSecondary, fontSize: 12)),
+                        Text(
+                          DateFormat('dd MMM yyyy - HH:mm').format(tx.date),
+                          style: TextStyle(
+                              color: Colors.grey.shade400, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        "+${CurrencyFormatter.format(tx.amount)}",
+                        style: const TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14),
+                      ),
+                      const Text("Selesai",
+                          style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+
+        // UI Pagination
+        if (totalPages > 1)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  onPressed: _transactionPage > 1
+                      ? () => setState(() => _transactionPage--)
+                      : null,
+                  icon: const Icon(Icons.chevron_left_rounded),
+                  color: AppColors.primary,
+                  disabledColor: Colors.grey.shade300,
+                ),
+                Text(
+                  "Halaman $_transactionPage dari $totalPages",
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: AppColors.textSecondary),
+                ),
+                IconButton(
+                  onPressed: _transactionPage < totalPages
+                      ? () => setState(() => _transactionPage++)
+                      : null,
+                  icon: const Icon(Icons.chevron_right_rounded),
+                  color: AppColors.primary,
+                  disabledColor: Colors.grey.shade300,
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPayoutStatus() {
+    final profileAsync = ref.watch(mitraProfileProvider);
+    if (profileAsync.isLoading) {
+      return _buildPayoutHistoryShell(
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Center(
+              child: CircularProgressIndicator(color: AppColors.primary)),
+        ),
+      );
+    }
+
+    final profile = profileAsync.valueOrNull;
+    if (profile == null || profile.id.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final payoutsAsync = ref.watch(mitraPayoutsProvider(profile.id));
+
+    return payoutsAsync.when(
+      loading: () => _buildPayoutHistoryShell(
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Center(
+              child: CircularProgressIndicator(color: AppColors.primary)),
+        ),
+      ),
+      error: (error, _) => _buildPayoutHistoryShell(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: EmptyStateWidget(
+            icon: Icons.error_outline,
+            title: 'Gagal memuat riwayat penarikan',
+            subtitle: error.toString(),
+          ),
+        ),
+      ),
+      data: (payouts) {
+        if (payouts.isEmpty) {
+          return _buildPayoutHistoryShell(
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: EmptyStateWidget(
+                icon: Icons.account_balance_wallet_outlined,
+                title: 'Belum ada riwayat penarikan',
+                subtitle:
+                    'Permintaan penarikan dana akan tampil otomatis di sini.',
+              ),
+            ),
+          );
+        }
+
+        final int totalPages = (payouts.length / _payoutsPerPage).ceil();
+        final int currentPage = _payoutPage.clamp(1, totalPages);
+        final int startIndex = (currentPage - 1) * _payoutsPerPage;
+        final int endIndex =
+            (startIndex + _payoutsPerPage).clamp(0, payouts.length);
+        final paginatedPayouts = payouts.sublist(startIndex, endIndex);
+
+        if (currentPage != _payoutPage) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _payoutPage = currentPage);
+          });
+        }
+
+        return _buildPayoutHistoryShell(
+          child: Column(
+            children: [
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: paginatedPayouts.length,
+                itemBuilder: (context, index) {
+                  return _buildPayoutHistoryItem(paginatedPayouts[index]);
+                },
+              ),
+              if (totalPages > 1)
+                _buildPayoutPagination(
+                  currentPage: currentPage,
+                  totalPages: totalPages,
+                  totalItems: payouts.length,
+                  startIndex: startIndex,
+                  endIndex: endIndex,
+                ),
             ],
           ),
         );
@@ -955,124 +1280,189 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
     );
   }
 
-  Widget _buildPayoutStatus() {
-    final profileAsync = ref.watch(mitraProfileProvider);
-    if (!profileAsync.hasValue) return const SizedBox.shrink();
+  Widget _buildPayoutHistoryShell({required Widget child}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: Text(
+            "Riwayat Penarikan",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textHeading,
+            ),
+          ),
+        ),
+        child,
+      ],
+    );
+  }
 
-    final mitraId = profileAsync.value!.id;
-    final service = MitraService();
+  Widget _buildPayoutHistoryItem(MitraPayoutModel payout) {
+    final statusStyle = _getPayoutStatusStyle(payout.status);
 
-    return StreamBuilder<List<MitraPayoutModel>>(
-      stream: service.streamMitraPayouts(mitraId),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        final payouts = snapshot.data!;
-        
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Text(
-                "Riwayat Penarikan",
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 4)],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: statusStyle.color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(statusStyle.icon, color: statusStyle.color, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Tarik Dana",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                Text(
+                  DateFormat('dd MMM yyyy - HH:mm').format(payout.requestedAt),
+                  style: const TextStyle(
+                      color: AppColors.textSecondary, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                CurrencyFormatter.format(payout.amount),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              Text(
+                statusStyle.label,
                 style: TextStyle(
-                  fontSize: 16,
+                  color: statusStyle.color,
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textHeading,
                 ),
               ),
-            ),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: payouts.length > 5 ? 5 : payouts.length,
-              itemBuilder: (context, index) {
-                final payout = payouts[index];
-                
-                Color statusColor;
-                IconData statusIcon;
-                String statusText;
-
-                switch (payout.status) {
-                  case 'completed':
-                    statusColor = Colors.green;
-                    statusIcon = Icons.check_circle;
-                    statusText = 'Selesai';
-                    break;
-                  case 'rejected':
-                    statusColor = Colors.red;
-                    statusIcon = Icons.cancel;
-                    statusText = 'Ditolak';
-                    break;
-                  default:
-                    statusColor = Colors.orange;
-                    statusIcon = Icons.access_time;
-                    statusText = 'Diproses';
-                }
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 4)],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: statusColor.withOpacity(0.1), shape: BoxShape.circle),
-                        child: Icon(statusIcon, color: statusColor, size: 20),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Tarik Dana",
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                            Text(
-                              DateFormat('dd MMM yyyy - HH:mm').format(payout.requestedAt),
-                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            CurrencyFormatter.format(payout.amount),
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          ),
-                          Text(
-                            statusText,
-                            style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        );
-      },
+            ],
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildPayoutPagination({
+    required int currentPage,
+    required int totalPages,
+    required int totalItems,
+    required int startIndex,
+    required int endIndex,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+      child: Row(
+        children: [
+          Text(
+            "${startIndex + 1}-$endIndex dari $totalItems",
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: currentPage > 1
+                ? () => setState(() => _payoutPage = currentPage - 1)
+                : null,
+            icon: const Icon(Icons.chevron_left_rounded),
+            color: AppColors.primary,
+            disabledColor: Colors.grey.shade300,
+          ),
+          Text(
+            "$currentPage / $totalPages",
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          IconButton(
+            onPressed: currentPage < totalPages
+                ? () => setState(() => _payoutPage = currentPage + 1)
+                : null,
+            icon: const Icon(Icons.chevron_right_rounded),
+            color: AppColors.primary,
+            disabledColor: Colors.grey.shade300,
+          ),
+        ],
+      ),
+    );
+  }
+
+  _PayoutStatusStyle _getPayoutStatusStyle(String status) {
+    switch (status) {
+      case 'completed':
+        return const _PayoutStatusStyle(
+          color: Colors.green,
+          icon: Icons.check_circle,
+          label: 'Selesai',
+        );
+      case 'rejected':
+        return const _PayoutStatusStyle(
+          color: Colors.red,
+          icon: Icons.cancel,
+          label: 'Ditolak',
+        );
+      case 'processing':
+        return const _PayoutStatusStyle(
+          color: Colors.orange,
+          icon: Icons.access_time,
+          label: 'Diproses',
+        );
+      default:
+        return const _PayoutStatusStyle(
+          color: AppColors.primary,
+          icon: Icons.schedule,
+          label: 'Menunggu',
+        );
+    }
   }
 }
 
+class _PayoutStatusStyle {
+  final Color color;
+  final IconData icon;
+  final String label;
+
+  const _PayoutStatusStyle({
+    required this.color,
+    required this.icon,
+    required this.label,
+  });
+}
+
 class SimpleChartPainter extends CustomPainter {
+  final List<double> data;
+  final double maxData;
+
+  SimpleChartPainter({required this.data, required this.maxData});
+
   @override
   void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+
     final paint = Paint()
       ..color = AppColors.primary
       ..strokeWidth = 3
@@ -1080,10 +1470,22 @@ class SimpleChartPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final path = Path();
-    path.moveTo(0, size.height * 0.8);
-    path.quadraticBezierTo(size.width * 0.2, size.height * 0.9, size.width * 0.4, size.height * 0.6);
-    path.quadraticBezierTo(size.width * 0.6, size.height * 0.3, size.width * 0.8, size.height * 0.4);
-    path.lineTo(size.width, size.height * 0.2);
+
+    final double stepX = size.width / (data.length - 1);
+
+    // Normalisasi data ke tinggi canvas. (Pembalikan Y axis karena 0 di atas)
+    double getY(int index) {
+      if (maxData == 0) return size.height; // garis bawah jika 0
+      final normalized = data[index] / maxData;
+      return size.height - (normalized * size.height);
+    }
+
+    path.moveTo(0, getY(0));
+
+    // Menggunakan garis lurus karena menghubungkan data rill
+    for (int i = 1; i < data.length; i++) {
+      path.lineTo(i * stepX, getY(i));
+    }
 
     canvas.drawPath(path, paint);
 
@@ -1091,7 +1493,10 @@ class SimpleChartPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [AppColors.primary.withOpacity(0.2), AppColors.primary.withOpacity(0)],
+        colors: [
+          AppColors.primary.withOpacity(0.2),
+          AppColors.primary.withOpacity(0)
+        ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     final fillPath = Path.from(path);
@@ -1100,13 +1505,23 @@ class SimpleChartPainter extends CustomPainter {
     fillPath.close();
 
     canvas.drawPath(fillPath, fillPaint);
-    
-    // Dot at current day
+
+    // Dot at current day (Hari terakhir di data array)
     final dotPaint = Paint()..color = AppColors.primary;
-    canvas.drawCircle(Offset(size.width * 0.8, size.height * 0.4), 5, dotPaint);
-    canvas.drawCircle(Offset(size.width * 0.8, size.height * 0.4), 8, Paint()..color = Colors.white.withOpacity(0.5)..style = PaintingStyle.stroke..strokeWidth = 2);
+    final lastX = size.width;
+    final lastY = getY(data.length - 1);
+    canvas.drawCircle(Offset(lastX, lastY), 5, dotPaint);
+    canvas.drawCircle(
+        Offset(lastX, lastY),
+        8,
+        Paint()
+          ..color = Colors.white.withOpacity(0.5)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant SimpleChartPainter oldDelegate) {
+    return oldDelegate.data != data || oldDelegate.maxData != maxData;
+  }
 }

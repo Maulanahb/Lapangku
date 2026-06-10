@@ -76,13 +76,12 @@ class MitraInfoController extends StateNotifier<AsyncValue<void>> {
   }
 
   // Mengambil daftar lapangan yang didaftarkan oleh Mitra secara real-time
-  Stream<List<MitraFieldModel>> getLapanganTerdaftar() {
-    final user = currentUser;
-    if (user == null) return Stream.value([]);
+  Stream<List<MitraFieldModel>> getLapanganTerdaftar(String uid) {
+    if (uid.isEmpty) return Stream.value([]);
     
     return _firestore
         .collection('lapangan')
-        .where('mitraId', isEqualTo: user.uid)
+        .where('mitraId', isEqualTo: uid)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => MitraFieldModel.fromMap(doc.data(), doc.id))

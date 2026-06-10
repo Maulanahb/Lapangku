@@ -7,6 +7,7 @@ import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
 import 'package:lapangku/standards/widgets/loading_overlay.dart';
 import 'package:lapangku/standards/widgets/confirmation_dialog.dart';
+import 'package:lapangku/views/mitra/mitra_booking_list_page.dart';
 
 class MitraNotificationPage extends ConsumerWidget {
   const MitraNotificationPage({super.key});
@@ -152,6 +153,139 @@ class _NotificationCard extends ConsumerWidget {
     }
   }
 
+  void _showNotificationDetail(BuildContext context, WidgetRef ref) {
+    if (!notification.isRead) {
+      ref.read(notificationControllerProvider).markAsRead(notification.id);
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _getIconColor().withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(_getIcon(), color: _getIconColor(), size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        notification.type.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: _getIconColor(),
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      Text(
+                        _formatRelativeTime(notification.createdAt),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              notification.title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              notification.message,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textBody,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                      side: BorderSide(color: Colors.grey.shade300),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Tutup'),
+                  ),
+                ),
+                if (notification.type == 'booking' || notification.type == 'payment' || notification.type == 'reschedule') ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context); // Close bottom sheet
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MitraBookingListPage()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Lihat Pesanan'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Dismissible(
@@ -182,17 +316,7 @@ class _NotificationCard extends ConsumerWidget {
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       child: GestureDetector(
-        onTap: () async {
-          if (!notification.isRead) {
-            await ref.read(notificationControllerProvider).markAsRead(notification.id);
-          }
-          if (!context.mounted) return;
-          
-          if (notification.type == 'booking' || notification.type == 'payment' || notification.type == 'reschedule') {
-            // Kita bisa arahkan ke mitra-orders (pesanan masuk)
-            Navigator.pushNamed(context, '/mitra-orders');
-          }
-        },
+        onTap: () => _showNotificationDetail(context, ref),
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           padding: const EdgeInsets.all(16),

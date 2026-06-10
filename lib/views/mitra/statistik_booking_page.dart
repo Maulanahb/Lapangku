@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_stats_controller.dart';
 import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/widgets/empty_state_widget.dart';
@@ -15,7 +16,7 @@ class StatistikBookingPage extends ConsumerStatefulWidget {
 class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
   @override
   Widget build(BuildContext context) {
-    final mitraId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final mitraId = ref.watch(currentUidProvider);
     final statsAsync = ref.watch(mitraAdvancedStatsProvider(mitraId));
     final currentFilter = ref.watch(statsFilterProvider);
 
@@ -37,12 +38,7 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
             fontSize: 18,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today_outlined, color: Colors.white),
-            onPressed: () {},
-          ),
-        ],
+
       ),
       body: _buildBody(statsAsync, currentFilter, mitraId),
     );
@@ -73,26 +69,6 @@ class _StatistikBookingPageState extends ConsumerState<StatistikBookingPage> {
     }
 
     final stats = statsAsync;
-
-    if (stats['filteredCount'] == 0) {
-      return RefreshIndicator(
-        onRefresh: () async => ref.refresh(mitraBookingsProvider(mitraId)),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              _buildFilterChips(currentFilter),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-              const EmptyStateWidget(
-                icon: Icons.analytics_outlined,
-                title: 'Data Belum Tersedia',
-                subtitle: 'Belum ada aktivitas booking pada periode ini.',
-              ),
-            ],
-          ),
-        ),
-      );
-    }
 
     return RefreshIndicator(
       onRefresh: () async => ref.refresh(mitraBookingsProvider(mitraId)),

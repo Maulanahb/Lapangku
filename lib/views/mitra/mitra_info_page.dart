@@ -7,6 +7,7 @@ import 'package:lapangku/standards/constants/app_colors.dart';
 import 'package:lapangku/standards/widgets/loading_overlay.dart';
 import 'package:lapangku/controllers/mitra/mitra_info_controller.dart';
 import 'package:lapangku/controllers/mitra/mitra_profile_provider.dart';
+import 'package:lapangku/controllers/auth/auth_controller.dart';
 import 'package:lapangku/models/mitra/mitra_profile_model.dart';
 import 'package:lapangku/models/mitra/mitra_field_model.dart';
 import 'package:lapangku/views/customer/change_password_page.dart';
@@ -558,8 +559,9 @@ class _MitraInfoPageState extends ConsumerState<MitraInfoPage> {
   }
 
   Widget _buildLapanganList() {
+    final uid = ref.watch(currentUidProvider);
     return StreamBuilder<List<MitraFieldModel>>(
-      stream: ref.read(mitraInfoControllerProvider.notifier).getLapanganTerdaftar(),
+      stream: ref.read(mitraInfoControllerProvider.notifier).getLapanganTerdaftar(uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Padding(

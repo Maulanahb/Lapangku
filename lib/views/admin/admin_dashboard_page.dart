@@ -87,14 +87,10 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  width: 54,
+                  height: 54,
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [_primary, _primary.withOpacity(0.8)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
                         color: _primary.withOpacity(0.3),
@@ -103,7 +99,13 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.stadium_outlined, color: Colors.white, size: 24),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      'assets/icon/app_icon.png',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 16),
                 const Column(
@@ -132,17 +134,25 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
               builder: (context, ref, _) {
                 final mitrasAsync = ref.watch(adminAllMitrasProvider);
                 final pendingCount = mitrasAsync.value
-                    ?.where((m) => m.statusVerifikasi == 'menunggu')
-                    .length ?? 0;
+                        ?.where((m) => m.statusVerifikasi == 'menunggu')
+                        .length ??
+                    0;
                 return ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
-                    _sidebarItem(0, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Dashboard'),
-                    _sidebarItem(1, Icons.people_outline_rounded, Icons.people_rounded, 'Kelola Pengguna'),
-                    _sidebarItem(2, Icons.domain_verification_rounded, Icons.domain_verification_rounded, 'Verifikasi Mitra', badge: pendingCount),
-                    _sidebarItem(3, Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Daftar Pesanan'),
-                    _sidebarItem(4, Icons.analytics_outlined, Icons.analytics_rounded, 'Laporan Analistik'),
-                    _sidebarItem(5, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded, 'Pencairan Dana'),
+                    _sidebarItem(0, Icons.dashboard_outlined,
+                        Icons.dashboard_rounded, 'Dashboard'),
+                    _sidebarItem(1, Icons.people_outline_rounded,
+                        Icons.people_rounded, 'Kelola Pengguna'),
+                    _sidebarItem(2, Icons.domain_verification_rounded,
+                        Icons.domain_verification_rounded, 'Verifikasi Mitra',
+                        badge: pendingCount),
+                    _sidebarItem(3, Icons.receipt_long_outlined,
+                        Icons.receipt_long_rounded, 'Daftar Pesanan'),
+                    _sidebarItem(4, Icons.analytics_outlined,
+                        Icons.analytics_rounded, 'Laporan Analistik'),
+                    _sidebarItem(5, Icons.account_balance_wallet_outlined,
+                        Icons.account_balance_wallet_rounded, 'Pencairan Dana'),
                   ],
                 );
               },
@@ -160,13 +170,15 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                   ref.read(authProvider.notifier).logout();
                   Navigator.pushReplacementNamed(context, '/admin-login');
                 },
-                leading: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 22),
+                leading: const Icon(Icons.logout_rounded,
+                    color: Colors.redAccent, size: 22),
                 title: const Text('Keluar',
                     style: TextStyle(
                         color: Colors.redAccent,
                         fontWeight: FontWeight.bold,
                         fontSize: 14)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
               ),
             ),
           ),
@@ -198,7 +210,8 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
             color: isSelected ? _primary.withOpacity(0.08) : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected ? _primary.withOpacity(0.1) : Colors.transparent,
+              color:
+                  isSelected ? _primary.withOpacity(0.1) : Colors.transparent,
               width: 1,
             ),
           ),
@@ -217,8 +230,8 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                       top: -6,
                       right: -8,
                       child: Container(
-                        constraints: const BoxConstraints(
-                            minWidth: 16, minHeight: 16),
+                        constraints:
+                            const BoxConstraints(minWidth: 16, minHeight: 16),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 4, vertical: 1),
                         decoration: BoxDecoration(
@@ -251,8 +264,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                   label,
                   style: TextStyle(
                     color: isSelected ? _primary : Colors.grey.shade600,
-                    fontWeight:
-                        isSelected ? FontWeight.w800 : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
                     fontSize: 14,
                     letterSpacing: isSelected ? 0.2 : 0,
                   ),
@@ -260,8 +272,8 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
               ),
               if (badge > 0 && !isSelected)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 7, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFEF3C7),
                     borderRadius: BorderRadius.circular(10),
@@ -306,7 +318,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 800;
     final dashboardStats = ref.watch(adminDashboardStatsProvider);
-    
+
     final chartAsync = ref.watch(bookingsChartProvider);
     final activitiesAsync = ref.watch(activitiesProvider);
     final authState = ref.watch(authProvider);
@@ -327,7 +339,6 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
             children: [
               _buildHeader(context, authState.user?.nama ?? 'Admin'),
               const SizedBox(height: 32),
-              
               dashboardStats.when(
                 loading: () => _buildStatsShimmer(isDesktop),
                 error: (error, _) => _buildError(error.toString()),
@@ -354,11 +365,12 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                 ),
               ),
               const SizedBox(height: 24),
-
               activitiesAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator(color: _primary)),
+                loading: () => const Center(
+                    child: CircularProgressIndicator(color: _primary)),
                 error: (_, __) => const SizedBox.shrink(),
-                data: (activities) => _buildAktivitasTerbaru(context, activities),
+                data: (activities) =>
+                    _buildAktivitasTerbaru(context, activities),
               ),
             ],
           ),
@@ -373,7 +385,8 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
     final dateStr = formatter.format(DateTime.now());
     final mitrasAsync = ref.watch(adminAllMitrasProvider);
     final pendingCount = mitrasAsync.when(
-      data: (list) => list.where((m) => m.statusVerifikasi == 'menunggu').length,
+      data: (list) =>
+          list.where((m) => m.statusVerifikasi == 'menunggu').length,
       loading: () => 0,
       error: (_, __) => 0,
     );
@@ -384,7 +397,10 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 2)),
+          BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 2)),
         ],
       ),
       child: Padding(
@@ -398,14 +414,21 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Dashboard',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.textHeading, letterSpacing: -0.5)),
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.textHeading,
+                          letterSpacing: -0.5)),
                   const SizedBox(height: 2),
-                  Text(dateStr, style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
+                  Text(dateStr,
+                      style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500)),
                 ],
               )
             else
               const SizedBox.shrink(),
-
             Row(
               children: [
                 // Notification Bell
@@ -480,20 +503,24 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
         } else if (width < 900) {
           crossAxisCount = 2;
         } else if (width < 1200) {
-          crossAxisCount = 2; // Can be 2 or 3 depending on preference, 2 is safer for long text
+          crossAxisCount =
+              2; // Can be 2 or 3 depending on preference, 2 is safer for long text
         }
 
         // Account for spacing (crossAxisCount - 1) * 16
         // Small tolerance subtraction to prevent wrap due to rounding
-        final cardWidth = (width - ((crossAxisCount - 1) * 16)) / crossAxisCount - 0.1;
+        final cardWidth =
+            (width - ((crossAxisCount - 1) * 16)) / crossAxisCount - 0.1;
 
         return Wrap(
           spacing: 16,
           runSpacing: 16,
-          children: cards.map((c) => SizedBox(
-            width: cardWidth,
-            child: _buildStatCard(c),
-          )).toList(),
+          children: cards
+              .map((c) => SizedBox(
+                    width: cardWidth,
+                    child: _buildStatCard(c),
+                  ))
+              .toList(),
         );
       },
     );
@@ -505,7 +532,10 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
         color: data.isGreen ? _primary : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
         ],
       ),
       padding: const EdgeInsets.all(16),
@@ -515,10 +545,13 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: data.isGreen ? Colors.white.withOpacity(0.2) : data.color.withOpacity(0.1),
+              color: data.isGreen
+                  ? Colors.white.withOpacity(0.2)
+                  : data.color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(data.icon, color: data.isGreen ? Colors.white : data.color, size: 22),
+            child: Icon(data.icon,
+                color: data.isGreen ? Colors.white : data.color, size: 22),
           ),
           const SizedBox(height: 16),
           Column(
@@ -561,19 +594,21 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
         } else if (width < 1200) {
           crossAxisCount = 2;
         }
-        final cardWidth = (width - ((crossAxisCount - 1) * 16)) / crossAxisCount - 0.1;
+        final cardWidth =
+            (width - ((crossAxisCount - 1) * 16)) / crossAxisCount - 0.1;
 
         return Wrap(
           spacing: 16,
           runSpacing: 16,
-          children: List.generate(4, (_) => Container(
-            width: cardWidth,
-            height: 120,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200, 
-              borderRadius: BorderRadius.circular(12)
-            ),
-          )),
+          children: List.generate(
+              4,
+              (_) => Container(
+                    width: cardWidth,
+                    height: 120,
+                    decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(12)),
+                  )),
         );
       },
     );
@@ -584,7 +619,12 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
+        ],
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -593,7 +633,8 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Pesanan per Minggu', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              const Text('Pesanan per Minggu',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               Row(
                 children: [
                   _chartLegend(const Color(0xFF1B6B3A), 'Past 6 Days'),
@@ -607,8 +648,10 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
           SizedBox(
             height: 250,
             child: chartAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator(color: _primary)),
-              error: (_, __) => const Center(child: Text('Gagal memuat grafik')),
+              loading: () => const Center(
+                  child: CircularProgressIndicator(color: _primary)),
+              error: (_, __) =>
+                  const Center(child: Text('Gagal memuat grafik')),
               data: (data) => _buildBarChart(data),
             ),
           ),
@@ -620,9 +663,14 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
   Widget _chartLegend(Color color, String label) {
     return Row(
       children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+        Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+                color: color, borderRadius: BorderRadius.circular(2))),
         const SizedBox(width: 6),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+        Text(label,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
       ],
     );
   }
@@ -641,10 +689,30 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
 
     return BarChart(BarChartData(
       maxY: maxY,
-      barTouchData: const BarTouchData(enabled: true),
+      barTouchData: BarTouchData(
+        enabled: true,
+        touchTooltipData: BarTouchTooltipData(
+          getTooltipColor: (_) => _primary,
+          tooltipPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          tooltipMargin: 10,
+          fitInsideHorizontally: true,
+          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+            return BarTooltipItem(
+              rod.toY.toInt().toString(),
+              const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            );
+          },
+        ),
+      ),
       titlesData: FlTitlesData(
         leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles:
+            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
@@ -654,7 +722,11 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
               if (idx < 0 || idx >= days.length) return const SizedBox();
               return Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(days[idx], style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                child: Text(days[idx],
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.bold)),
               );
             },
           ),
@@ -679,10 +751,10 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
   Widget _buildDonutCard(AdminDashboardStats stats) {
     final selesai = stats.countSelesai;
     final menungguBayar = stats.countMenungguBayar;
-    final menungguKonfirmasi = stats.countMenungguKonfirmasi;
-    final dikonfirmasi = stats.countDikonfirmasi;
+    final dikonfirmasi =
+        stats.countDikonfirmasi + stats.countMenungguKonfirmasi;
     final dibatalkan = stats.countDibatalkan;
-    final total = selesai + menungguBayar + menungguKonfirmasi + dikonfirmasi + dibatalkan;
+    final total = selesai + menungguBayar + dikonfirmasi + dibatalkan;
 
     double pct(int n) => total == 0 ? 0 : (n / total * 100);
 
@@ -690,50 +762,117 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Status Pesanan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 24),
+          const Text(
+            'Status Pesanan',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          const SizedBox(height: 20),
           Center(
             child: SizedBox(
-              height: 170,
-              width: 170,
+              height: 150,
+              width: 150,
               child: Stack(alignment: Alignment.center, children: [
                 PieChart(PieChartData(
-                  sectionsSpace: 3,
-                  centerSpaceRadius: 60,
+                  sectionsSpace: 2,
+                  centerSpaceRadius: 53,
                   startDegreeOffset: -90,
                   sections: total == 0
-                    ? [PieChartSectionData(value: 100, color: Colors.grey.shade200, radius: 22, showTitle: false)]
-                    : [
-                      if (selesai > 0)         PieChartSectionData(value: pct(selesai), color: _primary, radius: 22, showTitle: false),
-                      if (dikonfirmasi > 0)    PieChartSectionData(value: pct(dikonfirmasi), color: const Color(0xFF4285F4), radius: 22, showTitle: false),
-                      if (menungguKonfirmasi > 0) PieChartSectionData(value: pct(menungguKonfirmasi), color: const Color(0xFF9C27B0), radius: 22, showTitle: false),
-                      if (menungguBayar > 0)   PieChartSectionData(value: pct(menungguBayar), color: const Color(0xFFFF9800), radius: 22, showTitle: false),
-                      if (dibatalkan > 0)      PieChartSectionData(value: pct(dibatalkan), color: Colors.red.shade400, radius: 22, showTitle: false),
-                    ],
+                      ? [
+                          PieChartSectionData(
+                            value: 100,
+                            color: Colors.grey.shade200,
+                            radius: 20,
+                            showTitle: false,
+                          ),
+                        ]
+                      : [
+                          if (selesai > 0)
+                            PieChartSectionData(
+                              value: pct(selesai),
+                              color: _primary,
+                              radius: 20,
+                              showTitle: false,
+                            ),
+                          if (dikonfirmasi > 0)
+                            PieChartSectionData(
+                              value: pct(dikonfirmasi),
+                              color: const Color(0xFF4285F4),
+                              radius: 20,
+                              showTitle: false,
+                            ),
+                          if (menungguBayar > 0)
+                            PieChartSectionData(
+                              value: pct(menungguBayar),
+                              color: const Color(0xFFFF9800),
+                              radius: 20,
+                              showTitle: false,
+                            ),
+                          if (dibatalkan > 0)
+                            PieChartSectionData(
+                              value: pct(dibatalkan),
+                              color: Colors.red.shade400,
+                              radius: 20,
+                              showTitle: false,
+                            ),
+                        ],
                 )),
                 Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text('$total', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 26, color: AppColors.textHeading)),
-                  const Text('TOTAL', style: TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  Text(
+                    '$total',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 26,
+                      color: AppColors.textHeading,
+                    ),
+                  ),
+                  const Text(
+                    'TOTAL',
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
                 ]),
               ]),
             ),
           ),
-          const SizedBox(height: 20),
-          _legendItemPie(_primary,                  'Selesai', selesai, total),
-          const SizedBox(height: 8),
-          _legendItemPie(const Color(0xFF4285F4),   'Dikonfirmasi', dikonfirmasi, total),
-          const SizedBox(height: 8),
-          _legendItemPie(const Color(0xFF9C27B0),   'Menunggu Konfirmasi', menungguKonfirmasi, total),
-          const SizedBox(height: 8),
-          _legendItemPie(const Color(0xFFFF9800),   'Menunggu Bayar', menungguBayar, total),
-          const SizedBox(height: 8),
-          _legendItemPie(Colors.red.shade400,       'Dibatalkan/Ditolak', dibatalkan, total),
+          const SizedBox(height: 18),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Column(
+              children: [
+                _legendItemPie(_primary, 'Selesai', selesai, total),
+                const SizedBox(height: 8),
+                _legendItemPie(const Color(0xFF4285F4), 'Dikonfirmasi',
+                    dikonfirmasi, total),
+                const SizedBox(height: 8),
+                _legendItemPie(const Color(0xFFFF9800), 'Menunggu Bayar',
+                    menungguBayar, total),
+                const SizedBox(height: 8),
+                _legendItemPie(
+                    Colors.red.shade400, 'Batal/Gagal', dibatalkan, total),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -741,34 +880,66 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
 
   Widget _legendItemPie(Color color, String label, int count, int total) {
     final pct = total == 0 ? 0 : (count / total * 100).round();
+    final activeColor = count == 0 ? Colors.grey.shade400 : color;
     return Row(
       children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 8),
+        Container(
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(color: activeColor, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 10),
         Expanded(
-          child: Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
-        Text(
-          '$pct%',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+        SizedBox(
+          width: 42,
+          child: Text(
+            '$pct%',
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: activeColor,
+            ),
+          ),
         ),
-        const SizedBox(width: 4),
-        Text(
-          '($count)',
-          style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+        const SizedBox(width: 6),
+        SizedBox(
+          width: 34,
+          child: Text(
+            '($count)',
+            textAlign: TextAlign.right,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildAktivitasTerbaru(BuildContext context, List<Map<String, dynamic>> activities) {
+  Widget _buildAktivitasTerbaru(
+      BuildContext context, List<Map<String, dynamic>> activities) {
     final list = activities.take(5).toList();
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
+        ],
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -777,11 +948,13 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Aktivitas Terkini', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text('Aktivitas Terkini',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               GestureDetector(
                 onTap: () => _showAllActivities(context, activities),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
                     color: _primary.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(20),
@@ -791,7 +964,11 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                     children: [
                       Icon(Icons.list_alt_rounded, size: 14, color: _primary),
                       SizedBox(width: 6),
-                      Text('Lihat Semua', style: TextStyle(color: _primary, fontWeight: FontWeight.w700, fontSize: 12)),
+                      Text('Lihat Semua',
+                          style: TextStyle(
+                              color: _primary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12)),
                     ],
                   ),
                 ),
@@ -805,9 +982,12 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                 padding: const EdgeInsets.all(32),
                 child: Column(
                   children: [
-                    Icon(Icons.inbox_outlined, size: 48, color: Colors.grey.shade300),
+                    Icon(Icons.inbox_outlined,
+                        size: 48, color: Colors.grey.shade300),
                     const SizedBox(height: 12),
-                    Text('Belum ada aktivitas', style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
+                    Text('Belum ada aktivitas',
+                        style: TextStyle(
+                            color: Colors.grey.shade400, fontSize: 14)),
                   ],
                 ),
               ),
@@ -824,13 +1004,39 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                 child: DataTable(
                   horizontalMargin: 0,
                   columnSpacing: 28,
-                  headingRowColor: WidgetStateProperty.all(const Color(0xFFF8F9FA)),
+                  headingRowColor:
+                      WidgetStateProperty.all(const Color(0xFFF8F9FA)),
                   columns: const [
-                    DataColumn(label: Text('TANGGAL', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('PENGGUNA', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('AKSI', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('DETAIL', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('STATUS', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+                    DataColumn(
+                        label: Text('TANGGAL',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.bold))),
+                    DataColumn(
+                        label: Text('PENGGUNA',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.bold))),
+                    DataColumn(
+                        label: Text('AKSI',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.bold))),
+                    DataColumn(
+                        label: Text('DETAIL',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.bold))),
+                    DataColumn(
+                        label: Text('STATUS',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.bold))),
                   ],
                   rows: list.map((b) => _buildDataRow(b)).toList(),
                 ),
@@ -843,7 +1049,9 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
 
   DataRow _buildDataRow(Map<String, dynamic> activity) {
     final String nama = activity['user'] as String? ?? '-';
-    final inisial = nama.isNotEmpty ? nama.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase() : '?';
+    final inisial = nama.isNotEmpty
+        ? nama.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
+        : '?';
     final String status = activity['status'] as String? ?? 'menunggu';
     final statusColor = _statusColor(status);
     final DateTime time = activity['time'] as DateTime? ?? DateTime.now();
@@ -860,17 +1068,27 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
           children: [
             CircleAvatar(
               radius: 15,
-              backgroundColor: isRegistration ? Colors.blue.shade50 : const Color(0xFFE8F5E9),
-              child: Text(inisial, style: TextStyle(fontSize: 10, color: isRegistration ? Colors.blue.shade700 : _primary, fontWeight: FontWeight.bold)),
+              backgroundColor: isRegistration
+                  ? Colors.blue.shade50
+                  : const Color(0xFFE8F5E9),
+              child: Text(inisial,
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: isRegistration ? Colors.blue.shade700 : _primary,
+                      fontWeight: FontWeight.bold)),
             ),
             const SizedBox(width: 10),
-            Text(nama, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            Text(nama,
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
           ],
         )),
         DataCell(Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: isRegistration ? Colors.blue.shade50 : _primary.withOpacity(0.07),
+            color: isRegistration
+                ? Colors.blue.shade50
+                : _primary.withOpacity(0.07),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
@@ -890,17 +1108,21 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
         )),
         DataCell(Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          decoration: BoxDecoration(color: statusColor.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
+          decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(20)),
           child: Text(
             _statusLabel(status),
-            style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w700),
+            style: TextStyle(
+                color: statusColor, fontSize: 10, fontWeight: FontWeight.w700),
           ),
         )),
       ],
     );
   }
 
-  void _showAllActivities(BuildContext context, List<Map<String, dynamic>> activities) {
+  void _showAllActivities(
+      BuildContext context, List<Map<String, dynamic>> activities) {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -908,7 +1130,8 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
         insetPadding: const EdgeInsets.all(24),
         child: Container(
           width: 780,
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+          constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.85),
           padding: const EdgeInsets.all(28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -916,29 +1139,62 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Semua Aktivitas', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textHeading)),
+                  const Text('Semua Aktivitas',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: AppColors.textHeading)),
                   IconButton(
                     onPressed: () => Navigator.pop(ctx),
-                    icon: Icon(Icons.close_rounded, color: Colors.grey.shade500),
-                    style: IconButton.styleFrom(backgroundColor: Colors.grey.shade100),
+                    icon:
+                        Icon(Icons.close_rounded, color: Colors.grey.shade500),
+                    style: IconButton.styleFrom(
+                        backgroundColor: Colors.grey.shade100),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
-              Text('${activities.length} aktivitas terbaru', style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+              Text('${activities.length} aktivitas terbaru',
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
               const SizedBox(height: 16),
               Expanded(
                 child: SingleChildScrollView(
                   child: DataTable(
                     horizontalMargin: 0,
                     columnSpacing: 24,
-                    headingRowColor: WidgetStateProperty.all(const Color(0xFFF8F9FA)),
+                    headingRowColor:
+                        WidgetStateProperty.all(const Color(0xFFF8F9FA)),
                     columns: const [
-                      DataColumn(label: Text('TANGGAL', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('PENGGUNA', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('AKSI', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('DETAIL', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('STATUS', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('TANGGAL',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('PENGGUNA',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('AKSI',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('DETAIL',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('STATUS',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold))),
                     ],
                     rows: activities.map((a) => _buildDataRow(a)).toList(),
                   ),
@@ -951,41 +1207,59 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
     );
   }
 
-
-
   Color _statusColor(String status) {
     switch (status) {
-      case 'selesai': return const Color(0xFF1B6B3A);
-      case 'aktif':   return const Color(0xFF1B6B3A);
-      case 'dikonfirmasi': return const Color(0xFF4285F4);
-      case 'menunggu_konfirmasi': return const Color(0xFF9C27B0);
-      case 'menunggu_bayar': return const Color(0xFFFF9800);
-      case 'dibatalkan': return Colors.red.shade400;
-      case 'ditolak':    return Colors.red.shade400;
-      case 'expired':    return Colors.red.shade300;
-      default: return Colors.grey;
+      case 'selesai':
+        return const Color(0xFF1B6B3A);
+      case 'aktif':
+        return const Color(0xFF1B6B3A);
+      case 'dikonfirmasi':
+        return const Color(0xFF4285F4);
+      case 'menunggu_konfirmasi':
+        return const Color(0xFF4285F4);
+      case 'menunggu_bayar':
+        return const Color(0xFFFF9800);
+      case 'dibatalkan':
+        return Colors.red.shade400;
+      case 'ditolak':
+        return Colors.red.shade400;
+      case 'expired':
+        return Colors.red.shade300;
+      default:
+        return Colors.grey;
     }
   }
 
   String _statusLabel(String status) {
     switch (status) {
-      case 'selesai':              return 'Selesai';
-      case 'aktif':               return 'Aktif';
-      case 'dikonfirmasi':        return 'Dikonfirmasi';
-      case 'menunggu_konfirmasi': return 'Menunggu Konfirmasi';
-      case 'menunggu_bayar':      return 'Menunggu Bayar';
-      case 'dibatalkan':          return 'Dibatalkan';
-      case 'ditolak':             return 'Ditolak';
-      case 'expired':             return 'Expired';
-      case 'menunggu':            return 'Menunggu';
-      default: return status;
+      case 'selesai':
+        return 'Selesai';
+      case 'aktif':
+        return 'Aktif';
+      case 'dikonfirmasi':
+        return 'Dikonfirmasi';
+      case 'menunggu_konfirmasi':
+        return 'Dikonfirmasi';
+      case 'menunggu_bayar':
+        return 'Menunggu Bayar';
+      case 'dibatalkan':
+        return 'Dibatalkan';
+      case 'ditolak':
+        return 'Ditolak';
+      case 'expired':
+        return 'Expired';
+      case 'menunggu':
+        return 'Menunggu';
+      default:
+        return status;
     }
   }
 
   Widget _buildError(String msg) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+          color: Colors.red.shade50, borderRadius: BorderRadius.circular(12)),
       child: Text('Error: $msg', style: const TextStyle(color: Colors.red)),
     );
   }
@@ -996,7 +1270,8 @@ class _StatData {
   final IconData icon;
   final Color color;
   final bool isGreen;
-  const _StatData(this.label, this.value, this.icon, this.color, {this.isGreen = false});
+  const _StatData(this.label, this.value, this.icon, this.color,
+      {this.isGreen = false});
 }
 
 // --- Notification Bell Widget ---
@@ -1020,7 +1295,8 @@ class _NotificationBell extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            Icon(Icons.notifications_outlined, color: Colors.grey.shade600, size: 22),
+            Icon(Icons.notifications_outlined,
+                color: Colors.grey.shade600, size: 22),
             if (pendingCount > 0)
               Positioned(
                 top: -4,
@@ -1031,10 +1307,14 @@ class _NotificationBell extends StatelessWidget {
                     color: Colors.redAccent,
                     shape: BoxShape.circle,
                   ),
-                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                  constraints:
+                      const BoxConstraints(minWidth: 16, minHeight: 16),
                   child: Text(
                     pendingCount > 9 ? '9+' : '$pendingCount',
-                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -1055,7 +1335,13 @@ class _ProfileMenu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final inisial = adminName.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase();
+    final inisial = adminName
+        .trim()
+        .split(' ')
+        .map((w) => w[0])
+        .take(2)
+        .join()
+        .toUpperCase();
 
     return PopupMenuButton<String>(
       offset: const Offset(0, 50),
@@ -1076,7 +1362,10 @@ class _ProfileMenu extends ConsumerWidget {
               backgroundColor: _primary,
               child: Text(
                 inisial,
-                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(width: 8),
@@ -1085,13 +1374,18 @@ class _ProfileMenu extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(adminName,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textHeading)),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: AppColors.textHeading)),
                 Text('Administrator',
-                    style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                    style:
+                        TextStyle(fontSize: 10, color: Colors.grey.shade500)),
               ],
             ),
             const SizedBox(width: 6),
-            Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Colors.grey.shade500),
+            Icon(Icons.keyboard_arrow_down_rounded,
+                size: 16, color: Colors.grey.shade500),
           ],
         ),
       ),
@@ -1108,16 +1402,21 @@ class _ProfileMenu extends ConsumerWidget {
                     radius: 20,
                     backgroundColor: _primary,
                     child: Text(inisial,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(adminName,
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textHeading)),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: AppColors.textHeading)),
                       Text('admin@lapangku.id',
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade500)),
                     ],
                   ),
                 ],
@@ -1138,11 +1437,15 @@ class _ProfileMenu extends ConsumerWidget {
                   color: Colors.red.shade50,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.logout_rounded, color: Colors.red.shade600, size: 18),
+                child: Icon(Icons.logout_rounded,
+                    color: Colors.red.shade600, size: 18),
               ),
               const SizedBox(width: 12),
               Text('Keluar',
-                  style: TextStyle(color: Colors.red.shade600, fontWeight: FontWeight.w600, fontSize: 14)),
+                  style: TextStyle(
+                      color: Colors.red.shade600,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14)),
             ],
           ),
         ),
