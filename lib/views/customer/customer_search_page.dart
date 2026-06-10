@@ -32,17 +32,22 @@ class _CustomerSearchPageState extends ConsumerState<CustomerSearchPage> {
   bool _isLoadingLocation = false;
 
   final List<String> _availableFacilities = [
-    'Shower', 'Toilet', 
-    'Area Parkir', 'Kantin', 'Mushola', 'Gratis Bola'
+    'Parkir',
+    'Toilet',
+    'Wifi',
+    'CCTV',
+    'Mushola',
+    'Kantin',
+    'Ruang Ganti',
+    'Tribun'
   ];
 
   final List<String> _categories = [
     'Semua',
     'Futsal',
     'Mini Soccer',
-    'Bulu Tangkis',
-    'Basket',
-    'Voli'
+    'Badminton',
+    'Basket'
   ];
 
   @override
