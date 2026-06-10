@@ -25,7 +25,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
     'Semua',
     'Futsal',
     'Mini Soccer',
-    'Bulu Tangkis',
+    'Badminton',
     'Basket',
     'Tenis'
   ];
