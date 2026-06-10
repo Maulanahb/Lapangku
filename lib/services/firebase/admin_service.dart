@@ -38,7 +38,7 @@ class AdminService {
         .get();
     final pesananHariIni = todayBookingsSnap.count ?? 0;
 
-    // 4. Total Pendapatan — diambil dari metadata/stats yang diupdate oleh Cloud Functions
+    // 4. Total Pendapatan — samakan dengan yang di laporan penghasilan
     int totalPendapatan = 0;
     try {
       final statsDoc =
@@ -47,8 +47,9 @@ class AdminService {
         totalPendapatan = (statsDoc.data()?['totalPendapatan'] ?? 0) as int;
       }
     } catch (_) {
-      // Fail-safe jika dokumen belum ada
+      // Fail-safe jika gagal query
     }
+
 
     // 5. Booking Status Counts for Donut Chart (Menggunakan .count() agar hemat kuota)
     int countSelesai = 0;
