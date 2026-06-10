@@ -150,7 +150,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                     _sidebarItem(3, Icons.receipt_long_outlined,
                         Icons.receipt_long_rounded, 'Daftar Pesanan'),
                     _sidebarItem(4, Icons.analytics_outlined,
-                        Icons.analytics_rounded, 'Laporan Analistik'),
+                        Icons.analytics_rounded, 'Laporan Analitik'),
                     _sidebarItem(5, Icons.account_balance_wallet_outlined,
                         Icons.account_balance_wallet_rounded, 'Pencairan Dana'),
                   ],
@@ -383,13 +383,6 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
     final isDesktop = MediaQuery.of(context).size.width >= 800;
     final formatter = DateFormat('EEEE, d MMMM yyyy');
     final dateStr = formatter.format(DateTime.now());
-    final mitrasAsync = ref.watch(adminAllMitrasProvider);
-    final pendingCount = mitrasAsync.when(
-      data: (list) =>
-          list.where((m) => m.statusVerifikasi == 'menunggu').length,
-      loading: () => 0,
-      error: (_, __) => 0,
-    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -431,19 +424,6 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
               const SizedBox.shrink(),
             Row(
               children: [
-                // Notification Bell
-                _NotificationBell(
-                  pendingCount: pendingCount,
-                  onTap: () {},
-                ),
-                const SizedBox(width: 4),
-                // Divider
-                Container(
-                  width: 1,
-                  height: 28,
-                  color: Colors.grey.shade200,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                ),
                 // Profile Avatar with popup
                 _ProfileMenu(adminName: adminName),
               ],
@@ -1274,57 +1254,7 @@ class _StatData {
       {this.isGreen = false});
 }
 
-// --- Notification Bell Widget ---
-class _NotificationBell extends StatelessWidget {
-  final int pendingCount;
-  final VoidCallback onTap;
-  const _NotificationBell({required this.pendingCount, required this.onTap});
 
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(Icons.notifications_outlined,
-                color: Colors.grey.shade600, size: 22),
-            if (pendingCount > 0)
-              Positioned(
-                top: -4,
-                right: -4,
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints:
-                      const BoxConstraints(minWidth: 16, minHeight: 16),
-                  child: Text(
-                    pendingCount > 9 ? '9+' : '$pendingCount',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // --- Profile Menu Widget ---
 class _ProfileMenu extends ConsumerWidget {

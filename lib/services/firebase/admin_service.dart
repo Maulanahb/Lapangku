@@ -37,16 +37,21 @@ class AdminService {
         .get();
     final pesananHariIni = todayBookingsSnap.count ?? 0;
 
-    // 4. Total Pendapatan — diambil dari metadata/stats yang diupdate oleh Cloud Functions
+    // 4. Total Pendapatan — samakan dengan yang di laporan penghasilan
     int totalPendapatan = 0;
     try {
-      final statsDoc = await _firestore.collection('metadata').doc('stats').get();
-      if (statsDoc.exists) {
-        totalPendapatan = (statsDoc.data()?['totalPendapatan'] ?? 0) as int;
+      final selesaiDocs = await _firestore
+          .collection('bookings')
+          .where('status', isEqualTo: 'selesai')
+          .get();
+      for (final doc in selesaiDocs.docs) {
+        final data = doc.data();
+        totalPendapatan += (data['totalBayar'] ?? data['totalHarga'] ?? 0) as int;
       }
     } catch (_) {
-      // Fail-safe jika dokumen belum ada
+      // Fail-safe jika gagal query
     }
+
 
     // 5. Booking Status Counts for Donut Chart (Menggunakan .count() agar hemat kuota)
     int countSelesai = 0;
