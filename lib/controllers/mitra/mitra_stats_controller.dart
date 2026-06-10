@@ -45,7 +45,7 @@ final mitraTodayStatsProvider =
   return bookingsAsync.when(
     data: (bookings) {
       final todayBookings = bookings.where((b) {
-        final bDate = DateTime(b.createdAt.year, b.createdAt.month, b.createdAt.day);
+        final bDate = DateTime(b.tanggal.year, b.tanggal.month, b.tanggal.day);
         return bDate.isAtSameMomentAs(today);
       }).toList();
 
@@ -58,9 +58,8 @@ final mitraTodayStatsProvider =
         revenue += b.hargaLapangan;
       }
 
-      final confirmedToday = todayBookings
-          .where((b) => b.status == 'dikonfirmasi')
-          .toList();
+      final confirmedToday =
+          todayBookings.where((b) => b.status == 'dikonfirmasi').toList();
 
       final waitingToday = todayBookings
           .where((b) =>
@@ -101,7 +100,7 @@ final mitraMonthlyStatsProvider =
   return bookingsAsync.when(
     data: (bookings) {
       final monthBookings = bookings.where((b) {
-        return b.createdAt.year == now.year && b.createdAt.month == now.month;
+        return b.tanggal.year == now.year && b.tanggal.month == now.month;
       }).toList();
 
       final finishedMonth = monthBookings
@@ -164,7 +163,9 @@ final mitraAdvancedStatsProvider =
         }
       }).toList();
 
-      if (kDebugMode) debugPrint('DEBUG: Filtered bookings count: ${filteredBookings.length}');
+      if (kDebugMode)
+        debugPrint(
+            'DEBUG: Filtered bookings count: ${filteredBookings.length}');
 
       // 2. Hitung Total Berhasil (Hero Card)
       final totalSuccess =
@@ -243,7 +244,8 @@ final mitraAdvancedStatsProvider =
         // Lacak hari dengan booking terbanyak
         if (dayCount > maxDayCount) {
           maxDayCount = dayCount;
-          peakDayName = DateFormat('EEEE', 'id').format(dayDate); // Senin, Selasa, dst
+          peakDayName =
+              DateFormat('EEEE', 'id').format(dayDate); // Senin, Selasa, dst
         }
 
         weeklyData.add({
@@ -303,9 +305,8 @@ final mitraAdvancedStatsProvider =
       // Cari imageUrl dari booking terakhir milik lapangan paling aktif
       String topFieldImageUrl = '';
       if (topField != '-') {
-        final topFieldBooking = filteredBookings
-            .where((b) => b.fieldName == topField)
-            .toList();
+        final topFieldBooking =
+            filteredBookings.where((b) => b.fieldName == topField).toList();
         if (topFieldBooking.isNotEmpty) {
           topFieldImageUrl = topFieldBooking.first.fieldImageUrl;
         }
@@ -413,9 +414,9 @@ final mitraRevenueWeeklyProvider =
 
         final dayBookings = bookings.where((b) {
           final bDate =
-              DateTime(b.createdAt.year, b.createdAt.month, b.createdAt.day);
-          return bDate.isAtSameMomentAs(dayDate) && 
-                 (b.status == 'selesai' || b.status == 'dikonfirmasi');
+              DateTime(b.tanggal.year, b.tanggal.month, b.tanggal.day);
+          return bDate.isAtSameMomentAs(dayDate) &&
+              (b.status == 'selesai' || b.status == 'dikonfirmasi');
         });
 
         int dayRevenue = 0;

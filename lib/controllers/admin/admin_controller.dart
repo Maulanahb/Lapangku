@@ -10,6 +10,7 @@ import 'package:lapangku/models/admin/admin_field_model.dart';
 import 'package:lapangku/models/admin/booking_model.dart';
 import 'package:lapangku/models/admin/admin_stats.dart';
 import 'package:lapangku/services/firebase/admin_service.dart';
+
 // --- Service Provider ---
 final adminServiceProvider = Provider<AdminService>((ref) {
   return AdminService();
@@ -76,7 +77,7 @@ class AllUsersNotifier
   DocumentSnapshot? _lastDoc;
   bool _hasMore = true;
   bool _isLoadingMore = false;
-  
+
   bool get hasMore => _hasMore;
   bool get isLoadingMore => _isLoadingMore;
 
@@ -89,31 +90,42 @@ class AllUsersNotifier
     _lastDoc = null;
     _hasMore = true;
     _isLoadingMore = false;
-    
+
     try {
       final snap = await _service.getUsersPaginatedRaw(limit: 20);
       if (snap.docs.length < 20) _hasMore = false;
       if (snap.docs.isNotEmpty) _lastDoc = snap.docs.last;
-      
-      final users = snap.docs.map((d) => <String, dynamic>{'uid': d.id, ...(d.data()! as Map<String, dynamic>)}).toList();
+
+      final users = snap.docs
+          .map((d) => <String, dynamic>{
+                'uid': d.id,
+                ...(d.data()! as Map<String, dynamic>)
+              })
+          .toList();
       state = AsyncValue.data(users);
     } catch (e, s) {
       state = AsyncValue.error(e, s);
     }
   }
-  
+
   Future<void> loadMore() async {
     if (!_hasMore || _isLoadingMore || state is AsyncLoading) return;
-    
+
     final currentList = state.value ?? [];
     _isLoadingMore = true;
-    
+
     try {
-      final snap = await _service.getUsersPaginatedRaw(limit: 20, startAfter: _lastDoc);
+      final snap =
+          await _service.getUsersPaginatedRaw(limit: 20, startAfter: _lastDoc);
       if (snap.docs.length < 20) _hasMore = false;
       if (snap.docs.isNotEmpty) _lastDoc = snap.docs.last;
 
-      final newUsers = snap.docs.map((d) => <String, dynamic>{'uid': d.id, ...(d.data()! as Map<String, dynamic>)}).toList();
+      final newUsers = snap.docs
+          .map((d) => <String, dynamic>{
+                'uid': d.id,
+                ...(d.data()! as Map<String, dynamic>)
+              })
+          .toList();
       state = AsyncValue.data([...currentList, ...newUsers]);
     } catch (e) {
       debugPrint('Error loadMore: $e');
@@ -152,7 +164,8 @@ final allUsersProvider = StateNotifierProvider<AllUsersNotifier,
 // --- Manajemen Lapangan ---
 
 // Controller untuk mengambil seluruh daftar lapangan untuk keperluan Admin
-class AdminFieldsNotifier extends StateNotifier<AsyncValue<List<AdminFieldModel>>> {
+class AdminFieldsNotifier
+    extends StateNotifier<AsyncValue<List<AdminFieldModel>>> {
   final AdminService _service;
 
   AdminFieldsNotifier(this._service) : super(const AsyncValue.loading()) {
@@ -176,22 +189,22 @@ class AdminFieldsNotifier extends StateNotifier<AsyncValue<List<AdminFieldModel>
     await _service.updateFieldVerifikasi(
       mitraId: mitraId,
       status: status,
-      fieldId: '', // Tetap panggil service, tapi fieldId kosong karena verifikasi mitra
+      fieldId:
+          '', // Tetap panggil service, tapi fieldId kosong karena verifikasi mitra
     );
     await load();
   }
 }
 
-final adminFieldsProvider =
-    StateNotifierProvider<AdminFieldsNotifier, AsyncValue<List<AdminFieldModel>>>((ref) {
+final adminFieldsProvider = StateNotifierProvider<AdminFieldsNotifier,
+    AsyncValue<List<AdminFieldModel>>>((ref) {
   return AdminFieldsNotifier(ref.watch(adminServiceProvider));
 });
 
 // --- Manajemen Transaksi ---
 
 // Controller untuk mengambil semua data riwayat transaksi
-class BookingsNotifier
-    extends StateNotifier<AsyncValue<List<BookingModel>>> {
+class BookingsNotifier extends StateNotifier<AsyncValue<List<BookingModel>>> {
   final AdminService _service;
 
   BookingsNotifier(this._service) : super(const AsyncValue.loading()) {
@@ -214,9 +227,11 @@ final bookingsProvider =
         (ref) {
   return BookingsNotifier(ref.watch(adminServiceProvider));
 });
+
 // --- Aktivitas Terbaru ---
 // Controller untuk memantau aktivitas terbaru secara langsung
-class ActivitiesNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
+class ActivitiesNotifier
+    extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
   final AdminService _service;
 
   ActivitiesNotifier(this._service) : super(const AsyncValue.loading()) {
@@ -234,7 +249,8 @@ class ActivitiesNotifier extends StateNotifier<AsyncValue<List<Map<String, dynam
   }
 }
 
-final activitiesProvider = StateNotifierProvider<ActivitiesNotifier, AsyncValue<List<Map<String, dynamic>>>>((ref) {
+final activitiesProvider = StateNotifierProvider<ActivitiesNotifier,
+    AsyncValue<List<Map<String, dynamic>>>>((ref) {
   return ActivitiesNotifier(ref.watch(adminServiceProvider));
 });
 
@@ -244,7 +260,8 @@ final bookingServiceProvider = Provider<BookingService>((ref) {
   return BookingService();
 });
 
-final adminAllBookingsProvider = StreamProvider<List<global_booking.BookingModel>>((ref) {
+final adminAllBookingsProvider =
+    StreamProvider<List<global_booking.BookingModel>>((ref) {
   return ref.watch(bookingServiceProvider).streamAllBookings();
 });
 
@@ -262,39 +279,16 @@ final adminAllMitrasProvider = StreamProvider<List<AdminFieldModel>>((ref) {
       .collection('mitra')
       .snapshots()
       .map((snapshot) {
-    return snapshot.docs.map((doc) {
-      final data = doc.data();
-      String status = (data['statusVerifikasi'] ?? 'menunggu').toString().toLowerCase().trim();
-      if (!data.containsKey('statusVerifikasi')) {
-        status = (data['isVerified'] == true) ? 'aktif' : 'menunggu';
-      }
-      return AdminFieldModel(
-        fieldId: doc.id,
-        mitraId: doc.id,
-        namaLapangan: data['businessName'] ?? data['namaBisnis'] ?? 'Bisnis Baru',
-        namaMitra: data['MitraName'] ?? data['ownerName'] ?? 'Mitra',
-        emailPemilik: data['email'] ?? '',
-        lokasi: data['alamat'] ?? 'Alamat belum diatur',
-        hargaPerJam: 0,
-        jenis: data['sport'] ?? data['jenisLapangan'] ?? '',
-        statusVerifikasi: status,
-        createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-        photoUrls: (data['photoUrls'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
-        phone: data['phone'] ?? '',
-        deskripsi: data['deskripsi'] ?? '',
-        tipeLapangan: data['tipeLapangan'] ?? '',
-        fasilitas: (data['fasilitas'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? (data['facilities'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-        jamOperasional: data['jamOperasional'] ?? '',
-        hariOperasional: (data['hariOperasional'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-        ktpUrl: data['ktpUrl'],
-        selfieUrl: data['selfieUrl'],
-      );
-    }).toList();
+    return snapshot.docs.map(AdminFieldModel.fromMitraDoc).toList();
   });
 });
 
-final adminAllUsersStreamProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
-  return FirestoreService.instance.collection('users').snapshots().map((snapshot) {
+final adminAllUsersStreamProvider =
+    StreamProvider<List<Map<String, dynamic>>>((ref) {
+  return FirestoreService.instance
+      .collection('users')
+      .snapshots()
+      .map((snapshot) {
     return snapshot.docs.map((doc) => doc.data()).toList();
   });
 });
@@ -326,19 +320,20 @@ class AdminDashboardStats {
   });
 }
 
-final adminDashboardStatsProvider = Provider<AsyncValue<AdminDashboardStats>>((ref) {
+final adminDashboardStatsProvider =
+    Provider<AsyncValue<AdminDashboardStats>>((ref) {
   final statsAsync = ref.watch(adminStatsProvider);
   return statsAsync.whenData((stats) => AdminDashboardStats(
-    totalPengguna: stats.totalUsers,
-    totalMitra: stats.lapanganAktif,
-    totalBookingHariIni: stats.pesananHariIni,
-    totalPendapatan: stats.totalPendapatan,
-    countSelesai: stats.countSelesai,
-    countMenungguBayar: stats.countMenungguBayar,
-    countMenungguKonfirmasi: stats.countMenungguKonfirmasi,
-    countDikonfirmasi: stats.countDikonfirmasi,
-    countDibatalkan: stats.countDibatalkan,
-  ));
+        totalPengguna: stats.totalUsers,
+        totalMitra: stats.lapanganAktif,
+        totalBookingHariIni: stats.pesananHariIni,
+        totalPendapatan: stats.totalPendapatan,
+        countSelesai: stats.countSelesai,
+        countMenungguBayar: stats.countMenungguBayar,
+        countMenungguKonfirmasi: stats.countMenungguKonfirmasi,
+        countDikonfirmasi: stats.countDikonfirmasi,
+        countDibatalkan: stats.countDibatalkan,
+      ));
 });
 
 // Provider untuk memantau riwayat penarikan saldo (payout) Mitra

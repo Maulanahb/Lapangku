@@ -31,7 +31,8 @@ class AdminService {
     // 3. Pesanan hari ini
     final todayBookingsSnap = await _firestore
         .collection('bookings')
-        .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('tanggal',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
         .where('tanggal', isLessThan: Timestamp.fromDate(endOfDay))
         .count()
         .get();
@@ -40,7 +41,8 @@ class AdminService {
     // 4. Total Pendapatan — diambil dari metadata/stats yang diupdate oleh Cloud Functions
     int totalPendapatan = 0;
     try {
-      final statsDoc = await _firestore.collection('metadata').doc('stats').get();
+      final statsDoc =
+          await _firestore.collection('metadata').doc('stats').get();
       if (statsDoc.exists) {
         totalPendapatan = (statsDoc.data()?['totalPendapatan'] ?? 0) as int;
       }
@@ -58,20 +60,50 @@ class AdminService {
     try {
       // Fetch all counts concurrently to speed up response time
       final results = await Future.wait([
-        _firestore.collection('bookings').where('status', isEqualTo: 'selesai').count().get(),
-        _firestore.collection('bookings').where('status', isEqualTo: 'menunggu_bayar').count().get(),
-        _firestore.collection('bookings').where('status', isEqualTo: 'menunggu_konfirmasi').count().get(),
-        _firestore.collection('bookings').where('status', isEqualTo: 'dikonfirmasi').count().get(),
-        _firestore.collection('bookings').where('status', isEqualTo: 'dibatalkan').count().get(),
-        _firestore.collection('bookings').where('status', isEqualTo: 'ditolak').count().get(),
-        _firestore.collection('bookings').where('status', isEqualTo: 'expired').count().get(),
+        _firestore
+            .collection('bookings')
+            .where('status', isEqualTo: 'selesai')
+            .count()
+            .get(),
+        _firestore
+            .collection('bookings')
+            .where('status', isEqualTo: 'menunggu_bayar')
+            .count()
+            .get(),
+        _firestore
+            .collection('bookings')
+            .where('status', isEqualTo: 'menunggu_konfirmasi')
+            .count()
+            .get(),
+        _firestore
+            .collection('bookings')
+            .where('status', isEqualTo: 'dikonfirmasi')
+            .count()
+            .get(),
+        _firestore
+            .collection('bookings')
+            .where('status', isEqualTo: 'dibatalkan')
+            .count()
+            .get(),
+        _firestore
+            .collection('bookings')
+            .where('status', isEqualTo: 'ditolak')
+            .count()
+            .get(),
+        _firestore
+            .collection('bookings')
+            .where('status', isEqualTo: 'expired')
+            .count()
+            .get(),
       ]);
 
       countSelesai = results[0].count ?? 0;
       countMenungguBayar = results[1].count ?? 0;
       countMenungguKonfirmasi = results[2].count ?? 0;
       countDikonfirmasi = results[3].count ?? 0;
-      countDibatalkan = (results[4].count ?? 0) + (results[5].count ?? 0) + (results[6].count ?? 0);
+      countDibatalkan = (results[4].count ?? 0) +
+          (results[5].count ?? 0) +
+          (results[6].count ?? 0);
     } catch (e) {
       debugPrint('Error count booking status: $e');
     }
@@ -99,7 +131,7 @@ class AdminService {
     if (startAfter != null) {
       query = query.startAfterDocument(startAfter);
     }
-    return await query.get();
+    return query.get();
   }
 
   // Backward compatible method (returns all users, may be heavy).
@@ -118,29 +150,7 @@ class AdminService {
   Future<List<AdminFieldModel>> getAllFields() async {
     try {
       final snap = await _firestore.collection('mitra').get();
-      return snap.docs.map((d) {
-        final data = d.data();
-        
-        String status = (data['statusVerifikasi'] ?? 'menunggu').toString().toLowerCase().trim();
-        if (!data.containsKey('statusVerifikasi')) {
-          status = (data['isVerified'] == true) ? 'aktif' : 'menunggu';
-        }
-
-        return AdminFieldModel(
-          fieldId: d.id,
-          mitraId: d.id,
-          namaLapangan: data['namaLapangan'] ?? data['businessName'] ?? data['namaBisnis'] ?? 'Bisnis Baru',
-          namaMitra: data['ownerName'] ?? data['mitraName'] ?? data['nama'] ?? 'Mitra',
-          emailPemilik: data['email'] ?? 'mitra@example.com',
-          lokasi: data['alamat'] ?? 'Alamat belum diatur',
-          hargaPerJam: data['hargaPerJam'] ?? 0,
-          jenis: data['sport'] ?? 'Semua Lapangan',
-          statusVerifikasi: status,
-          createdAt: data['createdAt'] != null 
-              ? (data['createdAt'] as Timestamp).toDate() 
-              : DateTime.now(),
-        );
-      }).toList();
+      return snap.docs.map(AdminFieldModel.fromMitraDoc).toList();
     } catch (e) {
       debugPrint('Error getAllFields: $e');
       return [];
@@ -183,10 +193,12 @@ class AdminService {
     }
     final snap = await query.get();
     return snap.docs
-        .map((d) => <String, dynamic>{'uid': d.id, ...(d.data()! as Map<String, dynamic>)})
+        .map((d) => <String, dynamic>{
+              'uid': d.id,
+              ...(d.data()! as Map<String, dynamic>)
+            })
         .toList();
   }
-
 
   // Existing methods remain unchanged
   Future<void> updateUserStatus(String uid, String status) async {
@@ -266,7 +278,7 @@ class AdminService {
         'isVerified': isVerified,
       },
     );
-    
+
     // Update the users collection
     batch.update(
       _firestore.collection('users').doc(mitraId),
@@ -275,7 +287,7 @@ class AdminService {
         'isVerified': isVerified,
       },
     );
-    
+
     await batch.commit();
   }
 
@@ -291,8 +303,7 @@ class AdminService {
 
       final snap = await _firestore
           .collection('bookings')
-          .where('tanggal',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+          .where('tanggal', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
           .where('tanggal', isLessThan: Timestamp.fromDate(end))
           .count()
           .get();
@@ -310,10 +321,7 @@ class AdminService {
             .orderBy('tanggal', descending: true)
             .limit(10)
             .get(),
-        _firestore
-            .collection('mitra')
-            .limit(20)
-            .get(),
+        _firestore.collection('mitra').limit(20).get(),
       ]);
 
       final List<Map<String, dynamic>> activities = [];
@@ -333,7 +341,9 @@ class AdminService {
           'time': time,
           'user': booking.userName.isNotEmpty ? booking.userName : 'Penyewa',
           'action': 'New Booking',
-          'detail': booking.fieldName.isNotEmpty ? booking.fieldName : 'Tanpa Keterangan',
+          'detail': booking.fieldName.isNotEmpty
+              ? booking.fieldName
+              : 'Tanpa Keterangan',
           'status': booking.status,
           'type': 'booking',
         });
@@ -344,8 +354,9 @@ class AdminService {
       for (var doc in ownersSnap.docs) {
         final data = doc.data()! as Map<String, dynamic>;
         final dynamic t = data['createdAt'];
-        DateTime time = DateTime.now().subtract(const Duration(days: 365)); // Default old
-        
+        DateTime time =
+            DateTime.now().subtract(const Duration(days: 365)); // Default old
+
         if (t is Timestamp) {
           time = t.toDate();
         } else if (data['isVerified'] == false) {
@@ -364,7 +375,8 @@ class AdminService {
       }
 
       // Sort by time (Newest first)
-      activities.sort((a, b) => (b['time'] as DateTime).compareTo(a['time'] as DateTime));
+      activities.sort(
+          (a, b) => (b['time'] as DateTime).compareTo(a['time'] as DateTime));
 
       return activities.take(10).toList();
     } catch (e) {
@@ -403,4 +415,3 @@ class AdminService {
     await _firestore.collection('payouts').doc(payoutId).update(data);
   }
 }
-

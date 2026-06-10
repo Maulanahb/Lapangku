@@ -66,7 +66,7 @@ class MitraService {
         final index = entry.key;
         final file = entry.value;
 
-        if (!await file.exists()) throw Exception('File tidak ditemukan');
+        if (!file.existsSync()) throw Exception('File tidak ditemukan');
 
         // 📁 STRUKTUR RAPI: Memaksa file masuk ke sub-folder ID lapangan, bukan root 'fields'
         final ref = _storage.ref().child('fields/$fieldId/${sfx}_$index.jpg');
@@ -86,14 +86,14 @@ class MitraService {
   }
 
   Future<String> uploadLogo(String uid, File imageFile) async {
-    if (!await imageFile.exists()) throw Exception('File logo tidak ditemukan');
+    if (!imageFile.existsSync()) throw Exception('File logo tidak ditemukan');
     final url =
         await FirebaseStorageService.uploadImage(imageFile, folder: 'logos');
     return url!;
   }
 
   Future<String> uploadDocument(String uid, String docType, File file) async {
-    if (!await file.exists()) throw Exception('File dokumen tidak ditemukan');
+    if (!file.existsSync()) throw Exception('File dokumen tidak ditemukan');
     final url =
         await FirebaseStorageService.uploadImage(file, folder: 'documents');
     return url!;
@@ -128,7 +128,9 @@ class MitraService {
           .where('MitraId', isEqualTo: MitraId)
           .get();
 
-      if (kDebugMode) debugPrint('📂 Koleksi "lapangan": Ditemukan ${snap.docs.length} dokumen');
+      if (kDebugMode)
+        debugPrint(
+            '📂 Koleksi "lapangan": Ditemukan ${snap.docs.length} dokumen');
 
       for (var doc in snap.docs) {
         final data = doc.data();
@@ -173,7 +175,8 @@ class MitraService {
 
     if (photoFiles != null && photoFiles.isNotEmpty) {
       try {
-        if (kDebugMode) debugPrint('UPLOADING ${photoFiles.length} PHOTOS for new field...');
+        if (kDebugMode)
+          debugPrint('UPLOADING ${photoFiles.length} PHOTOS for new field...');
         final List<String> photoUrls = await uploadFieldPhotos(
           docRef.id,
           photoFiles,
@@ -199,7 +202,8 @@ class MitraService {
                 'ROLLBACK SUCCESS: Dokumen cacat berhasil dihapus dari Firestore');
           }
         } catch (deleteError) {
-          if (kDebugMode) debugPrint('FAILED TO ROLLBACK FIRESTORE: $deleteError');
+          if (kDebugMode)
+            debugPrint('FAILED TO ROLLBACK FIRESTORE: $deleteError');
         }
 
         // Lemparkan error ke provider agar UI tahu kalau ini GAGAL
@@ -238,13 +242,17 @@ class MitraService {
           if (!field.photoUrls.contains(url)) {
             deleteTasks.add(() async {
               try {
-                if (kDebugMode) debugPrint('MENGHAPUS FOTO SAMPAH DARI STORAGE: $url');
+                if (kDebugMode)
+                  debugPrint('MENGHAPUS FOTO SAMPAH DARI STORAGE: $url');
                 // Hapus file fisik dari Firebase Storage menggunakan URL-nya
                 await _storage.refFromURL(url).delete();
-                if (kDebugMode) debugPrint('BERHASIL MENGHAPUS FOTO DARI STORAGE');
+                if (kDebugMode)
+                  debugPrint('BERHASIL MENGHAPUS FOTO DARI STORAGE');
               } catch (storageError) {
                 // Gunakan catch agar jika 1 foto gagal dihapus (misal karena sudah tidak ada), proses update tidak crash
-                if (kDebugMode) debugPrint('GAGAL MENGHAPUS FOTO DARI STORAGE: $storageError');
+                if (kDebugMode)
+                  debugPrint(
+                      'GAGAL MENGHAPUS FOTO DARI STORAGE: $storageError');
               }
             }());
           }
@@ -261,14 +269,16 @@ class MitraService {
 
     // 2. Upload foto baru jika ada
     if (newPhotoFiles != null && newPhotoFiles.isNotEmpty) {
-      if (kDebugMode) debugPrint('Uploading ${newPhotoFiles.length} new photos...');
+      if (kDebugMode)
+        debugPrint('Uploading ${newPhotoFiles.length} new photos...');
       final uploaded = await uploadFieldPhotos(
         field.id,
         newPhotoFiles,
         suffix: 'new_${DateTime.now().millisecondsSinceEpoch}',
       );
       photoUrls.addAll(uploaded);
-      if (kDebugMode) debugPrint('Total photos after upload: ${photoUrls.length}');
+      if (kDebugMode)
+        debugPrint('Total photos after upload: ${photoUrls.length}');
     }
 
     final data = field.copyWith(photoUrls: photoUrls).toMap();
@@ -283,7 +293,8 @@ class MitraService {
       if (kDebugMode) debugPrint('Updating in "lapangan" collection...');
       await fieldRef.update(data);
     } else {
-      if (kDebugMode) debugPrint('Document not found. Creating new in "lapangan"...');
+      if (kDebugMode)
+        debugPrint('Document not found. Creating new in "lapangan"...');
       await fieldRef.set(data);
     }
     if (kDebugMode) debugPrint('UPDATE COMPLETED SUCCESSFULLY');
@@ -293,7 +304,8 @@ class MitraService {
     await _db.collection('lapangan').doc(fieldId).delete();
   }
 
-  Future<void> toggleFieldStatus(String fieldId, {required bool isActive}) async {
+  Future<void> toggleFieldStatus(String fieldId,
+      {required bool isActive}) async {
     await _db
         .collection('lapangan')
         .doc(fieldId)
@@ -406,12 +418,14 @@ class MitraService {
 
     for (var b in validBookings) {
       if (b.status == 'selesai' || b.status == 'dikonfirmasi') {
+        final revenueDate = b.tanggal;
         totalRevenue += b.hargaLapangan; // Menggunakan harga asli lapangan
 
-        // Cek jika transaksi hari ini (berdasarkan kapan dibuat)
-        if (b.createdAt.year == today.year &&
-            b.createdAt.month == today.month &&
-            b.createdAt.day == today.day) {
+        // Cek jika transaksi hari ini berdasarkan tanggal main.
+        // Ini membuat booking yang di-reschedule masuk ke pendapatan tanggal baru.
+        if (revenueDate.year == today.year &&
+            revenueDate.month == today.month &&
+            revenueDate.day == today.day) {
           todayRevenue += b.hargaLapangan;
         }
 
@@ -420,19 +434,22 @@ class MitraService {
           customerName: b.userName,
           fieldName: b.fieldName,
           amount: b.hargaLapangan,
-          date: b.createdAt, // Tampilkan berdasarkan kapan dibuat
+          date: revenueDate,
         );
 
         // Filter for current period
-        if (b.createdAt.isAfter(startDate.subtract(const Duration(seconds: 1))) &&
-            b.createdAt.isBefore(endDate.add(const Duration(seconds: 1)))) {
+        if (revenueDate
+                .isAfter(startDate.subtract(const Duration(seconds: 1))) &&
+            revenueDate.isBefore(endDate.add(const Duration(seconds: 1)))) {
           periodRevenue += b.hargaLapangan;
           transactions.add(tx);
           currentPeriodRevenue += b.hargaLapangan;
         }
         // Filter for previous period (for growth)
-        else if (b.createdAt.isAfter(previousPeriodStart.subtract(const Duration(seconds: 1))) &&
-                 b.createdAt.isBefore(previousPeriodEnd.add(const Duration(seconds: 1)))) {
+        else if (revenueDate.isAfter(
+                previousPeriodStart.subtract(const Duration(seconds: 1))) &&
+            revenueDate
+                .isBefore(previousPeriodEnd.add(const Duration(seconds: 1)))) {
           previousPeriodRevenue += b.hargaLapangan;
         }
       }
@@ -445,7 +462,9 @@ class MitraService {
 
     double revenueGrowth = 0.0;
     if (previousPeriodRevenue > 0) {
-      revenueGrowth = ((currentPeriodRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100;
+      revenueGrowth = ((currentPeriodRevenue - previousPeriodRevenue) /
+              previousPeriodRevenue) *
+          100;
     } else if (currentPeriodRevenue > 0) {
       revenueGrowth = 100.0;
     }

@@ -804,24 +804,34 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
                 final now = DateTime.now();
                 DateRange range;
                 if (filter == 'Hari Ini') {
-                  range = DateRange(DateTime(now.year, now.month, now.day), DateTime(now.year, now.month, now.day, 23, 59, 59));
+                  range = DateRange(DateTime(now.year, now.month, now.day),
+                      DateTime(now.year, now.month, now.day, 23, 59, 59));
                 } else if (filter == 'Minggu Ini') {
-                  final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-                  range = DateRange(DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day), DateTime(now.year, now.month, now.day, 23, 59, 59));
+                  final startOfWeek =
+                      now.subtract(Duration(days: now.weekday - 1));
+                  range = DateRange(
+                      DateTime(
+                          startOfWeek.year, startOfWeek.month, startOfWeek.day),
+                      DateTime(now.year, now.month, now.day, 23, 59, 59));
                 } else if (filter == 'Bulan Ini') {
-                  range = DateRange(DateTime(now.year, now.month, 1), DateTime(now.year, now.month + 1, 0, 23, 59, 59));
-                } else { // Tahun Ini
-                  range = DateRange(DateTime(now.year, 1, 1), DateTime(now.year, 12, 31, 23, 59, 59));
+                  range = DateRange(DateTime(now.year, now.month, 1),
+                      DateTime(now.year, now.month + 1, 0, 23, 59, 59));
+                } else {
+                  // Tahun Ini
+                  range = DateRange(DateTime(now.year, 1, 1),
+                      DateTime(now.year, 12, 31, 23, 59, 59));
                 }
                 ref.read(revenueDateRangeProvider.notifier).state = range;
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.primary : Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.borderLight,
+                    color:
+                        isSelected ? AppColors.primary : AppColors.borderLight,
                   ),
                   boxShadow: [
                     if (isSelected)
@@ -976,7 +986,7 @@ class _MitraRevenuePageState extends ConsumerState<MitraRevenuePage> {
 
           final dayBookings = bookings.where((b) {
             final bDate =
-                DateTime(b.createdAt.year, b.createdAt.month, b.createdAt.day);
+                DateTime(b.tanggal.year, b.tanggal.month, b.tanggal.day);
             return bDate.isAtSameMomentAs(dayDate) &&
                 (b.status == 'selesai' || b.status == 'dikonfirmasi');
           });
