@@ -58,3 +58,11 @@ functions/lib/
 
 # Firestore Security Rules Unit Tests
 firestore-tests/
+
+# JVM crash/replay logs
+hs_err_pid*.log
+replay_pid*.log
+
+# Analysis output files
+analyze*.txt
+current_rules.txt
